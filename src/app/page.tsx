@@ -1,25 +1,33 @@
+import Image from "next/image";
 import Link from "next/link";
 
-const principles = [
-  "Theo sát từng phần của bài học",
-  "Phản hồi ngay tại điểm kiến thức",
-  "Giúp giảng viên hiểu tình hình lớp",
-] as const;
+import backgroundImage from "../../picture/background.png";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-6 py-16 sm:px-10 lg:px-16">
-      <section className="grid w-full gap-14 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
-        <div>
+    <main className="relative isolate flex min-h-screen items-center overflow-hidden">
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="-z-20 object-contain object-right-bottom opacity-25 sm:opacity-45 lg:opacity-100"
+        fill
+        placeholder="blur"
+        priority
+        sizes="100vw"
+        src={backgroundImage}
+      />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[var(--background)] via-[var(--background)]/95 to-[var(--background)]/20 lg:via-[var(--background)]/80 lg:to-transparent" />
+
+      <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:px-16">
+        <div className="max-w-3xl">
           <p className="mb-6 text-sm font-bold tracking-[0.24em] text-[var(--accent)]">
             MINCLASS
           </p>
           <h1 className="max-w-4xl text-5xl leading-[1.05] font-semibold tracking-[-0.045em] text-balance sm:text-7xl">
-            Một nhịp học chung cho cả lớp.
+            Học cùng Thầy Bảo
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-[var(--muted)] sm:text-xl">
-            Classroom companion tối giản cho lớp học trực tiếp, nơi nội dung và phản hồi
-            cùng đi theo flow của giảng viên.
+            Học viên theo dõi bài học, làm quiz và thảo luận trực tiếp với giảng viên trong thời gian thực
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -36,20 +44,6 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-
-        <ul className="space-y-3" aria-label="Giá trị cốt lõi">
-          {principles.map((principle, index) => (
-            <li
-              className="flex items-start gap-4 border-t border-black/10 py-4 text-base leading-7"
-              key={principle}
-            >
-              <span className="mt-0.5 font-mono text-xs text-[var(--accent)]">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span>{principle}</span>
-            </li>
-          ))}
-        </ul>
       </section>
     </main>
   );

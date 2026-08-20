@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { BackLink } from "@/components/back-link";
 import { MarkdownContent } from "@/features/lessons/components/markdown-preview";
 import { EndSessionButton } from "@/features/rooms/components/end-session-button";
 import { NextSectionButton } from "@/features/rooms/components/next-section-button";
@@ -34,7 +34,7 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
-      <Link className="text-sm font-medium text-[var(--muted)] hover:text-[var(--accent)]" href="/">← MINCLASS</Link>
+      <BackLink href="/" label="MINCLASS" />
 
       <header className="mt-8 flex flex-col justify-between gap-5 border-b border-black/10 pb-7 sm:flex-row sm:items-end">
         <div>
@@ -58,7 +58,7 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
             {!currentSection ? (
               <div className="rounded-3xl border border-red-200 bg-red-50 p-7 text-red-900">Không tìm thấy teaching section hiện tại.</div>
             ) : (
-              <article className="rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-10">
+              <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-7 shadow-sm sm:p-10">
                 <header className="mb-7 flex flex-col justify-between gap-5 border-b border-black/10 pb-6 sm:flex-row sm:items-start">
                   <div>
                     <p className="font-mono text-xs font-semibold text-[var(--accent)]">SECTION ĐANG DẠY · {currentSectionIndex + 1} / {room.sections.length}</p>

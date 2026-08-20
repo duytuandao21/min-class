@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackLink } from "@/components/back-link";
 import { DeleteRoomButton } from "@/features/rooms/components/delete-room-button";
 import { getTeacherRoomSummary } from "@/features/rooms/server/queries";
 
@@ -11,7 +12,7 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
-      <Link className="text-sm font-medium text-[var(--muted)] hover:text-[var(--accent)]" href="/">← MINCLASS</Link>
+      <BackLink href="/" label="MINCLASS" />
 
       <header className="mt-10 border-b border-black/10 pb-8">
         <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">POST-CLASS SUMMARY · {summary.room.code}</p>

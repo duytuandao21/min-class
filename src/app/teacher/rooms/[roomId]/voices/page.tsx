@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackLink } from "@/components/back-link";
 import { ClassVoicesViewer } from "@/features/rooms/components/class-voices-viewer";
 import { getTeacherClassVoices } from "@/features/rooms/server/queries";
 
@@ -18,7 +18,7 @@ export default async function ClassVoicesPage({
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
-      <Link className="text-sm font-medium text-[var(--muted)] hover:text-[var(--accent)]" href={`/teacher/rooms/${snapshot.roomId}/summary`}>← Summary</Link>
+      <BackLink href={`/teacher/rooms/${snapshot.roomId}/summary`} label="Summary" />
       <header className="mt-10 max-w-4xl border-b border-black/10 pb-8">
         <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">CLASS VOICES - {snapshot.roomCode}</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Những điều lớp học muốn nói</h1>

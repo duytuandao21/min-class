@@ -1,13 +1,10 @@
-import Link from "next/link";
-
+import { BackLink } from "@/components/back-link";
 import { JoinRoomForm } from "@/features/rooms/components/join-room-form";
 
 export default function JoinPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-12">
-      <Link className="mb-10 w-fit text-sm font-medium text-[var(--muted)] hover:text-[var(--accent)]" href="/">
-        ← MINCLASS
-      </Link>
+      <BackLink className="mb-10" href="/" label="MINCLASS" />
       <header className="mb-8">
         <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">STUDENT · JOIN ROOM</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">Tham gia buổi học</h1>

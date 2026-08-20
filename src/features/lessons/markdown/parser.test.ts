@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { MarkdownValidationError, parseLessonMarkdown } from "./parser";
@@ -42,6 +45,23 @@ options:
 :::`;
 
 describe("parseLessonMarkdown", () => {
+  it("parses the complete manual test lesson", () => {
+    const source = readFileSync(resolve(process.cwd(), "test/lesson.md"), "utf8");
+    const lesson = parseLessonMarkdown(source);
+    const quiz = lesson.sections.at(-1);
+
+    expect(lesson.sections).toHaveLength(8);
+    expect(lesson.sections.some((section) => section.type === "REFLECTION")).toBe(true);
+    expect(lesson.sections.some((section) => section.contentMd.includes("![Minh họa"))).toBe(true);
+    expect(quiz?.type).toBe("QUIZ");
+    if (quiz?.type === "QUIZ") {
+      expect(quiz.quiz.questions).toHaveLength(8);
+      expect(new Set(quiz.quiz.questions.map((question) => question.type))).toEqual(
+        new Set(["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"]),
+      );
+    }
+  });
+
   it("returns normalized content and quiz data", () => {
     const lesson = parseLessonMarkdown(validLesson);
 

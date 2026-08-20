@@ -164,7 +164,7 @@ export function StudentLessonPlayer({
         </div>
       ) : (
         <div className="mx-auto w-full max-w-2xl">
-          <article className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-10">
+          <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-6 shadow-sm sm:p-10">
             <header className="mb-7 border-b border-black/10 pb-5">
               <div className="flex items-center justify-between gap-4">
                 <p className="font-mono text-xs font-semibold text-[var(--accent)]">
