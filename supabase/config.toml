@@ -1,0 +1,10 @@
+project_id = "minclass"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+enable_signup = true
+enable_anonymous_sign_ins = true
+
+[db.seed]
+enabled = false
