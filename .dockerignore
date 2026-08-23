@@ -1,0 +1,17 @@
+.git
+.next
+node_modules
+
+.env
+.env.*
+!.env.example
+
+coverage
+playwright-report
+test-results
+supabase/.temp
+
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
