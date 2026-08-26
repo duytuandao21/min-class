@@ -87,8 +87,8 @@ export default async function CourseSectionRosterPage({
                               </span>
                               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                                 {lesson.latestSession?.status === "ACTIVE" ? (
-                                  <Link className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--accent)] px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-emerald-800" href={`/teacher/rooms/${lesson.latestSession.id}`}>
-                                    Start Lesson
+                                  <Link className="inline-flex min-h-9 items-center justify-center rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600" href={`/teacher/rooms/${lesson.latestSession.id}`}>
+                                    Dashboard
                                   </Link>
                                 ) : (
                                   <StartLessonSessionButton className="" lessonId={lesson.id} />
