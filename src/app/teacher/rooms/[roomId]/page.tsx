@@ -31,10 +31,13 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
     ? room.sections.findIndex((section) => section.id === currentSection.id)
     : -1;
   const hasNextSection = currentSectionIndex >= 0 && currentSectionIndex < room.sections.length - 1;
+  const courseSectionHref = room.lessonContext
+    ? `/teacher/subjects/${room.lessonContext.subjectId}/sections/${room.lessonContext.courseSectionId}`
+    : "/teacher/subjects";
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
-      <BackLink href="/" label="MINCLASS" />
+      <BackLink href={courseSectionHref} label="Course Section" />
 
       <header className="mt-8 flex flex-col justify-between gap-5 border-b border-black/10 pb-7 sm:flex-row sm:items-end">
         <div>

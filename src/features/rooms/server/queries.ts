@@ -50,7 +50,14 @@ const lessonAccessGrantSchema = z.object({
   room_id: z.string().uuid(),
   mssv: z.string(),
 });
-const lessonIdSchema = z.object({ id: z.string().uuid() });
+const lessonPlacementSchema = z.object({
+  id: z.string().uuid(),
+  course_section_id: z.string().uuid().nullable(),
+});
+const courseSectionPlacementSchema = z.object({
+  id: z.string().uuid(),
+  subject_id: z.string().uuid(),
+});
 const sectionRowSchema = z.object({
   id: z.string().uuid(),
   position: z.number().int().nonnegative(),
@@ -61,6 +68,10 @@ const sectionRowSchema = z.object({
 
 export type TeacherRoom = z.infer<typeof teacherRoomSchema> & {
   attendance: TeacherAttendance;
+  lessonContext: {
+    courseSectionId: string;
+    subjectId: string;
+  } | null;
   sections: LessonSection[];
 };
 export type StudentRoom = StudentLessonSnapshot & { mssv: string; reactions: OwnReactions };
@@ -95,13 +106,29 @@ export async function getTeacherRoom(input: string): Promise<TeacherRoom | null>
   const attendance = teacherAttendanceSchema.safeParse(attendanceResult.data);
   if (!room.success || !attendance.success) return null;
 
-  let lessonQuery = supabase.from("lessons").select("id");
+  let lessonQuery = supabase.from("lessons").select("id, course_section_id");
   lessonQuery = room.data.lesson_id
     ? lessonQuery.eq("id", room.data.lesson_id)
     : lessonQuery.eq("room_id", roomId.data);
   const { data: lessonData, error: lessonError } = await lessonQuery.maybeSingle();
-  const lesson = lessonIdSchema.safeParse(lessonData);
+  const lesson = lessonPlacementSchema.safeParse(lessonData);
   if (lessonError || !lesson.success) return null;
+
+  let lessonContext: TeacherRoom["lessonContext"] = null;
+  if (lesson.data.course_section_id) {
+    const { data: courseSectionData, error: courseSectionError } = await supabase
+      .from("course_sections")
+      .select("id, subject_id")
+      .eq("id", lesson.data.course_section_id)
+      .maybeSingle();
+    const courseSection = courseSectionPlacementSchema.safeParse(courseSectionData);
+    if (!courseSectionError && courseSection.success) {
+      lessonContext = {
+        courseSectionId: courseSection.data.id,
+        subjectId: courseSection.data.subject_id,
+      };
+    }
+  }
 
   const { data: sectionData, error: sectionError } = await supabase
     .from("sections")
@@ -118,7 +145,7 @@ export async function getTeacherRoom(input: string): Promise<TeacherRoom | null>
     contentMd: section.content_md,
   }));
 
-  return { ...room.data, attendance: attendance.data, sections };
+  return { ...room.data, attendance: attendance.data, lessonContext, sections };
 }
 
 export async function getStudentRoom(input: string): Promise<StudentRoom | null> {
