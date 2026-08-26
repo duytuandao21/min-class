@@ -1,6 +1,6 @@
 # MINCLASS
 
-MINCLASS là ứng dụng hỗ trợ lớp học trực tiếp, giúp giảng viên trình bày bài học theo từng section và nhận phản hồi gần realtime từ sinh viên. Sinh viên theo dõi nội dung, gửi reaction hoặc comment và làm quiz ngay trong buổi học mà không cần đăng ký tài khoản.
+MINCLASS là ứng dụng hỗ trợ lớp học trực tiếp. Giảng viên quản lý môn học, lớp học phần, danh sách sinh viên và bài học; sinh viên theo dõi nội dung, phản hồi và làm quiz mà không cần tạo tài khoản.
 
 ## Chạy project
 
@@ -10,152 +10,112 @@ Cài dependencies:
 pnpm install
 ```
 
-Tạo file `.env.local` từ `.env.example` và điền thông tin Supabase:
+Tạo `.env.local` từ `.env.example` và điền cấu hình Supabase:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-Chạy môi trường development:
+Áp dụng các migration và chạy project:
 
 ```bash
+pnpm exec supabase db push
 pnpm dev
 ```
 
-Sau đó truy cập [http://localhost:3000](http://localhost:3000).
+Truy cập [http://localhost:3000](http://localhost:3000).
 
-Build và chạy production:
+Các lệnh kiểm tra và build:
 
 ```bash
+pnpm lint
+pnpm typecheck
+pnpm test
 pnpm build
 pnpm start
 ```
 
 ## Dành cho giảng viên
 
-1. Chọn **Tạo Room**, nhập tên buổi học và upload file Markdown.
-2. Kiểm tra nội dung trong phần preview rồi lưu Room.
-3. Chọn **Start Room** và chia sẻ Room Code cho sinh viên.
-4. Trình bày section hiện tại, theo dõi reaction, comment và tiến độ quiz.
-5. Chọn **Done Section** để chuyển lớp sang section tiếp theo.
-6. Khi hoàn tất, chọn **Kết thúc buổi học** để xem Summary và Class Voices.
+### Đăng nhập và quản lý môn học
+
+1. Từ trang chủ, chọn **Đăng nhập**.
+2. Đăng nhập bằng tài khoản giảng viên để vào trang quản lý.
+3. Chọn **Thêm môn học** để tạo môn học mới.
+4. Có thể chỉnh sửa hoặc xóa môn học đã tạo.
+
+### Lesson Plan và lớp học phần
+
+1. Mở một môn học và chọn **Lesson Plan** để tạo, chỉnh sửa danh sách chương.
+2. Các chương được sắp xếp theo tên và dùng để phân nhóm Lesson.
+3. Chọn **Thêm lớp học phần**, nhập mã lớp và tên hiển thị.
+4. Mở lớp học phần để quản lý roster và danh sách Lesson.
+
+### Quản lý danh sách sinh viên
+
+1. Chuẩn bị file `.txt`, mỗi dòng chứa một MSSV.
+2. Upload file roster và kiểm tra phần preview.
+3. Chỉ lưu khi danh sách không có MSSV sai định dạng hoặc bị trùng.
+4. Sau khi lưu, trang lớp học phần hiển thị sĩ số và danh sách MSSV.
+
+Việc cập nhật roster sau này không làm thay đổi dữ liệu điểm danh của các buổi học đã diễn ra.
+
+### Tạo và chuẩn bị Lesson
+
+1. Trong lớp học phần, chọn **Tạo Lesson** rồi chọn chương chứa Lesson.
+2. Nhập tên và upload file bài học `.md`.
+3. Kiểm tra nội dung trong phần preview rồi lưu.
+4. Lesson mới tạo chưa LIVE và chưa cho sinh viên truy cập nội dung.
+
+Nút **Cách viết file lesson** trên trang tạo Lesson mở hướng dẫn đầy đủ về định dạng file bài học.
+
+### Dạy Lesson trực tiếp
+
+1. Chọn **Start Lesson** để tạo Lesson Session LIVE.
+2. Chia sẻ Session Code đang hiển thị cho sinh viên thuộc lớp học phần.
+3. Dashboard hiển thị sĩ số, số sinh viên đã tham gia, section đang dạy, reaction, comment và tiến độ quiz.
+4. Chọn **Done Section** để chuyển sang section tiếp theo. Sinh viên nhận nội dung mới qua realtime.
+5. Chọn **Kết thúc buổi học** và xác nhận để đóng Session.
+
+### Xem lại buổi học
+
+Sau khi Session kết thúc, giảng viên có thể mở **Xem Lesson Review** để xem:
+
+- Số sinh viên đã tham gia và danh sách vắng.
+- Kết quả và thống kê quiz.
+- Reaction theo từng section.
+- Comment có tên hoặc ẩn danh.
+- Class Voices ở chế độ danh sách hoặc trình chiếu.
+
+Giảng viên có thể xóa một Session sau khi xác nhận. Attendance, participant, reaction, comment và dữ liệu quiz của Session đó sẽ bị xóa vĩnh viễn; Lesson gốc vẫn được giữ lại.
 
 ## Dành cho sinh viên
 
-1. Chọn **Tham gia Room**.
-2. Nhập Room Code và MSSV, sau đó chọn **Tham gia**.
-3. Theo dõi section đang được giảng viên trình bày.
-4. Gửi reaction hoặc comment cho từng section; comment có thể hiển thị MSSV hoặc để ẩn danh.
-5. Làm và gửi quiz khi section quiz được mở.
-6. Sau khi buổi học kết thúc, bạn vẫn có thể xem lại các section đã được công bố.
+Sinh viên không cần email, mật khẩu hoặc tài khoản MINCLASS.
 
-## Hướng dẫn viết file bài học Markdown
+### Tham gia Lesson đang LIVE
 
-File phải bắt đầu bằng frontmatter chứa `title` và có thể thêm `description`:
+1. Từ trang chủ, chọn **Khám phá bài học**.
+2. Chọn môn học, lớp học phần và Lesson đang **LIVE**.
+3. Nhập MSSV và Lesson Session Code do giảng viên cung cấp.
+4. MSSV phải có trong roster của đúng lớp học phần.
+5. Theo dõi section đang được giảng viên trình bày và các section đã mở trước đó.
 
-```markdown
----
-title: Tên bài học
-description: Mô tả ngắn về bài học.
----
-```
+Trong buổi học, sinh viên có thể:
 
-### Section nội dung
+- Chọn reaction **Hiểu**, **Chưa chắc** hoặc **Có câu hỏi**.
+- Gửi nhiều comment và chọn hiện MSSV hoặc ẩn danh.
+- Làm quiz sau khi section quiz được mở.
+- Xem lại lựa chọn và kết quả sau khi nộp quiz.
 
-Mỗi section dùng cặp `:::section` và `:::`. `id` phải duy nhất trong toàn bài; sau phần metadata phải có một dòng trống trước nội dung Markdown.
+Mỗi sinh viên chỉ được nộp một lần cho mỗi quiz trong Session.
 
-````markdown
-:::section
-id: section-overview
-title: Tổng quan
-type: content
+### Xem lại Lesson đã kết thúc
 
-## Tiêu đề nội dung
+1. Chọn Lesson có trạng thái **Đã kết thúc**.
+2. Nhập MSSV; không cần Session Code.
+3. MSSV thuộc roster được xem toàn bộ nội dung Lesson ở chế độ chỉ đọc.
+4. Phần quiz hiển thị đáp án đúng và, nếu sinh viên đã làm bài, đáp án mà sinh viên đã chọn.
 
-Đây là một đoạn văn có **chữ đậm**, *chữ nghiêng* và `inline code`.
-
-- Mục thứ nhất
-- Mục thứ hai
-
-1. Bước một
-2. Bước hai
-
-Đọc thêm tại [MDN](https://developer.mozilla.org).
-
-![Mô tả ảnh](https://example.com/image.png)
-
-```text
-Ví dụ code block
-```
-:::
-````
-
-Có thể dùng `type: reflection` cho một section suy ngẫm:
-
-```markdown
-:::section
-id: reflection-check
-title: Dừng lại và suy ngẫm
-type: reflection
-
-Bạn hãy giải thích lại ý chính của phần vừa học.
-:::
-```
-
-### Section quiz
-
-Quiz dùng `:::quiz`. MINCLASS hỗ trợ `single_choice`, `multiple_choice` và `true_false`.
-
-```markdown
-:::quiz
-id: knowledge-check
-title: Kiểm tra kiến thức
-questions:
-  - id: single-question
-    type: single_choice
-    text: "Đâu là đáp án đúng?"
-    options:
-      - id: option-a
-        text: Đáp án A
-        correct: true
-      - id: option-b
-        text: Đáp án B
-        correct: false
-
-  - id: multiple-question
-    type: multiple_choice
-    text: "Chọn tất cả đáp án đúng."
-    options:
-      - id: choice-a
-        text: Lựa chọn A
-        correct: true
-      - id: choice-b
-        text: Lựa chọn B
-        correct: true
-      - id: choice-c
-        text: Lựa chọn C
-        correct: false
-
-  - id: true-false-question
-    type: true_false
-    text: "Nội dung của nhận định này là đúng."
-    options:
-      - id: answer-true
-        text: Đúng
-        correct: true
-      - id: answer-false
-        text: Sai
-        correct: false
-:::
-```
-
-Quy tắc quiz:
-
-- Mỗi câu phải có ít nhất hai lựa chọn.
-- `single_choice` phải có đúng một đáp án `correct: true`.
-- `multiple_choice` phải có ít nhất một đáp án `correct: true`.
-- `true_false` phải có đúng hai lựa chọn và đúng một đáp án đúng.
-- `id` của section không được trùng; `id` câu hỏi và lựa chọn cũng phải duy nhất trong phạm vi tương ứng.
-
-Markdown hỗ trợ paragraph, heading, chữ đậm, chữ nghiêng, danh sách, link, ảnh, inline code và fenced code block. Link và ảnh phải dùng URL `http` hoặc `https`. Không dùng HTML tùy ý, iframe, video, slide, assignment hoặc nội dung nằm ngoài `:::section`/`:::quiz`.
+Ở chế độ xem lại, sinh viên không thể gửi reaction, comment, nộp lại quiz hoặc thay đổi dữ liệu tham gia.
