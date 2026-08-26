@@ -45,6 +45,43 @@ describe("Quiz MVP contracts", () => {
     expect(JSON.stringify(snapshot)).not.toContain("correctOption");
   });
 
+  it("accepts answer review only as part of a submitted attempt", () => {
+    const snapshot = studentQuizSnapshotSchema.parse({
+      quizId: "61000000-0000-4000-8000-000000000001",
+      sectionId: "51000000-0000-4000-8000-000000000001",
+      title: "Quick check",
+      questions: [{
+        id: "71000000-0000-4000-8000-000000000001",
+        position: 0,
+        type: "SINGLE_CHOICE",
+        questionText: "Question 1",
+        options: [{
+          id: "81000000-0000-4000-8000-000000000001",
+          position: 0,
+          content: "Option 1",
+        }, {
+          id: "81000000-0000-4000-8000-000000000002",
+          position: 1,
+          content: "Option 2",
+        }],
+      }],
+      attempt: {
+        attemptId: "91000000-0000-4000-8000-000000000001",
+        score: 1,
+        totalQuestions: 1,
+        submittedAt: "2026-08-25T12:00:00.000Z",
+        answers: [{
+          questionId: "71000000-0000-4000-8000-000000000001",
+          selectedOptionIds: ["81000000-0000-4000-8000-000000000001"],
+          correctOptionIds: ["81000000-0000-4000-8000-000000000001"],
+          isCorrect: true,
+        }],
+      },
+    });
+
+    expect(snapshot.attempt?.answers[0]?.isCorrect).toBe(true);
+  });
+
   it("validates Teacher analytics percentages", () => {
     expect(teacherQuizAnalyticsSchema.safeParse({
       quizzes: [{

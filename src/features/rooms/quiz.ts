@@ -25,6 +25,12 @@ const quizAttemptSchema = z.object({
   score: z.number().int().nonnegative(),
   totalQuestions: z.number().int().positive(),
   submittedAt: z.string(),
+  answers: z.array(z.object({
+    questionId: z.string().uuid(),
+    selectedOptionIds: z.array(z.string().uuid()),
+    correctOptionIds: z.array(z.string().uuid()).min(1),
+    isCorrect: z.boolean(),
+  })).default([]),
 });
 
 export const studentQuizSnapshotSchema = z.object({

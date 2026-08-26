@@ -10,21 +10,25 @@ import {
 import { roomIdSchema } from "@/features/rooms/schemas";
 import { createClient } from "@/lib/supabase/client";
 
-export async function fetchStudentQuizSnapshot(sectionIdInput: string): Promise<StudentQuizSnapshot> {
+export async function fetchStudentQuizSnapshot(roomIdInput: string, sectionIdInput: string): Promise<StudentQuizSnapshot> {
+  const roomId = roomIdSchema.parse(roomIdInput);
   const sectionId = roomIdSchema.parse(sectionIdInput);
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_student_quiz_snapshot", {
+  const { data, error } = await supabase.rpc("get_session_student_quiz_snapshot", {
+    p_room_id: roomId,
     p_section_id: sectionId,
   });
   if (error) throw new Error("Quiz chưa sẵn sàng.");
   return studentQuizSnapshotSchema.parse(data);
 }
 
-export async function submitQuiz(quizIdInput: string, answersInput: QuizSubmission) {
+export async function submitQuiz(roomIdInput: string, quizIdInput: string, answersInput: QuizSubmission) {
+  const roomId = roomIdSchema.parse(roomIdInput);
   const quizId = roomIdSchema.parse(quizIdInput);
   const answers = quizSubmissionSchema.parse(answersInput);
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("submit_quiz", {
+  const { data, error } = await supabase.rpc("submit_session_quiz", {
+    p_room_id: roomId,
     p_quiz_id: quizId,
     p_answers: answers,
   });

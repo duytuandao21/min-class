@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { deleteRoomAction } from "@/features/rooms/lifecycle-actions";
 
-export function DeleteRoomButton({ roomId }: { roomId: string }) {
+export function DeleteRoomButton({ redirectTo = "/teacher/subjects", roomId }: { redirectTo?: string; roomId: string }) {
   const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function DeleteRoomButton({ roomId }: { roomId: string }) {
         setError(result.message);
         return;
       }
-      router.replace("/");
+      router.replace(redirectTo);
       router.refresh();
     });
   }

@@ -61,11 +61,21 @@ export function TeacherQuizAnalytics({
       });
 
     const syncAfterReconnect = () => void syncAnalytics();
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") void syncAnalytics();
+    };
+    const fallbackSyncTimer = window.setInterval(syncWhenVisible, 3_000);
+
     window.addEventListener("online", syncAfterReconnect);
+    window.addEventListener("focus", syncAfterReconnect);
+    document.addEventListener("visibilitychange", syncWhenVisible);
 
     return () => {
       syncVersionRef.current += 1;
+      window.clearInterval(fallbackSyncTimer);
       window.removeEventListener("online", syncAfterReconnect);
+      window.removeEventListener("focus", syncAfterReconnect);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
       void supabase.removeChannel(channel);
     };
   }, [roomId, syncAnalytics]);

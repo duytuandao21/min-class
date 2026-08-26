@@ -1,6 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
 select plan(16);
 
@@ -22,7 +23,7 @@ values (
   '',
   now(),
   now(),
-  true
+  false
 );
 
 select ok(
@@ -38,7 +39,7 @@ select ok(
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"10000000-0000-0000-0000-000000000003","role":"authenticated"}',
+  '{"sub":"10000000-0000-0000-0000-000000000003","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 

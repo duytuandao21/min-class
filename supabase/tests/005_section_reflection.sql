@@ -1,6 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
 select plan(25);
 
@@ -21,8 +22,8 @@ select ok(
 
 insert into auth.users (id, instance_id, aud, role, encrypted_password, created_at, updated_at, is_anonymous)
 values
-  ('15000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
-  ('15000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
+  ('15000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
+  ('15000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
   ('25000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true);
 
 insert into public.rooms (id, code, teacher_user_id, title, status, teaching_section, released_through, started_at, ended_at)
@@ -114,7 +115,7 @@ select is(
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"15000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"15000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select is(
   (select count(*) from public.section_comments where section_id = '55000000-0000-0000-0000-000000000001'),
@@ -188,7 +189,7 @@ select is(
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"15000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"15000000-0000-0000-0000-000000000002","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select throws_ok(
   $$select public.get_teacher_feedback_snapshot('35000000-0000-0000-0000-000000000001')$$,

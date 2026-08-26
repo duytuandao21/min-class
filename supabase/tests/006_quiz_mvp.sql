@@ -1,13 +1,14 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
-select plan(25);
+select plan(28);
 
 insert into auth.users (id, instance_id, aud, role, encrypted_password, created_at, updated_at, is_anonymous)
 values
-  ('16000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
-  ('16000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
+  ('16000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
+  ('16000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
   ('26000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
   ('26000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true);
 
@@ -75,6 +76,16 @@ select is((select count(*) from public.quizzes), 1::bigint, 'Student can read on
 select is((select count(*) from public.quiz_questions), 3::bigint, 'Student can read only questions from released Quiz');
 select is(jsonb_array_length(public.get_student_quiz_snapshot('56000000-0000-0000-0000-000000000001')->'questions'), 3, 'Released Quiz snapshot contains all questions');
 select ok(not jsonb_path_exists(public.get_student_quiz_snapshot('56000000-0000-0000-0000-000000000001'), '$.**.correctOptionIds'), 'Student Quiz snapshot contains no answer key');
+select ok(
+  not jsonb_path_exists(
+    public.get_session_student_quiz_snapshot(
+      '36000000-0000-0000-0000-000000000001',
+      '56000000-0000-0000-0000-000000000001'
+    ),
+    '$.**.correctOptionIds'
+  ),
+  'Session Quiz snapshot contains no answer key before submit'
+);
 
 select throws_ok(
   $$select public.get_student_quiz_snapshot('56000000-0000-0000-0000-000000000002')$$,
@@ -98,6 +109,24 @@ select lives_ok(
 select is((select score from public.quiz_attempts), 3, 'Server calculates the correct score from private keys');
 select is((select total_questions from public.quiz_attempts), 3, 'Server records the question total');
 select is((select count(*) from public.quiz_answers), 3::bigint, 'Server records one answer per question');
+select is(
+  jsonb_array_length(
+    public.get_session_student_quiz_snapshot(
+      '36000000-0000-0000-0000-000000000001',
+      '56000000-0000-0000-0000-000000000001'
+    )->'attempt'->'answers'
+  ),
+  3,
+  'Submitted Student receives review for every own answer'
+);
+select is(
+  public.get_session_student_quiz_snapshot(
+    '36000000-0000-0000-0000-000000000001',
+    '56000000-0000-0000-0000-000000000001'
+  )->'attempt'->'answers'->0->'correctOptionIds'->>0,
+  '81000000-0000-0000-0000-000000000001',
+  'Submitted Student receives the correct answer after submit'
+);
 select ok((select is_correct from public.quiz_answers where question_id = '71000000-0000-0000-0000-000000000001'), 'SINGLE_CHOICE is scored correctly');
 select ok((select is_correct from public.quiz_answers where question_id = '71000000-0000-0000-0000-000000000002'), 'MULTIPLE_CHOICE is scored correctly');
 select ok((select is_correct from public.quiz_answers where question_id = '71000000-0000-0000-0000-000000000003'), 'TRUE_FALSE is scored correctly');
@@ -114,7 +143,7 @@ select is((select count(*) from public.room_feedback_events), 0::bigint, 'Studen
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"16000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"16000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select is((public.get_teacher_quiz_analytics('36000000-0000-0000-0000-000000000001')->'quizzes'->0->>'submittedCount')::integer, 1, 'Teacher sees submitted Student count');
 select is((public.get_teacher_quiz_analytics('36000000-0000-0000-0000-000000000001')->'quizzes'->0->>'participantCount')::integer, 2, 'Teacher analytics includes participant count');
@@ -126,7 +155,7 @@ select is((select count(*) from public.room_feedback_events where kind = 'QUIZ')
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"16000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"16000000-0000-0000-0000-000000000002","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select throws_ok(
   $$select public.get_teacher_quiz_analytics('36000000-0000-0000-0000-000000000001')$$,

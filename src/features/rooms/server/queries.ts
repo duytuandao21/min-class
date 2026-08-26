@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { requireTeacher } from "@/features/auth/teacher-session";
 import {
   classVoicesSnapshotSchema,
   type ClassVoicesSnapshot,
@@ -22,7 +23,9 @@ import {
 } from "@/features/rooms/quiz";
 import { roomCodeSchema, roomIdSchema } from "@/features/rooms/schemas";
 import {
+  teacherAttendanceSchema,
   teacherRoomSummarySchema,
+  type TeacherAttendance,
   type TeacherRoomSummary,
 } from "@/features/rooms/summary";
 import { createClient } from "@/lib/supabase/server";
@@ -36,9 +39,14 @@ const teacherRoomSchema = z.object({
   started_at: z.string().nullable(),
   teaching_section: z.number().int().nonnegative(),
   released_through: z.number().int(),
+  lesson_id: z.string().uuid().nullable(),
 });
 const participantSchema = z.object({
   id: z.string().uuid(),
+  room_id: z.string().uuid(),
+  mssv: z.string(),
+});
+const lessonAccessGrantSchema = z.object({
   room_id: z.string().uuid(),
   mssv: z.string(),
 });
@@ -52,40 +60,46 @@ const sectionRowSchema = z.object({
 });
 
 export type TeacherRoom = z.infer<typeof teacherRoomSchema> & {
-  participantCount: number;
+  attendance: TeacherAttendance;
   sections: LessonSection[];
 };
 export type StudentRoom = StudentLessonSnapshot & { mssv: string; reactions: OwnReactions };
+export type TeacherRoomSummaryDetail = TeacherRoomSummary & {
+  lessonContext: {
+    lessonId: string;
+    courseSectionId: string;
+    subjectId: string;
+  } | null;
+};
 
 export async function getTeacherRoom(input: string): Promise<TeacherRoom | null> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return null;
 
   const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) return null;
-
-  const [roomResult, countResult] = await Promise.all([
+  const [roomResult, attendanceResult] = await Promise.all([
     supabase
       .from("rooms")
-      .select("id, code, title, status, started_at, teaching_section, released_through")
+      .select("id, code, title, status, started_at, teaching_section, released_through, lesson_id")
       .eq("id", roomId.data)
       .maybeSingle(),
-    supabase
-      .from("participants")
-      .select("id", { count: "exact", head: true })
-      .eq("room_id", roomId.data),
+    supabase.rpc("get_teacher_session_attendance", {
+      p_session_id: roomId.data,
+    }),
   ]);
-  if (roomResult.error || countResult.error) return null;
+  if (roomResult.error || attendanceResult.error) return null;
 
   const room = teacherRoomSchema.safeParse(roomResult.data);
-  if (!room.success) return null;
+  const attendance = teacherAttendanceSchema.safeParse(attendanceResult.data);
+  if (!room.success || !attendance.success) return null;
 
-  const { data: lessonData, error: lessonError } = await supabase
-    .from("lessons")
-    .select("id")
-    .eq("room_id", roomId.data)
-    .maybeSingle();
+  let lessonQuery = supabase.from("lessons").select("id");
+  lessonQuery = room.data.lesson_id
+    ? lessonQuery.eq("id", room.data.lesson_id)
+    : lessonQuery.eq("room_id", roomId.data);
+  const { data: lessonData, error: lessonError } = await lessonQuery.maybeSingle();
   const lesson = lessonIdSchema.safeParse(lessonData);
   if (lessonError || !lesson.success) return null;
 
@@ -104,7 +118,7 @@ export async function getTeacherRoom(input: string): Promise<TeacherRoom | null>
     contentMd: section.content_md,
   }));
 
-  return { ...room.data, participantCount: countResult.count ?? 0, sections };
+  return { ...room.data, attendance: attendance.data, sections };
 }
 
 export async function getStudentRoom(input: string): Promise<StudentRoom | null> {
@@ -115,18 +129,30 @@ export async function getStudentRoom(input: string): Promise<StudentRoom | null>
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData.user) return null;
 
-  const [participantResult, snapshotResult] = await Promise.all([
+  const [participantResult, accessGrantResult, snapshotResult] = await Promise.all([
     supabase
       .from("participants")
       .select("id, room_id, mssv")
       .eq("room_id", roomId.data)
       .eq("user_id", userData.user.id)
       .maybeSingle(),
+    supabase
+      .from("lesson_session_access_grants")
+      .select("room_id, mssv")
+      .eq("room_id", roomId.data)
+      .eq("user_id", userData.user.id)
+      .maybeSingle(),
     supabase.rpc("get_student_lesson_snapshot", { p_room_id: roomId.data }),
   ]);
   const { data: participantData, error: participantError } = participantResult;
-  const participant = participantSchema.safeParse(participantData);
-  if (participantError || !participant.success) return null;
+  const participant = participantData ? participantSchema.safeParse(participantData) : null;
+  const accessGrant = accessGrantResult.data
+    ? lessonAccessGrantSchema.safeParse(accessGrantResult.data)
+    : null;
+  if (participantError || accessGrantResult.error) return null;
+  if (participant && !participant.success) return null;
+  if (accessGrant && !accessGrant.success) return null;
+  if (!participant && !accessGrant) return null;
 
   if (snapshotResult.error) return null;
   let snapshot: StudentLessonSnapshot;
@@ -136,25 +162,31 @@ export async function getStudentRoom(input: string): Promise<StudentRoom | null>
     return null;
   }
 
-  const { data: reactionData, error: reactionError } = await supabase
-    .from("section_reactions")
-    .select("section_id, reaction")
-    .eq("participant_id", participant.data.id);
-  if (reactionError) return null;
+  const reactionResult = participant?.success
+    ? await supabase
+      .from("section_reactions")
+      .select("section_id, reaction")
+      .eq("participant_id", participant.data.id)
+    : { data: [], error: null };
+  if (reactionResult.error) return null;
 
   let reactions: OwnReactions;
   try {
-    reactions = parseOwnReactions(reactionData);
+    reactions = parseOwnReactions(reactionResult.data);
   } catch {
     return null;
   }
 
-  return { ...snapshot, mssv: participant.data.mssv, reactions };
+  const mssv = participant?.success ? participant.data.mssv : accessGrant?.success ? accessGrant.data.mssv : null;
+  if (!mssv) return null;
+  return { ...snapshot, mssv, reactions };
 }
 
 export async function getTeacherFeedbackSnapshot(
   input: string,
 ): Promise<TeacherFeedbackSnapshot | null> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return null;
 
@@ -174,6 +206,8 @@ export async function getTeacherFeedbackSnapshot(
 export async function getTeacherQuizAnalytics(
   input: string,
 ): Promise<TeacherQuizAnalytics | null> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return null;
 
@@ -192,18 +226,54 @@ export async function getTeacherQuizAnalytics(
 
 export async function getTeacherRoomSummary(
   input: string,
-): Promise<TeacherRoomSummary | null> {
+): Promise<TeacherRoomSummaryDetail | null> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return null;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_teacher_room_summary", {
-    p_room_id: roomId.data,
-  });
-  if (error) return null;
+  const [summaryResult, attendanceResult] = await Promise.all([
+    supabase.rpc("get_teacher_room_summary", { p_room_id: roomId.data }),
+    supabase.rpc("get_teacher_session_attendance", { p_session_id: roomId.data }),
+  ]);
+  if (summaryResult.error || attendanceResult.error) return null;
 
   try {
-    return teacherRoomSummarySchema.parse(data);
+    const summary = teacherRoomSummarySchema.parse({
+      ...summaryResult.data,
+      attendance: attendanceResult.data,
+    });
+
+    const { data: roomData, error: roomError } = await supabase
+      .from("rooms")
+      .select("lesson_id")
+      .eq("id", roomId.data)
+      .maybeSingle();
+    if (roomError || !roomData?.lesson_id) return { ...summary, lessonContext: null };
+
+    const { data: lessonData, error: lessonError } = await supabase
+      .from("lessons")
+      .select("id, course_section_id")
+      .eq("id", roomData.lesson_id)
+      .maybeSingle();
+    if (lessonError || !lessonData?.course_section_id) return { ...summary, lessonContext: null };
+
+    const { data: courseSectionData, error: courseSectionError } = await supabase
+      .from("course_sections")
+      .select("id, subject_id")
+      .eq("id", lessonData.course_section_id)
+      .maybeSingle();
+    if (courseSectionError || !courseSectionData) return { ...summary, lessonContext: null };
+
+    return {
+      ...summary,
+      lessonContext: {
+        lessonId: lessonData.id,
+        courseSectionId: courseSectionData.id,
+        subjectId: courseSectionData.subject_id,
+      },
+    };
   } catch {
     return null;
   }
@@ -212,6 +282,8 @@ export async function getTeacherRoomSummary(
 export async function getTeacherClassVoices(
   input: string,
 ): Promise<ClassVoicesSnapshot | null> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return null;
 

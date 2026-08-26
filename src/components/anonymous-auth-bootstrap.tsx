@@ -2,36 +2,48 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { ensureAnonymousSession } from "@/lib/supabase/client";
 
 type BootstrapState = "loading" | "ready" | "error";
+type RouteBootstrapState = { pathname: string; status: BootstrapState };
 
 export function AnonymousAuthBootstrap({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BootstrapState>("loading");
+  const pathname = usePathname();
+  const isTeacherPath = pathname.startsWith("/teacher");
+  const [bootstrapState, setBootstrapState] = useState<RouteBootstrapState>({
+    pathname,
+    status: "loading",
+  });
+  const state = bootstrapState.pathname === pathname ? bootstrapState.status : "loading";
 
   function bootstrap() {
-    setState("loading");
+    setBootstrapState({ pathname, status: "loading" });
     return ensureAnonymousSession()
-      .then(() => setState("ready"))
-      .catch(() => setState("error"));
+      .then(() => setBootstrapState({ pathname, status: "ready" }))
+      .catch(() => setBootstrapState({ pathname, status: "error" }));
   }
 
   useEffect(() => {
+    if (isTeacherPath) return;
+
     let active = true;
 
     ensureAnonymousSession()
       .then(() => {
-        if (active) setState("ready");
+        if (active) setBootstrapState({ pathname, status: "ready" });
       })
       .catch(() => {
-        if (active) setState("error");
+        if (active) setBootstrapState({ pathname, status: "error" });
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [isTeacherPath, pathname]);
+
+  if (isTeacherPath) return children;
 
   if (state === "loading") {
     return (

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { BackLink } from "@/components/back-link";
 import { MarkdownContent } from "@/features/lessons/components/markdown-preview";
 import { SectionReflection } from "@/features/rooms/components/section-reflection";
 import { StudentQuiz } from "@/features/rooms/components/student-quiz";
@@ -147,9 +148,12 @@ export function StudentLessonPlayer({
 
   return (
     <section className="flex flex-1 flex-col py-8">
-      <div className="mb-5 flex min-h-6 items-center justify-end text-xs text-[var(--muted)]" aria-live="polite">
-        {connection === "connecting" ? "Đang kết nối realtime…" : null}
-        {connection === "degraded" ? "Realtime đang kết nối lại…" : null}
+      <div className="mb-5 flex min-h-10 items-center justify-between gap-4">
+        {snapshot.status === "ENDED" ? <BackLink href="/" label="Trang chủ MINCLASS" /> : <span />}
+        <div className="text-right text-xs text-[var(--muted)]" aria-live="polite">
+          {connection === "connecting" ? "Đang kết nối realtime…" : null}
+          {connection === "degraded" ? "Realtime đang kết nối lại…" : null}
+        </div>
       </div>
 
       {syncError ? (
@@ -179,6 +183,7 @@ export function StudentLessonPlayer({
               <StudentQuiz
                 key={currentSection.id}
                 readOnly={snapshot.status === "ENDED"}
+                roomId={snapshot.id}
                 sectionId={currentSection.id}
               />
             ) : (
@@ -218,11 +223,6 @@ export function StudentLessonPlayer({
             </p>
           )}
 
-          {isLatest ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-black/15 px-5 py-4 text-center text-sm leading-6 text-[var(--muted)]">
-              Bạn đang xem section thầy/cô đang trình bày. Section tiếp theo sẽ xuất hiện khi thầy/cô bấm Next Section.
-            </div>
-          ) : null}
         </div>
       )}
     </section>

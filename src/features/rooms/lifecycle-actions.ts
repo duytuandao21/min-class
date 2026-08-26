@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { requireTeacher } from "@/features/auth/teacher-session";
 import { mssvSchema, roomCodeSchema, roomIdSchema } from "@/features/rooms/schemas";
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,15 +39,12 @@ const joinedRoomSchema = z.object({
 });
 
 export async function startRoomAction(input: unknown): Promise<StartRoomResult> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return { ok: false, message: "Room không hợp lệ." };
 
   const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
-    return { ok: false, message: "Phiên ẩn danh chưa sẵn sàng. Hãy thử lại." };
-  }
-
   const { error } = await supabase.rpc("start_room", { p_room_id: roomId.data });
   if (error) {
     return {
@@ -60,15 +58,12 @@ export async function startRoomAction(input: unknown): Promise<StartRoomResult> 
 }
 
 export async function advanceSectionAction(input: unknown): Promise<AdvanceSectionResult> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return { ok: false, message: "Room không hợp lệ." };
 
   const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
-    return { ok: false, message: "Phiên ẩn danh chưa sẵn sàng. Hãy thử lại." };
-  }
-
   const { error } = await supabase.rpc("release_section", { p_room_id: roomId.data });
   if (error) {
     return {
@@ -84,15 +79,12 @@ export async function advanceSectionAction(input: unknown): Promise<AdvanceSecti
 }
 
 export async function endRoomAction(input: unknown): Promise<EndRoomResult> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return { ok: false, message: "Room không hợp lệ." };
 
   const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
-    return { ok: false, message: "Phiên ẩn danh chưa sẵn sàng. Hãy thử lại." };
-  }
-
   const { error } = await supabase.rpc("end_room", { p_room_id: roomId.data });
   if (error) return { ok: false, message: "Chỉ Room ACTIVE do bạn tạo mới có thể kết thúc." };
 
@@ -102,15 +94,12 @@ export async function endRoomAction(input: unknown): Promise<EndRoomResult> {
 }
 
 export async function deleteRoomAction(input: unknown): Promise<DeleteRoomResult> {
+  await requireTeacher();
+
   const roomId = roomIdSchema.safeParse(input);
   if (!roomId.success) return { ok: false, message: "Room không hợp lệ." };
 
   const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
-    return { ok: false, message: "Phiên ẩn danh chưa sẵn sàng. Hãy thử lại." };
-  }
-
   const { error } = await supabase.rpc("delete_room", { p_room_id: roomId.data });
   if (error) return { ok: false, message: "Chỉ Teacher tạo Room mới có thể xóa buổi học này." };
 

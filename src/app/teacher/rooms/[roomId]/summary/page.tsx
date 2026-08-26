@@ -10,9 +10,13 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
   const summary = await getTeacherRoomSummary(roomId);
   if (!summary) notFound();
 
+  const lessonManagementHref = summary.lessonContext
+    ? `/teacher/subjects/${summary.lessonContext.subjectId}/sections/${summary.lessonContext.courseSectionId}/lessons/${summary.lessonContext.lessonId}`
+    : "/teacher/subjects";
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
-      <BackLink href="/" label="MINCLASS" />
+      <BackLink href={lessonManagementHref} label="Lesson" />
 
       <header className="mt-10 border-b border-black/10 pb-8">
         <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">POST-CLASS SUMMARY · {summary.room.code}</p>
@@ -34,10 +38,18 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
         </div>
       </section>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
-          <p className="text-sm text-[var(--muted)]">Participant</p>
-          <p className="mt-2 text-3xl font-semibold">{summary.participantCount}</p>
+          <p className="text-sm text-[var(--muted)]">Sĩ số</p>
+          <p className="mt-2 text-3xl font-semibold">{summary.attendance.rosterCount}</p>
+        </div>
+        <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+          <p className="text-sm text-[var(--muted)]">Có mặt / đã tham gia</p>
+          <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{summary.attendance.joinedCount}</p>
+        </div>
+        <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+          <p className="text-sm text-[var(--muted)]">Vắng</p>
+          <p className="mt-2 text-3xl font-semibold text-red-800">{summary.attendance.absentCount}</p>
         </div>
         <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
           <p className="text-sm text-[var(--muted)]">Total comment</p>
@@ -53,7 +65,7 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
+      <section className="mt-8 grid gap-6 lg:grid-cols-[0.7fr_0.7fr_1.3fr]">
         <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold">MSSV đã join</h2>
           {summary.participants.length === 0 ? (
@@ -64,6 +76,22 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
                 <li className="flex min-w-0 items-center gap-3 rounded-xl bg-black/3 px-4 py-2.5" key={`${participant.mssv}-${participant.joinedAt}`}>
                   <span className="w-6 text-xs text-[var(--muted)]">{index + 1}</span>
                   <span className="min-w-0 break-all font-mono font-semibold">{participant.mssv}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="text-xl font-semibold">Danh sách vắng</h2>
+          {summary.attendance.absentMssvs.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--muted)]">Không có Student vắng.</p>
+          ) : (
+            <ol className="mt-4 max-h-80 space-y-2 overflow-y-auto">
+              {summary.attendance.absentMssvs.map((mssv, index) => (
+                <li className="flex min-w-0 items-center gap-3 rounded-xl bg-red-50 px-4 py-2.5" key={mssv}>
+                  <span className="w-6 text-xs text-[var(--muted)]">{index + 1}</span>
+                  <span className="min-w-0 break-all font-mono font-semibold">{mssv}</span>
                 </li>
               ))}
             </ol>
@@ -110,10 +138,20 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
                 </div>
                 <div className="mt-4 space-y-2">
                   {quiz.questions.map((question) => (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-black/3 px-4 py-3 text-sm" key={question.questionId}>
-                      <span>Câu {question.position + 1}: {question.questionText}</span>
-                      <strong>{question.correctPercentage}% đúng</strong>
-                    </div>
+                    <section className="rounded-xl bg-black/3 px-4 py-3 text-sm" key={question.questionId}>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <span>Câu {question.position + 1}: {question.questionText}</span>
+                        <strong>{question.correctPercentage}% đúng</strong>
+                      </div>
+                      <div className="mt-3 space-y-2" aria-label={`Phân bố câu trả lời câu ${question.position + 1}`}>
+                        {question.options.map((option) => (
+                          <div className="flex items-center justify-between gap-4 rounded-lg bg-white/80 px-3 py-2" key={option.optionId}>
+                            <span className="min-w-0 break-words">{option.content}</span>
+                            <span className="shrink-0 font-semibold">{option.selectionCount} chọn</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
               </article>
@@ -125,7 +163,7 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
       <section className="mt-10 border-t border-red-200 pt-8">
         <h2 className="text-lg font-semibold text-red-950">Danger zone</h2>
         <p className="mt-2 mb-5 text-sm leading-6 text-[var(--muted)]">Xóa Room sẽ xóa vĩnh viễn toàn bộ dữ liệu của buổi học.</p>
-        <DeleteRoomButton roomId={summary.room.id} />
+        <DeleteRoomButton redirectTo={lessonManagementHref} roomId={summary.room.id} />
       </section>
     </main>
   );

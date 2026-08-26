@@ -27,14 +27,22 @@ export function MarkdownContent({ source }: { source: string }) {
   );
 }
 
-export function MarkdownPreview({ lesson }: { lesson: NormalizedLesson }) {
+export function MarkdownPreview({
+  lesson,
+  showHeader = true,
+}: {
+  lesson: NormalizedLesson;
+  showHeader?: boolean;
+}) {
   return (
     <article className="space-y-8">
-      <header className="border-b border-black/10 pb-6">
-        <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">LESSON PREVIEW</p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight">{lesson.title}</h2>
-        {lesson.description ? <p className="mt-3 leading-7 text-[var(--muted)]">{lesson.description}</p> : null}
-      </header>
+      {showHeader ? (
+        <header className="border-b border-black/10 pb-6">
+          <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">LESSON PREVIEW</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight">{lesson.title}</h2>
+          {lesson.description ? <p className="mt-3 leading-7 text-[var(--muted)]">{lesson.description}</p> : null}
+        </header>
+      ) : null}
 
       {lesson.sections.map((section) => (
         <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm sm:p-7" key={section.id}>

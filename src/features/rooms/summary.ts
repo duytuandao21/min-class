@@ -4,6 +4,13 @@ import { teacherFeedbackSnapshotSchema } from "@/features/rooms/feedback";
 import { teacherQuizAnalyticsSchema } from "@/features/rooms/quiz";
 import { roomCodeSchema } from "@/features/rooms/schemas";
 
+export const teacherAttendanceSchema = z.object({
+  rosterCount: z.number().int().nonnegative(),
+  joinedCount: z.number().int().nonnegative(),
+  absentCount: z.number().int().nonnegative(),
+  absentMssvs: z.array(z.string()),
+});
+
 export const teacherRoomSummarySchema = z.object({
   room: z.object({
     id: z.string().uuid(),
@@ -13,6 +20,7 @@ export const teacherRoomSummarySchema = z.object({
     endedAt: z.string(),
   }),
   participantCount: z.number().int().nonnegative(),
+  attendance: teacherAttendanceSchema,
   participants: z.array(z.object({
     mssv: z.string(),
     joinedAt: z.string(),
@@ -33,3 +41,4 @@ export const teacherRoomSummarySchema = z.object({
 });
 
 export type TeacherRoomSummary = z.infer<typeof teacherRoomSummarySchema>;
+export type TeacherAttendance = z.infer<typeof teacherAttendanceSchema>;

@@ -1,13 +1,14 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
 select plan(23);
 
 insert into auth.users (id, instance_id, aud, role, encrypted_password, created_at, updated_at, is_anonymous)
 values
-  ('18000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
-  ('18000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
+  ('18000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
+  ('18000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
   ('28000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true);
 
 insert into public.rooms (id, code, teacher_user_id, title, status, teaching_section, released_through, started_at)
@@ -47,7 +48,7 @@ select lives_ok($$select * from public.submit_quiz('63000000-0000-0000-0000-0000
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"18000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"18000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 select lives_ok($$select * from public.end_room('38000000-0000-0000-0000-000000000001')$$, 'Owner ends Room before opening Class Voices');
 select is((public.get_teacher_class_voices('38000000-0000-0000-0000-000000000001')->>'participantCount')::integer, 1, 'Class Voices derives participant count');
 select is(jsonb_array_length(public.get_teacher_class_voices('38000000-0000-0000-0000-000000000001')->'sections'), 2, 'Class Voices includes every released Section');
@@ -60,7 +61,7 @@ select unlike(public.get_teacher_class_voices('38000000-0000-0000-0000-000000000
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"18000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"18000000-0000-0000-0000-000000000002","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 select throws_ok($$select public.get_teacher_class_voices('38000000-0000-0000-0000-000000000001')$$, '42501', 'Class Voices are not available.', 'Another Teacher cannot read Class Voices');
 select throws_ok($$select public.delete_room('38000000-0000-0000-0000-000000000001')$$, '42501', 'Room cannot be deleted.', 'Another Teacher cannot delete Room');
 
@@ -71,7 +72,7 @@ select throws_ok($$select public.get_teacher_class_voices('38000000-0000-0000-00
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"18000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"18000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 select is(public.delete_room('38000000-0000-0000-0000-000000000001'), '38000000-0000-0000-0000-000000000001'::uuid, 'Owner can delete Room');
 select is((select count(*) from public.rooms where id = '38000000-0000-0000-0000-000000000001'), 0::bigint, 'Deleted Room is inaccessible');
 

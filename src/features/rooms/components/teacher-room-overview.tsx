@@ -3,20 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CopyRoomCodeButton } from "@/features/rooms/components/copy-room-code-button";
-import { fetchTeacherParticipantCount } from "@/features/rooms/dashboard-client";
+import { fetchTeacherAttendance } from "@/features/rooms/dashboard-client";
+import type { TeacherAttendance } from "@/features/rooms/summary";
 import { createClient } from "@/lib/supabase/client";
 
-export function TeacherRoomOverview({ roomId, roomCode, initialParticipantCount }: { roomId: string; roomCode: string; initialParticipantCount: number }) {
-  const [participantCount, setParticipantCount] = useState(initialParticipantCount);
+export function TeacherRoomOverview({ roomId, roomCode, initialAttendance }: { roomId: string; roomCode: string; initialAttendance: TeacherAttendance }) {
+  const [attendance, setAttendance] = useState(initialAttendance);
   const [isDegraded, setIsDegraded] = useState(false);
   const syncVersionRef = useRef(0);
 
   const syncCount = useCallback(async () => {
     const syncVersion = ++syncVersionRef.current;
     try {
-      const nextCount = await fetchTeacherParticipantCount(roomId);
+      const nextAttendance = await fetchTeacherAttendance(roomId);
       if (syncVersion !== syncVersionRef.current) return;
-      setParticipantCount(nextCount);
+      setAttendance(nextAttendance);
       setIsDegraded(false);
     } catch {
       if (syncVersion === syncVersionRef.current) setIsDegraded(true);
@@ -28,16 +29,28 @@ export function TeacherRoomOverview({ roomId, roomCode, initialParticipantCount 
     const channel = supabase
       .channel(`room-participants:${roomId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants", filter: `room_id=eq.${roomId}` }, () => void syncCount())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "session_attendance", filter: `session_id=eq.${roomId}` }, () => void syncCount())
       .subscribe((status) => {
         if (status === "SUBSCRIBED") void syncCount();
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setIsDegraded(true);
       });
 
     const syncAfterReconnect = () => void syncCount();
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") void syncCount();
+    };
+    const fallbackSyncTimer = window.setInterval(syncWhenVisible, 3_000);
+
     window.addEventListener("online", syncAfterReconnect);
+    window.addEventListener("focus", syncAfterReconnect);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+
     return () => {
       syncVersionRef.current += 1;
+      window.clearInterval(fallbackSyncTimer);
       window.removeEventListener("online", syncAfterReconnect);
+      window.removeEventListener("focus", syncAfterReconnect);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
       void supabase.removeChannel(channel);
     };
   }, [roomId, syncCount]);
@@ -52,9 +65,10 @@ export function TeacherRoomOverview({ roomId, roomCode, initialParticipantCount 
         </div>
       </div>
       <div className="rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold text-[var(--muted)]">STUDENT ĐÃ JOIN</p>
-        <p className="mt-3 text-5xl font-semibold tracking-tight">{participantCount}</p>
-        <p className="mt-2 text-sm text-[var(--muted)]">participant</p>
+        <p className="text-sm font-semibold text-[var(--muted)]">SĨ SỐ LỚP</p>
+        <p className="mt-3 text-5xl font-semibold tracking-tight">{attendance.rosterCount}</p>
+        <p className="mt-4 text-sm text-[var(--muted)]">Đã tham gia</p>
+        <p className="mt-1 text-3xl font-semibold tracking-tight text-[var(--accent)]">{attendance.joinedCount}</p>
         {isDegraded ? <p className="mt-2 text-xs text-amber-800" role="status">Đang kết nối lại…</p> : null}
       </div>
     </section>

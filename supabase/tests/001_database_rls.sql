@@ -1,6 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
 select plan(29);
 
@@ -23,7 +24,7 @@ values
     '',
     now(),
     now(),
-    true
+    false
   ),
   (
     '10000000-0000-0000-0000-000000000002',
@@ -33,7 +34,7 @@ values
     '',
     now(),
     now(),
-    true
+    false
   ),
   (
     '20000000-0000-0000-0000-000000000001',
@@ -182,7 +183,7 @@ select is(
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -277,7 +278,7 @@ select is(
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -380,7 +381,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -461,7 +462,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -546,7 +547,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 

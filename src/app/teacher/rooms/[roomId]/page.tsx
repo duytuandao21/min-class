@@ -44,7 +44,7 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
         <span className={`w-fit rounded-full px-3 py-1 text-sm font-semibold ${room.status === "ACTIVE" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>{room.status}</span>
       </header>
 
-      <TeacherRoomOverview initialParticipantCount={room.participantCount} roomCode={room.code} roomId={room.id} />
+      <TeacherRoomOverview initialAttendance={room.attendance} roomCode={room.code} roomId={room.id} />
 
       {room.status === "DRAFT" ? (
         <section className="mt-7 rounded-3xl border border-amber-200 bg-amber-50 p-7 sm:p-9">

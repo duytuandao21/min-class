@@ -1,6 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
 select plan(29);
 
@@ -16,8 +17,8 @@ select ok(
 
 insert into auth.users (id, instance_id, aud, role, encrypted_password, created_at, updated_at, is_anonymous)
 values
-  ('17000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
-  ('17000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
+  ('17000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
+  ('17000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
   ('27000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
   ('27000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true);
 
@@ -52,7 +53,7 @@ insert into public.quiz_answer_keys (question_id, correct_option_ids)
 values ('72000000-0000-0000-0000-000000000001', array['82000000-0000-0000-0000-000000000001'::uuid]);
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select throws_ok(
   $$select public.get_teacher_room_summary('37000000-0000-0000-0000-000000000001')$$,
@@ -77,7 +78,7 @@ select lives_ok($$select * from public.set_section_reaction('57000000-0000-0000-
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select lives_ok($$select * from public.end_room('37000000-0000-0000-0000-000000000001')$$, 'Teacher can end their ACTIVE Room');
 select is((select status::text from public.rooms where id = '37000000-0000-0000-0000-000000000001'), 'ENDED', 'Room transitions to ENDED');
@@ -112,7 +113,7 @@ select throws_ok($$select * from public.submit_quiz('62000000-0000-0000-0000-000
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select is((public.get_teacher_room_summary('37000000-0000-0000-0000-000000000001')->>'participantCount')::integer, 2, 'Summary contains total participant count');
 select is(jsonb_array_length(public.get_teacher_room_summary('37000000-0000-0000-0000-000000000001')->'participants'), 2, 'Summary contains joined MSSV list');
@@ -129,7 +130,7 @@ select is((public.get_teacher_room_summary('37000000-0000-0000-0000-000000000001
 
 reset role;
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"17000000-0000-0000-0000-000000000002","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 select throws_ok($$select public.get_teacher_room_summary('37000000-0000-0000-0000-000000000001')$$, '42501', 'Room summary is not available.', 'A different Teacher cannot read Summary');
 
 select * from finish();

@@ -8,6 +8,7 @@ import {
   parseLessonMarkdown,
 } from "@/features/lessons/markdown/parser";
 import type { NormalizedLesson } from "@/features/lessons/markdown/schema";
+import { requireTeacher } from "@/features/auth/teacher-session";
 import { createClient } from "@/lib/supabase/server";
 
 const roomTitleSchema = z.string().trim().min(1, "Nhập tên buổi học.").max(120, "Tên buổi học tối đa 120 ký tự.");
@@ -40,6 +41,8 @@ function zodMessages(error: z.ZodError): string[] {
 }
 
 export async function previewLessonAction(formData: FormData): Promise<PreviewLessonResult> {
+  await requireTeacher();
+
   const result = z
     .object({ roomTitle: roomTitleSchema, lessonFile: lessonFileSchema })
     .safeParse({ roomTitle: formData.get("roomTitle"), lessonFile: formData.get("lessonFile") });
@@ -62,6 +65,8 @@ export async function previewLessonAction(formData: FormData): Promise<PreviewLe
 }
 
 export async function saveRoomAction(input: unknown): Promise<SaveRoomResult> {
+  await requireTeacher();
+
   const result = saveInputSchema.safeParse(input);
   if (!result.success) return { ok: false, errors: zodMessages(result.error) };
 
@@ -74,11 +79,6 @@ export async function saveRoomAction(input: unknown): Promise<SaveRoomResult> {
   }
 
   const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
-    return { ok: false, errors: ["Phiên ẩn danh chưa sẵn sàng. Hãy thử lại."] };
-  }
-
   const { data, error } = await supabase.rpc("create_room_with_lesson", {
     p_room_title: result.data.roomTitle,
     p_markdown_source: result.data.markdownSource,

@@ -1,15 +1,13 @@
-import { z } from "zod";
-
 import { roomIdSchema } from "@/features/rooms/schemas";
+import { teacherAttendanceSchema, type TeacherAttendance } from "@/features/rooms/summary";
 import { createClient } from "@/lib/supabase/client";
 
-export async function fetchTeacherParticipantCount(roomIdInput: string): Promise<number> {
+export async function fetchTeacherAttendance(roomIdInput: string): Promise<TeacherAttendance> {
   const roomId = roomIdSchema.parse(roomIdInput);
   const supabase = createClient();
-  const { count, error } = await supabase
-    .from("participants")
-    .select("id", { count: "exact", head: true })
-    .eq("room_id", roomId);
-  if (error) throw new Error("Không thể đồng bộ participant count.");
-  return z.number().int().nonnegative().parse(count ?? 0);
+  const { data, error } = await supabase.rpc("get_teacher_session_attendance", {
+    p_session_id: roomId,
+  });
+  if (error) throw new Error("Không thể đồng bộ attendance.");
+  return teacherAttendanceSchema.parse(data);
 }

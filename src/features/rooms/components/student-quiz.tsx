@@ -8,7 +8,7 @@ import { fetchStudentQuizSnapshot, submitQuiz } from "@/features/rooms/quiz-clie
 type AnswerState = Record<string, string[]>;
 type ScoreResult = { score: number; totalQuestions: number };
 
-export function StudentQuiz({ sectionId, readOnly }: { sectionId: string; readOnly: boolean }) {
+export function StudentQuiz({ roomId, sectionId, readOnly }: { roomId: string; sectionId: string; readOnly: boolean }) {
   const [quiz, setQuiz] = useState<StudentQuizSnapshot | null>(null);
   const [answers, setAnswers] = useState<AnswerState>({});
   const [result, setResult] = useState<ScoreResult | null>(null);
@@ -19,7 +19,7 @@ export function StudentQuiz({ sectionId, readOnly }: { sectionId: string; readOn
   useEffect(() => {
     let active = true;
 
-    void fetchStudentQuizSnapshot(sectionId)
+    void fetchStudentQuizSnapshot(roomId, sectionId)
       .then((snapshot) => {
         if (!active) return;
         setQuiz(snapshot);
@@ -37,7 +37,7 @@ export function StudentQuiz({ sectionId, readOnly }: { sectionId: string; readOn
     return () => {
       active = false;
     };
-  }, [sectionId]);
+  }, [roomId, sectionId]);
 
   function chooseSingle(questionId: string, optionId: string) {
     setAnswers((current) => ({ ...current, [questionId]: [optionId] }));
@@ -73,11 +73,17 @@ export function StudentQuiz({ sectionId, readOnly }: { sectionId: string; readOn
     setIsSubmitting(true);
     setError(null);
     try {
-      const submitted = await submitQuiz(quiz.quizId, submission);
+      const submitted = await submitQuiz(roomId, quiz.quizId, submission);
       setResult({ score: submitted.score, totalQuestions: submitted.total_questions });
+      try {
+        const latest = await fetchStudentQuizSnapshot(roomId, sectionId);
+        setQuiz(latest);
+      } catch {
+        setError("Đã nộp Quiz nhưng chưa thể tải phần xem lại đáp án. Hãy mở lại section này.");
+      }
     } catch {
       try {
-        const latest = await fetchStudentQuizSnapshot(sectionId);
+        const latest = await fetchStudentQuizSnapshot(roomId, sectionId);
         setQuiz(latest);
         if (latest.attempt) {
           setResult({ score: latest.attempt.score, totalQuestions: latest.attempt.totalQuestions });
@@ -103,11 +109,57 @@ export function StudentQuiz({ sectionId, readOnly }: { sectionId: string; readOn
   if (result) {
     const percentage = Math.round((result.score / result.totalQuestions) * 100);
     return (
-      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-        <p className="text-sm font-semibold text-emerald-800">ĐÃ SUBMIT</p>
-        <p className="mt-3 text-5xl font-bold text-emerald-950">{result.score}/{result.totalQuestions}</p>
-        <p className="mt-2 text-emerald-900">{percentage}% câu trả lời chính xác</p>
-        <p className="mt-4 text-sm text-emerald-800">Mỗi Student chỉ submit Quiz một lần.</p>
+      <section>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+          <p className="text-sm font-semibold text-emerald-800">ĐÃ SUBMIT</p>
+          <p className="mt-3 text-5xl font-bold text-emerald-950">{result.score}/{result.totalQuestions}</p>
+          <p className="mt-2 text-emerald-900">{percentage}% câu trả lời chính xác</p>
+          <p className="mt-4 text-sm text-emerald-800">Mỗi Student chỉ submit Quiz một lần.</p>
+        </div>
+
+        {quiz.attempt?.answers.length ? (
+          <div className="mt-6 space-y-5">
+            <h3 className="text-xl font-semibold">Xem lại đáp án</h3>
+            {quiz.questions.map((question) => {
+              const review = quiz.attempt?.answers.find((answer) => answer.questionId === question.id);
+              if (!review) return null;
+
+              return (
+                <article className="rounded-2xl border border-black/10 bg-white p-5" key={question.id}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h4 className="font-semibold leading-7">{question.position + 1}. {question.questionText}</h4>
+                    <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold ${review.isCorrect ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-800"}`}>
+                      {review.isCorrect ? "Đúng" : "Sai"}
+                    </span>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {question.options.map((option) => {
+                      const selected = review.selectedOptionIds.includes(option.id);
+                      const correct = review.correctOptionIds.includes(option.id);
+                      return (
+                        <div
+                          className={`flex items-start justify-between gap-4 rounded-xl border px-4 py-3 text-sm ${
+                            correct
+                              ? "border-emerald-300 bg-emerald-50"
+                              : selected
+                                ? "border-red-200 bg-red-50"
+                                : "border-black/10 bg-white"
+                          }`}
+                          key={option.id}
+                        >
+                          <span className="min-w-0 break-words">{option.content}</span>
+                          {selected ? <span className="shrink-0 whitespace-nowrap text-xs font-semibold">Bạn đã chọn</span> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {error ? <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">{error}</p> : null}
       </section>
     );
   }

@@ -1,6 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 
 select plan(17);
 
@@ -16,7 +17,7 @@ select ok(
 
 insert into auth.users (id, instance_id, aud, role, encrypted_password, created_at, updated_at, is_anonymous)
 values
-  ('12000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true),
+  ('12000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), false),
   ('22000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', '', now(), now(), true);
 
 insert into public.rooms (
@@ -57,7 +58,7 @@ values (
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -96,7 +97,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -135,7 +136,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
@@ -169,7 +170,7 @@ reset role;
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
-  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated"}',
+  '{"sub":"12000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}',
   true
 );
 
