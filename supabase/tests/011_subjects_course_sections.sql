@@ -104,7 +104,7 @@ insert into public.course_sections (id, subject_id, section_code)
 values ('aa200000-0000-0000-0000-000000000002', 'aa100000-0000-0000-0000-000000000001', '24110NETW42002');
 
 select lives_ok(
-  $$delete from public.subjects where id = 'aa100000-0000-0000-0000-000000000001'$$,
+  $$select public.delete_subject('aa100000-0000-0000-0000-000000000001')$$,
   'Teacher can delete their Subject and cascade its Course Sections'
 );
 

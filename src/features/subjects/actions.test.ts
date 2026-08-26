@@ -100,14 +100,24 @@ describe("Subject management actions", () => {
   });
 
   it("deletes only the requested owned Subject", async () => {
-    const query = createMutationQuery({ data: { id: subjectId }, error: null });
-    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+    const rpc = vi.fn().mockResolvedValue({ data: subjectId, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
 
     await expect(deleteSubjectAction(subjectId)).rejects.toBe(redirectSignal);
 
-    expect(query.delete).toHaveBeenCalledOnce();
-    expect(query.eq).toHaveBeenCalledWith("teacher_id", teacherId);
+    expect(rpc).toHaveBeenCalledWith("delete_subject", { p_subject_id: subjectId });
     expect(mocks.redirect).toHaveBeenCalledWith("/teacher/subjects");
+  });
+
+  it("does not redirect when the Subject delete RPC is rejected", async () => {
+    mocks.createClient.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { code: "42501" } }),
+    });
+
+    await expect(deleteSubjectAction(subjectId)).rejects.toThrow(
+      "Không thể xóa môn học hoặc bạn không có quyền xóa.",
+    );
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
   it("creates a valid Course Section", async () => {

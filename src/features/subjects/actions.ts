@@ -81,17 +81,15 @@ export async function deleteSubjectAction(rawSubjectId: string): Promise<void> {
   const subjectId = subjectIdSchema.safeParse(rawSubjectId);
   if (!subjectId.success) throw new Error("Môn học không hợp lệ.");
 
-  const teacher = await requireTeacher();
+  await requireTeacher();
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("subjects")
-    .delete()
-    .eq("id", subjectId.data)
-    .eq("teacher_id", teacher.id)
-    .select("id")
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("delete_subject", {
+    p_subject_id: subjectId.data,
+  });
 
-  if (error || !data) throw new Error("Không thể xóa môn học hoặc bạn không có quyền xóa.");
+  if (error || data !== subjectId.data) {
+    throw new Error("Không thể xóa môn học hoặc bạn không có quyền xóa.");
+  }
   revalidatePath("/teacher/subjects");
   redirect("/teacher/subjects");
 }
