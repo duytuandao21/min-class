@@ -1,6 +1,6 @@
 # MINCLASS
 
-MINCLASS là ứng dụng hỗ trợ lớp học trực tiếp. Giảng viên quản lý môn học, lớp học phần, danh sách sinh viên và bài học; sinh viên theo dõi nội dung, phản hồi và làm quiz mà không cần tạo tài khoản.
+MINCLASS là ứng dụng hỗ trợ lớp học trực tiếp. Giảng viên quản lý môn học, Lesson Plan, lớp học phần, danh sách sinh viên và bài học; sinh viên theo dõi nội dung, phản hồi, làm quiz và xem lại buổi học mà không cần tạo tài khoản.
 
 ## Chạy project
 
@@ -72,21 +72,26 @@ Nút **Cách viết file lesson** trên trang tạo Lesson mở hướng dẫn �
 
 ### Dạy Lesson trực tiếp
 
-1. Chọn **Start Lesson** để tạo Lesson Session LIVE.
-2. Chia sẻ Session Code đang hiển thị cho sinh viên thuộc lớp học phần.
-3. Dashboard hiển thị sĩ số, số sinh viên đã tham gia, section đang dạy, reaction, comment và tiến độ quiz.
-4. Chọn **Done Section** để chuyển sang section tiếp theo. Sinh viên nhận nội dung mới qua realtime.
-5. Chọn **Kết thúc buổi học** và xác nhận để đóng Session.
+1. Chọn **Start Lesson** để tạo một Lesson Session LIVE. Hệ thống đồng thời chụp danh sách roster hiện tại làm dữ liệu điểm danh riêng cho Session.
+2. Yêu cầu sinh viên mở đúng Lesson LIVE và nhập MSSV thuộc lớp học phần; sinh viên không cần nhập Session Code.
+3. Mở **Dashboard** để theo dõi sĩ số, số sinh viên đã tham gia, section đang dạy, reaction, comment và tiến độ quiz.
+4. Chọn **Done Section** hoặc **Next Section** để hoàn thành section hiện tại và chuyển sang section kế tiếp. Sinh viên nhận nội dung mới qua realtime mà không cần tải lại trang.
+5. Chọn **Kết thúc buổi học** và xác nhận để đóng Session. Sau khi kết thúc, sinh viên chỉ có thể xem dữ liệu ở chế độ đọc.
 
 ### Xem lại buổi học
 
-Sau khi Session kết thúc, giảng viên có thể mở **Xem Lesson Review** để xem:
+Trong trang Course Section, mở lịch sử của Lesson và chọn **Xem Lesson Review** để xem lại một Session đã kết thúc:
 
 - Số sinh viên đã tham gia và danh sách vắng.
 - Kết quả và thống kê quiz.
 - Reaction theo từng section.
 - Comment có tên hoặc ẩn danh.
-- Class Voices ở chế độ danh sách hoặc trình chiếu.
+- Nội dung Lesson và dữ liệu buổi học vẫn được lưu sau khi tải lại trang.
+
+Trong mục **Tổng kết buổi học**:
+
+- **Xem Reviews** hiển thị MSSV, số lần phát biểu do sinh viên tự ghi nhận và lời review cuối buổi. Giảng viên có thể xem dạng danh sách hoặc trình chiếu; review mới được cập nhật realtime.
+- **Xem phản hồi** mở Class Voices, tổng hợp các comment theo section và hỗ trợ chế độ trình chiếu.
 
 Giảng viên có thể xóa một Session sau khi xác nhận. Attendance, participant, reaction, comment và dữ liệu quiz của Session đó sẽ bị xóa vĩnh viễn; Lesson gốc vẫn được giữ lại.
 
@@ -98,9 +103,11 @@ Sinh viên không cần email, mật khẩu hoặc tài khoản MINCLASS.
 
 1. Từ trang chủ, chọn **Khám phá bài học**.
 2. Chọn môn học, lớp học phần và Lesson đang **LIVE**.
-3. Nhập MSSV và Lesson Session Code do giảng viên cung cấp.
-4. MSSV phải có trong roster của đúng lớp học phần.
-5. Theo dõi section đang được giảng viên trình bày và các section đã mở trước đó.
+3. Nhập MSSV có trong roster của lớp học phần.
+4. MSSV phải có trong roster và attendance snapshot của đúng lớp học phần.
+5. Theo dõi section giảng viên đang trình bày và xem lại các section đã mở trước đó. Section tiếp theo chỉ xuất hiện khi giảng viên chuyển section.
+
+Sinh viên không cần tài khoản, mật khẩu hoặc Session Code. Số người tham gia và các thay đổi trong buổi học được đồng bộ realtime.
 
 Trong buổi học, sinh viên có thể:
 
@@ -111,11 +118,14 @@ Trong buổi học, sinh viên có thể:
 
 Mỗi sinh viên chỉ được nộp một lần cho mỗi quiz trong Session.
 
+Khi giảng viên kết thúc Session, trang Lesson đang mở sẽ tự hiển thị phần **Tổng kết cá nhân**. Sinh viên có thể nhập số lần mình đã phát biểu và gửi một lời review ngắn. Mỗi sinh viên chỉ gửi được một lần; nội dung đã gửi không thể chỉnh sửa, được cập nhật ngay cho giảng viên và có thể xem lại sau khi rời buổi học.
+
 ### Xem lại Lesson đã kết thúc
 
 1. Chọn Lesson có trạng thái **Đã kết thúc**.
-2. Nhập MSSV; không cần Session Code.
+2. Nhập MSSV để xác minh quyền xem lại.
 3. MSSV thuộc roster được xem toàn bộ nội dung Lesson ở chế độ chỉ đọc.
 4. Phần quiz hiển thị đáp án đúng và, nếu sinh viên đã làm bài, đáp án mà sinh viên đã chọn.
+5. Nếu đã gửi Tổng kết cá nhân, sinh viên có thể xem lại số lần phát biểu và lời review của chính mình.
 
 Ở chế độ xem lại, sinh viên không thể gửi reaction, comment, nộp lại quiz hoặc thay đổi dữ liệu tham gia.

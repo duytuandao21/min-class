@@ -55,6 +55,30 @@ function QuizReview({ quiz }: { quiz: NonNullable<EndedLessonReview["sections"][
 export function EndedLessonReviewView({ review }: { review: EndedLessonReview }) {
   return (
     <article className="mt-10 space-y-8">
+      {review.sessionReflection ? (
+        <section className="rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-6 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
+              <h2 className="mt-2 text-2xl font-semibold">Điều bạn đã ghi lại sau buổi học</h2>
+            </div>
+            <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-bold text-emerald-900">Đã gửi</span>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-[12rem_1fr]">
+            <div className="rounded-2xl border border-emerald-900/10 bg-white p-5">
+              <p className="text-sm text-[var(--muted)]">Số lần phát biểu</p>
+              <p className="mt-2 text-3xl font-semibold text-[var(--accent)]">{review.sessionReflection.speakingCount}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-900/10 bg-white p-5">
+              <p className="text-sm text-[var(--muted)]">Review buổi học</p>
+              <p className="mt-2 whitespace-pre-wrap break-words leading-7">
+                {review.sessionReflection.reviewBody ?? "Bạn không viết review."}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {review.sections.map((section) => (
         <section className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8" key={section.id}>
           <header className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-black/10 pb-5">

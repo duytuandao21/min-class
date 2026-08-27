@@ -9,7 +9,7 @@ import type { PublicLessonStatus } from "@/features/catalog/schemas";
 const initialState: LessonAccessState = { status: "idle" };
 
 export function LessonAccessForm({ lessonId, status }: { lessonId: string; status: PublicLessonStatus }) {
-  const action = accessPublicLessonAction.bind(null, lessonId);
+  const action = accessPublicLessonAction.bind(null, lessonId, status);
   const [state, formAction, pending] = useActionState(action, initialState);
   const router = useRouter();
 
@@ -44,21 +44,6 @@ export function LessonAccessForm({ lessonId, status }: { lessonId: string; statu
         />
         {state.fieldErrors?.mssv?.map((error) => <p className="mt-2 text-sm text-red-700" key={error}>{error}</p>)}
       </div>
-
-      {status === "LIVE" ? (
-        <div>
-          <label className="mb-2 block text-sm font-semibold" htmlFor="lesson-session-code">Lesson Session Code</label>
-          <input
-            autoCapitalize="characters"
-            autoComplete="off"
-            className="w-full rounded-xl border border-black/15 bg-white px-4 py-3 uppercase tracking-[0.16em] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-            id="lesson-session-code"
-            maxLength={6}
-            name="sessionCode"
-            required
-          />
-        </div>
-      ) : null}
 
       {state.message ? (
         <p

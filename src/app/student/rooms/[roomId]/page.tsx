@@ -20,6 +20,7 @@ export default async function StudentRoomPage({ params }: { params: Promise<{ ro
 
       <StudentLessonPlayer
         initialReactions={room.reactions}
+        initialSessionReflection={room.sessionReflection}
         initialSnapshot={{
           id: room.id,
           code: room.code,

@@ -17,6 +17,7 @@ import {
   type PublicSubject,
 } from "@/features/catalog/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { parseSessionReflectionRow } from "@/features/rooms/session-reflection";
 
 const idSchema = z.string().uuid();
 
@@ -82,11 +83,26 @@ export async function getStudentEndedLessonReview(rawSessionId: string): Promise
   if (!sessionId.success) return null;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_student_ended_lesson_review", {
-    p_room_id: sessionId.data,
-  });
+  const [reviewResult, reflectionResult] = await Promise.all([
+    supabase.rpc("get_student_ended_lesson_review", { p_room_id: sessionId.data }),
+    supabase.rpc("get_ended_session_reflection", { p_room_id: sessionId.data }),
+  ]);
+  const { data, error } = reviewResult;
   if (error) return null;
 
-  const review = endedLessonReviewSchema.safeParse(data);
+  let sessionReflection = null;
+  const reflectionRow = Array.isArray(reflectionResult.data) ? reflectionResult.data[0] : null;
+  if (!reflectionResult.error && reflectionRow) {
+    try {
+      sessionReflection = parseSessionReflectionRow(reflectionRow);
+    } catch {
+      return null;
+    }
+  }
+
+  const review = endedLessonReviewSchema.safeParse({
+    ...(data && typeof data === "object" && !Array.isArray(data) ? data : {}),
+    sessionReflection,
+  });
   return review.success ? review.data : null;
 }

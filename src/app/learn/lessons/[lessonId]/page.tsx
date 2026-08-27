@@ -23,7 +23,7 @@ export default async function PublicLessonAccessPage({ params }: { params: Promi
         <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">{lesson.section_display_name ?? lesson.section_code}</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">{lesson.lesson_title}</h1>
         <p className="mt-3 leading-7 text-[var(--muted)]">{statusLabel[lesson.lesson_status]}</p>
-        {lesson.lesson_status === "LIVE" ? <p className="mt-3 leading-7 text-[var(--muted)]">Nhập MSSV và Lesson Session Code do giảng viên cung cấp.</p> : null}
+        {lesson.lesson_status === "LIVE" ? <p className="mt-3 leading-7 text-[var(--muted)]">Nhập MSSV để tham gia Lesson đang LIVE.</p> : null}
         {lesson.lesson_status === "ENDED" ? <p className="mt-3 leading-7 text-[var(--muted)]">Nhập MSSV để xác minh bạn thuộc lớp học phần này.</p> : null}
       </header>
       <LessonAccessForm lessonId={lesson.lesson_id} status={lesson.lesson_status} />

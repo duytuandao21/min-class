@@ -13,7 +13,6 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
   const lessonManagementHref = summary.lessonContext
     ? `/teacher/subjects/${summary.lessonContext.subjectId}/sections/${summary.lessonContext.courseSectionId}/lessons/${summary.lessonContext.lessonId}`
     : "/teacher/subjects";
-
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
       <BackLink href={lessonManagementHref} label="Lesson" />
@@ -25,15 +24,15 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
       </header>
 
       <section className="mt-8 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/70 p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">CLASS VOICES</p>
-        <h2 className="mt-3 text-2xl font-semibold">Every question moves the class forward.</h2>
-        <p className="mt-3 text-[var(--muted)]">{summary.comments.total} phản hồi từ lớp học hôm nay.</p>
+        <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT BUỔI HỌC</p>
+        <h2 className="mt-3 text-2xl font-semibold">Nhìn lại những điều lớp học đã chia sẻ.</h2>
+        <p className="mt-3 text-[var(--muted)]">Xem review cuối buổi và phản hồi trong từng section.</p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link className="inline-flex rounded-xl border border-black/15 bg-white px-5 py-3 font-semibold transition hover:border-[var(--accent)] hover:text-[var(--accent)] motion-reduce:transition-none" href={`/teacher/rooms/${summary.room.id}/voices`}>
-            Xem tất cả phản hồi
+          <Link className="inline-flex rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:opacity-90 motion-reduce:transition-none" href={`/teacher/rooms/${summary.room.id}/reviews`}>
+            Xem Reviews
           </Link>
-          <Link className="inline-flex rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:opacity-90 motion-reduce:transition-none" href={`/teacher/rooms/${summary.room.id}/voices?present=1`}>
-            Trình chiếu Class Voices ✨
+          <Link className="inline-flex rounded-xl border border-amber-200 bg-amber-100 px-5 py-3 font-semibold text-amber-950 transition hover:border-amber-300 hover:bg-amber-200 motion-reduce:transition-none" href={`/teacher/rooms/${summary.room.id}/voices`}>
+            Xem phản hồi
           </Link>
         </div>
       </section>

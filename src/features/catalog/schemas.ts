@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { sessionReflectionSchema } from "@/features/rooms/session-reflection";
+
 export const lessonStatusSchema = z.enum(["UPCOMING", "LIVE", "ENDED"]);
 export type PublicLessonStatus = z.infer<typeof lessonStatusSchema>;
 
@@ -81,6 +83,7 @@ export const endedLessonReviewSchema = z.object({
   title: z.string().min(1),
   endedAt: z.string(),
   mssv: z.string().min(1),
+  sessionReflection: sessionReflectionSchema.nullable(),
   sections: z.array(endedLessonReviewSectionSchema).min(1),
 });
 
@@ -89,13 +92,6 @@ export const lessonAccessInputSchema = z.object({
   mssv: z.string().trim().toUpperCase().regex(
     /^[A-Z0-9][A-Z0-9._-]{2,31}$/,
     "MSSV cần 3–32 ký tự chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.",
-  ),
-  sessionCode: z.preprocess(
-    (value) => value == null || (typeof value === "string" && value.trim() === "") ? undefined : value,
-    z.string().trim().toUpperCase().regex(
-      /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/,
-      "Lesson Session Code gồm 6 ký tự hợp lệ.",
-    ).optional(),
   ),
 });
 

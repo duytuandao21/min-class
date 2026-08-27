@@ -23,6 +23,12 @@ import {
 } from "@/features/rooms/quiz";
 import { roomCodeSchema, roomIdSchema } from "@/features/rooms/schemas";
 import {
+  parseSessionReflectionRow,
+  teacherSessionReflectionsSchema,
+  type SessionReflection,
+  type TeacherSessionReflections,
+} from "@/features/rooms/session-reflection";
+import {
   teacherAttendanceSchema,
   teacherRoomSummarySchema,
   type TeacherAttendance,
@@ -74,13 +80,18 @@ export type TeacherRoom = z.infer<typeof teacherRoomSchema> & {
   } | null;
   sections: LessonSection[];
 };
-export type StudentRoom = StudentLessonSnapshot & { mssv: string; reactions: OwnReactions };
+export type StudentRoom = StudentLessonSnapshot & {
+  mssv: string;
+  reactions: OwnReactions;
+  sessionReflection: SessionReflection | null;
+};
 export type TeacherRoomSummaryDetail = TeacherRoomSummary & {
   lessonContext: {
     lessonId: string;
     courseSectionId: string;
     subjectId: string;
   } | null;
+  sessionReflections: TeacherSessionReflections;
 };
 
 export async function getTeacherRoom(input: string): Promise<TeacherRoom | null> {
@@ -206,7 +217,25 @@ export async function getStudentRoom(input: string): Promise<StudentRoom | null>
 
   const mssv = participant?.success ? participant.data.mssv : accessGrant?.success ? accessGrant.data.mssv : null;
   if (!mssv) return null;
-  return { ...snapshot, mssv, reactions };
+
+  let sessionReflection: SessionReflection | null = null;
+  if (snapshot.status === "ENDED" && participant?.success) {
+    const { data: reflectionData, error: reflectionError } = await supabase.rpc(
+      "get_own_session_reflection",
+      { p_room_id: roomId.data },
+    );
+    if (reflectionError) return null;
+    const reflectionRow = Array.isArray(reflectionData) ? reflectionData[0] : null;
+    if (reflectionRow) {
+      try {
+        sessionReflection = parseSessionReflectionRow(reflectionRow);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  return { ...snapshot, mssv, reactions, sessionReflection };
 }
 
 export async function getTeacherFeedbackSnapshot(
@@ -260,38 +289,46 @@ export async function getTeacherRoomSummary(
   if (!roomId.success) return null;
 
   const supabase = await createClient();
-  const [summaryResult, attendanceResult] = await Promise.all([
+  const [summaryResult, attendanceResult, sessionReflectionsResult] = await Promise.all([
     supabase.rpc("get_teacher_room_summary", { p_room_id: roomId.data }),
     supabase.rpc("get_teacher_session_attendance", { p_session_id: roomId.data }),
+    supabase.rpc("get_teacher_session_reflections", { p_room_id: roomId.data }),
   ]);
-  if (summaryResult.error || attendanceResult.error) return null;
+  if (summaryResult.error || attendanceResult.error || sessionReflectionsResult.error) return null;
 
   try {
     const summary = teacherRoomSummarySchema.parse({
       ...summaryResult.data,
       attendance: attendanceResult.data,
     });
+    const sessionReflections = teacherSessionReflectionsSchema.parse(sessionReflectionsResult.data);
 
     const { data: roomData, error: roomError } = await supabase
       .from("rooms")
       .select("lesson_id")
       .eq("id", roomId.data)
       .maybeSingle();
-    if (roomError || !roomData?.lesson_id) return { ...summary, lessonContext: null };
+    if (roomError || !roomData?.lesson_id) {
+      return { ...summary, lessonContext: null, sessionReflections };
+    }
 
     const { data: lessonData, error: lessonError } = await supabase
       .from("lessons")
       .select("id, course_section_id")
       .eq("id", roomData.lesson_id)
       .maybeSingle();
-    if (lessonError || !lessonData?.course_section_id) return { ...summary, lessonContext: null };
+    if (lessonError || !lessonData?.course_section_id) {
+      return { ...summary, lessonContext: null, sessionReflections };
+    }
 
     const { data: courseSectionData, error: courseSectionError } = await supabase
       .from("course_sections")
       .select("id, subject_id")
       .eq("id", lessonData.course_section_id)
       .maybeSingle();
-    if (courseSectionError || !courseSectionData) return { ...summary, lessonContext: null };
+    if (courseSectionError || !courseSectionData) {
+      return { ...summary, lessonContext: null, sessionReflections };
+    }
 
     return {
       ...summary,
@@ -300,10 +337,29 @@ export async function getTeacherRoomSummary(
         courseSectionId: courseSectionData.id,
         subjectId: courseSectionData.subject_id,
       },
+      sessionReflections,
     };
   } catch {
     return null;
   }
+}
+
+export async function getTeacherSessionReflections(
+  input: string,
+): Promise<TeacherSessionReflections | null> {
+  await requireTeacher();
+
+  const roomId = roomIdSchema.safeParse(input);
+  if (!roomId.success) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_teacher_session_reflections", {
+    p_room_id: roomId.data,
+  });
+  if (error) return null;
+
+  const result = teacherSessionReflectionsSchema.safeParse(data);
+  return result.success ? result.data : null;
 }
 
 export async function getTeacherClassVoices(

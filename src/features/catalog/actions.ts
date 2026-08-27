@@ -10,7 +10,6 @@ export type LessonAccessState = {
   message?: string;
   fieldErrors?: {
     mssv?: string[];
-    sessionCode?: string[];
   };
   sessionId?: string;
 };
@@ -23,27 +22,27 @@ const accessResultSchema = z.object({
 
 export async function accessPublicLessonAction(
   lessonId: string,
+  rawLessonStatus: string,
   _previousState: LessonAccessState,
   formData: FormData,
 ): Promise<LessonAccessState> {
+  const lessonStatus = lessonStatusSchema.safeParse(rawLessonStatus);
   const input = lessonAccessInputSchema.safeParse({
     lessonId,
     mssv: formData.get("mssv"),
-    sessionCode: formData.get("sessionCode"),
   });
-  if (!input.success) {
-    const errors = z.flattenError(input.error).fieldErrors;
-    const message = errors.sessionCode
-      ? "Lesson Session Code chưa đúng"
-      : errors.mssv
-        ? "Bạn không thuộc lớp học phần này"
-        : "Kiểm tra lại thông tin đã nhập.";
-
-    return {
-      status: "error",
-      message,
-      fieldErrors: { mssv: errors.mssv, sessionCode: errors.sessionCode },
-    };
+  if (!lessonStatus.success || !input.success) {
+    if (!input.success) {
+      const errors = z.flattenError(input.error).fieldErrors;
+      return {
+        status: "error",
+        message: errors.mssv
+          ? "Bạn không thuộc lớp học phần này"
+          : "Kiểm tra lại thông tin đã nhập.",
+        fieldErrors: { mssv: errors.mssv },
+      };
+    }
+    return { status: "error", message: "Lesson không hợp lệ." };
   }
 
   const supabase = await createClient();
@@ -59,20 +58,17 @@ export async function accessPublicLessonAction(
     };
   }
 
-  if (input.data.sessionCode) {
-    const joined = await supabase.rpc("join_lesson_session", {
+  if (lessonStatus.data === "LIVE") {
+    const joined = await supabase.rpc("join_live_lesson", {
       p_lesson_id: input.data.lessonId,
-      p_join_code: input.data.sessionCode,
       p_mssv: input.data.mssv,
     });
     if (joined.error) {
       const message = joined.error.code === "23505"
         ? "MSSV này đã tham gia bằng một phiên Student khác."
-        : joined.error.code === "P0002"
-          ? "Lesson Session Code chưa đúng"
-          : joined.error.code === "P0003"
-            ? "Bạn không thuộc lớp học phần này"
-            : "Không thể tham gia Lesson Session.";
+        : joined.error.code === "P0003"
+          ? "Bạn không thuộc lớp học phần này"
+          : "Không thể tham gia Lesson Session.";
 
       return {
         status: "error",
@@ -92,6 +88,10 @@ export async function accessPublicLessonAction(
       message: "Đã tham gia Lesson Session.",
       sessionId: joinedRoom.data.room_id,
     };
+  }
+
+  if (lessonStatus.data !== "ENDED") {
+    return { status: "error", message: "Lesson này chưa mở." };
   }
 
   const { data, error } = await supabase.rpc("access_ended_lesson_session", {

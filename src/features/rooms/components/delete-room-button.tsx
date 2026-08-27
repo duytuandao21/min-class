@@ -47,7 +47,7 @@ export function DeleteRoomButton({ redirectTo = "/teacher/subjects", roomId }: {
     <div aria-describedby="delete-room-description" aria-labelledby="delete-room-title" className="rounded-2xl border border-red-300 bg-red-50 p-5" role="alertdialog">
       <h3 className="text-lg font-semibold text-red-950" id="delete-room-title">Xóa vĩnh viễn buổi học này?</h3>
       <p className="mt-2 leading-7 text-red-900" id="delete-room-description">
-        Room cùng toàn bộ Lesson, Participant, Quiz, Reaction và Comment sẽ bị xóa vĩnh viễn. Thao tác này không thể hoàn tác.
+        Session cùng toàn bộ Attendance, Participant, Quiz, Reaction, Comment và Tổng kết cá nhân sẽ bị xóa vĩnh viễn. Lesson gốc vẫn được giữ lại. Thao tác này không thể hoàn tác.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
         <button className="rounded-xl bg-red-700 px-5 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={isPending} onClick={deleteRoom} ref={confirmButtonRef} type="button">

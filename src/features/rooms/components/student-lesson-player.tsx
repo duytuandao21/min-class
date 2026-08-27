@@ -7,6 +7,7 @@ import { BackLink } from "@/components/back-link";
 import { MarkdownContent } from "@/features/lessons/components/markdown-preview";
 import { SectionReflection } from "@/features/rooms/components/section-reflection";
 import { StudentQuiz } from "@/features/rooms/components/student-quiz";
+import { StudentSessionReflection } from "@/features/rooms/components/student-session-reflection";
 import type { OwnReactions, Reaction } from "@/features/rooms/feedback";
 import {
   reconcileStudentPosition,
@@ -16,6 +17,7 @@ import {
   fetchStudentLessonSnapshot,
   StudentRoomUnavailableError,
 } from "@/features/rooms/student-room-client";
+import type { SessionReflection } from "@/features/rooms/session-reflection";
 import { createClient } from "@/lib/supabase/client";
 
 type ConnectionState = "connecting" | "connected" | "degraded";
@@ -37,9 +39,11 @@ function WaitingForSection() {
 export function StudentLessonPlayer({
   initialSnapshot,
   initialReactions,
+  initialSessionReflection,
 }: {
   initialSnapshot: StudentLessonSnapshot;
   initialReactions: OwnReactions;
+  initialSessionReflection: SessionReflection | null;
 }) {
   const router = useRouter();
   const initialPosition = initialSnapshot.sections.at(-1)?.position ?? null;
@@ -218,9 +222,15 @@ export function StudentLessonPlayer({
               selectedReaction={reactions[currentSection.id]}
             />
           ) : (
-            <p className="mt-6 rounded-2xl border border-black/10 bg-white p-5 text-center text-sm text-[var(--muted)]">
-              Buổi học đã kết thúc. Bạn vẫn có thể xem lại các section đã release.
-            </p>
+            <>
+              <p className="mt-6 rounded-2xl border border-black/10 bg-white p-5 text-center text-sm text-[var(--muted)]">
+                Buổi học đã kết thúc. Bạn vẫn có thể xem lại các section đã release.
+              </p>
+              <StudentSessionReflection
+                initialReflection={initialSessionReflection}
+                roomId={snapshot.id}
+              />
+            </>
           )}
 
         </div>

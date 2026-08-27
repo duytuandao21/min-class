@@ -9,43 +9,19 @@ import {
 } from "./schemas";
 
 describe("public Lesson access input", () => {
-  it("normalizes a valid MSSV and LIVE session code", () => {
+  it("normalizes a valid MSSV", () => {
     const result = lessonAccessInputSchema.parse({
       lessonId: "ae300000-0000-4000-8000-000000000002",
       mssv: " 23110001 ",
-      sessionCode: " lvac24 ",
     });
 
     expect(result.mssv).toBe("23110001");
-    expect(result.sessionCode).toBe("LVAC24");
   });
 
-  it("allows the missing FormData session code for the ENDED gate", () => {
-    const result = lessonAccessInputSchema.safeParse({
-      lessonId: "ae300000-0000-4000-8000-000000000003",
-      mssv: "23110001",
-      sessionCode: null,
-    });
-
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data.sessionCode).toBeUndefined();
-  });
-
-  it("also normalizes a blank session code", () => {
-    const result = lessonAccessInputSchema.parse({
-      lessonId: "ae300000-0000-4000-8000-000000000003",
-      mssv: "23110001",
-      sessionCode: " ",
-    });
-
-    expect(result.sessionCode).toBeUndefined();
-  });
-
-  it("rejects invalid MSSV and ambiguous session-code characters", () => {
+  it("rejects an invalid MSSV", () => {
     expect(lessonAccessInputSchema.safeParse({
       lessonId: "ae300000-0000-4000-8000-000000000002",
       mssv: "BAD!",
-      sessionCode: "LIVEO1",
     }).success).toBe(false);
   });
 });
@@ -81,6 +57,12 @@ describe("ended Lesson review", () => {
       title: "TCP Review",
       endedAt: "2026-08-25T10:00:00.000Z",
       mssv: "23110001",
+      sessionReflection: {
+        id: "ae300000-0000-4000-8000-000000000017",
+        speakingCount: 2,
+        reviewBody: "Buổi học dễ hiểu.",
+        updatedAt: "2026-08-25T10:05:00.000Z",
+      },
       sections: [{
         id: "ae300000-0000-4000-8000-000000000012",
         position: 0,
@@ -129,6 +111,7 @@ describe("ended Lesson review", () => {
         { content: "SYN-ACK", isSelected: false, isCorrect: true },
       ],
     });
+    expect(review.sessionReflection).toMatchObject({ speakingCount: 2 });
   });
 
   it("supports a roster Student without an attempt", () => {
@@ -138,6 +121,7 @@ describe("ended Lesson review", () => {
       title: "Review",
       endedAt: "2026-08-25T10:00:00.000Z",
       mssv: "23110002",
+      sessionReflection: null,
       sections: [{
         id: "ae300000-0000-4000-8000-000000000012",
         position: 0,

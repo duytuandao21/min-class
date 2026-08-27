@@ -2,9 +2,18 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(26);
+select plan(29);
 
 select has_table('public', 'session_attendance', 'Session attendance table exists');
+select has_function('public', 'join_live_lesson', array['uuid', 'text'], 'MSSV-only LIVE Lesson join RPC exists');
+select ok(
+  has_function_privilege('authenticated', 'public.join_live_lesson(uuid, text)', 'EXECUTE'),
+  'Authenticated sessions can invoke the LIVE Lesson join RPC'
+);
+select ok(
+  not has_function_privilege('anon', 'public.join_live_lesson(uuid, text)', 'EXECUTE'),
+  'Unauthenticated clients cannot invoke the LIVE Lesson join RPC'
+);
 select ok(
   exists (
     select 1
@@ -57,11 +66,6 @@ select set_config(
   (select id::text from public.rooms where lesson_id = 'a7130000-0000-0000-0000-000000000001'),
   true
 );
-select set_config(
-  'test.session_code',
-  (select code from public.rooms where lesson_id = 'a7130000-0000-0000-0000-000000000001'),
-  true
-);
 select is(
   (select count(*) from public.session_attendance where session_id = current_setting('test.session_id')::uuid),
   3::bigint,
@@ -73,16 +77,25 @@ select is(
   'Every snapshot row starts absent'
 );
 
+select throws_ok(
+  $$select * from public.join_live_lesson(
+    'a7130000-0000-0000-0000-000000000001',
+    '23110001'
+  )$$,
+  '42501',
+  'Lesson Session is not available.',
+  'A permanent Teacher session cannot join as a Student'
+);
+
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c7100000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":true}', true);
 
 select lives_ok(
-  $$select * from public.join_lesson_session(
+  $$select * from public.join_live_lesson(
     'a7130000-0000-0000-0000-000000000001',
-    current_setting('test.session_code'),
     '23110001'
   )$$,
-  'A Student in the snapshot can join'
+  'A Student in the snapshot can join with MSSV only'
 );
 
 set local role authenticated;
@@ -95,9 +108,8 @@ select ok(
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c7100000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":true}', true);
 select lives_ok(
-  $$select * from public.join_lesson_session(
+  $$select * from public.join_live_lesson(
     'a7130000-0000-0000-0000-000000000001',
-    current_setting('test.session_code'),
     '23110001'
   )$$,
   'Duplicate retry from the same anonymous Student is idempotent'
@@ -152,20 +164,8 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c7100000-0000-0000-0000-000000000002","role":"authenticated","is_anonymous":true}', true);
 
 select throws_ok(
-  $$select * from public.join_lesson_session(
+  $$select * from public.join_live_lesson(
     'a7130000-0000-0000-0000-000000000001',
-    '000000',
-    '23110004'
-  )$$,
-  'P0002',
-  'Lesson Session Code is incorrect.',
-  'An incorrect code is reported before roster membership is checked'
-);
-
-select throws_ok(
-  $$select * from public.join_lesson_session(
-    'a7130000-0000-0000-0000-000000000001',
-    current_setting('test.session_code'),
     '23110004'
   )$$,
   'P0003',

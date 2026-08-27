@@ -77,12 +77,11 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"cf000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":true}', true);
 
 select lives_ok(
-  $$select * from public.join_lesson_session(
+  $$select * from public.join_live_lesson(
     'af300000-0000-0000-0000-000000000001',
-    (select code from public.rooms where lesson_id = 'af300000-0000-0000-0000-000000000001' and status = 'ACTIVE'),
     '23110001'
   )$$,
-  'Roster Student joins the correct LIVE Session'
+  'Roster Student joins the correct LIVE Session with MSSV only'
 );
 select is(
   (select count(*) from public.participants where user_id = 'cf000000-0000-0000-0000-000000000001'),
@@ -90,9 +89,8 @@ select is(
   'Participant is attached to exactly one Lesson Session'
 );
 select lives_ok(
-  $$select * from public.join_lesson_session(
+  $$select * from public.join_live_lesson(
     'af300000-0000-0000-0000-000000000001',
-    (select code from public.rooms where lesson_id = 'af300000-0000-0000-0000-000000000001' and status = 'ACTIVE'),
     '23110001'
   )$$,
   'Retrying the same join is idempotent for the same anonymous Session'
@@ -167,13 +165,12 @@ select lives_ok(
   'Student can refresh released Lesson content after End'
 );
 select throws_ok(
-  $$select * from public.join_lesson_session(
+  $$select * from public.join_live_lesson(
     'af300000-0000-0000-0000-000000000001',
-    (select code from public.rooms where lesson_id = 'af300000-0000-0000-0000-000000000001'),
     '23110001'
   )$$,
   'P0001', 'Lesson Session is not available.',
-  'Join code is invalid after Session End'
+  'MSSV-only join is unavailable after Session End'
 );
 
 select * from finish();
