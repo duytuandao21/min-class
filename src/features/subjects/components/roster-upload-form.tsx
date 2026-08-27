@@ -72,8 +72,7 @@ export function RosterUploadForm({
     <form action={action} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold tracking-[0.16em] text-[var(--accent)]">CẬP NHẬT ROSTER</p>
-          <h2 className="mt-2 text-2xl font-semibold">Tải lên file MSSV</h2>
+          <h2 className="text-2xl font-semibold">Tải lên file MSSV</h2>
         </div>
         <span className="shrink-0 rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-[var(--muted)]">
           {currentCount} hiện tại
