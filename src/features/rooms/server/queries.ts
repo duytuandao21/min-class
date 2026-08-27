@@ -21,7 +21,7 @@ import {
   teacherQuizAnalyticsSchema,
   type TeacherQuizAnalytics,
 } from "@/features/rooms/quiz";
-import { roomCodeSchema, roomIdSchema } from "@/features/rooms/schemas";
+import { roomIdSchema } from "@/features/rooms/schemas";
 import {
   parseSessionReflectionRow,
   teacherSessionReflectionsSchema,
@@ -36,10 +36,9 @@ import {
 } from "@/features/rooms/summary";
 import { createClient } from "@/lib/supabase/server";
 
-const roomStatusSchema = z.enum(["DRAFT", "ACTIVE", "ENDED"]);
+const roomStatusSchema = z.enum(["ACTIVE", "ENDED"]);
 const teacherRoomSchema = z.object({
   id: z.string().uuid(),
-  code: roomCodeSchema,
   title: z.string().min(1),
   status: roomStatusSchema,
   started_at: z.string().nullable(),
@@ -104,7 +103,7 @@ export async function getTeacherRoom(input: string): Promise<TeacherRoom | null>
   const [roomResult, attendanceResult] = await Promise.all([
     supabase
       .from("rooms")
-      .select("id, code, title, status, started_at, teaching_section, released_through, lesson_id")
+      .select("id, title, status, started_at, teaching_section, released_through, lesson_id")
       .eq("id", roomId.data)
       .maybeSingle(),
     supabase.rpc("get_teacher_session_attendance", {

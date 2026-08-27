@@ -110,24 +110,24 @@ export function StudentQuiz({ roomId, sectionId, readOnly }: { roomId: string; s
     const percentage = Math.round((result.score / result.totalQuestions) * 100);
     return (
       <section>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-          <p className="text-sm font-semibold text-emerald-800">ĐÃ SUBMIT</p>
-          <p className="mt-3 text-5xl font-bold text-emerald-950">{result.score}/{result.totalQuestions}</p>
-          <p className="mt-2 text-emerald-900">{percentage}% câu trả lời chính xác</p>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center">
+          <p className="text-base font-bold text-emerald-800">ĐÃ SUBMIT</p>
+          <p className="mt-3 text-6xl font-bold text-emerald-950">{result.score}/{result.totalQuestions}</p>
+          <p className="mt-3 text-lg text-emerald-900">{percentage}% câu trả lời chính xác</p>
           <p className="mt-4 text-sm text-emerald-800">Mỗi Student chỉ submit Quiz một lần.</p>
         </div>
 
         {quiz.attempt?.answers.length ? (
           <div className="mt-6 space-y-5">
-            <h3 className="text-xl font-semibold">Xem lại đáp án</h3>
+            <h3 className="text-2xl font-semibold">Xem lại đáp án</h3>
             {quiz.questions.map((question) => {
               const review = quiz.attempt?.answers.find((answer) => answer.questionId === question.id);
               if (!review) return null;
 
               return (
-                <article className="rounded-2xl border border-black/10 bg-white p-5" key={question.id}>
+                <article className="rounded-2xl border border-black/10 bg-white p-6" key={question.id}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h4 className="font-semibold leading-7">{question.position + 1}. {question.questionText}</h4>
+                    <h4 className="text-lg font-semibold leading-8">{question.position + 1}. {question.questionText}</h4>
                     <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold ${review.isCorrect ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-800"}`}>
                       {review.isCorrect ? "Đúng" : "Sai"}
                     </span>
@@ -138,7 +138,7 @@ export function StudentQuiz({ roomId, sectionId, readOnly }: { roomId: string; s
                       const correct = review.correctOptionIds.includes(option.id);
                       return (
                         <div
-                          className={`flex items-start justify-between gap-4 rounded-xl border px-4 py-3 text-sm ${
+                          className={`flex items-start justify-between gap-4 rounded-xl border px-5 py-4 text-base ${
                             correct
                               ? "border-emerald-300 bg-emerald-50"
                               : selected
@@ -178,14 +178,14 @@ export function StudentQuiz({ roomId, sectionId, readOnly }: { roomId: string; s
         {quiz.questions.map((question) => {
           const allowsMultiple = question.type === "MULTIPLE_CHOICE";
           return (
-            <fieldset className="rounded-2xl border border-black/10 p-5" disabled={isSubmitting} key={question.id}>
-              <legend className="px-2 font-semibold leading-7">{question.position + 1}. {question.questionText}</legend>
-              <p className="mb-3 text-xs text-[var(--muted)]">{allowsMultiple ? "Chọn tất cả đáp án đúng" : "Chọn một đáp án"}</p>
+            <fieldset className="rounded-2xl border border-black/10 p-6" disabled={isSubmitting} key={question.id}>
+              <legend className="px-2 text-lg font-semibold leading-8">{question.position + 1}. {question.questionText}</legend>
+              <p className="mb-4 text-sm text-[var(--muted)]">{allowsMultiple ? "Chọn tất cả đáp án đúng" : "Chọn một đáp án"}</p>
               <div className="space-y-2">
                 {question.options.map((option) => {
                   const selected = (answers[question.id] ?? []).includes(option.id);
                   return (
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${selected ? "border-[var(--accent)] bg-emerald-50" : "border-black/10 hover:border-black/30"}`} key={option.id}>
+                    <label className={`flex cursor-pointer items-start gap-4 rounded-xl border px-5 py-4 text-base transition ${selected ? "border-[var(--accent)] bg-emerald-50" : "border-black/10 hover:border-black/30"}`} key={option.id}>
                       <input
                         checked={selected}
                         className="mt-1"
@@ -204,7 +204,7 @@ export function StudentQuiz({ roomId, sectionId, readOnly }: { roomId: string; s
       </div>
 
       {error ? <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900" role="alert">{error}</p> : null}
-      <button className="mt-6 w-full rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" disabled={isSubmitting} type="submit">
+      <button className="mt-7 w-full rounded-xl bg-[var(--accent)] px-6 py-4 text-lg font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Đang chấm điểm…" : "Submit Quiz"}
       </button>
     </form>

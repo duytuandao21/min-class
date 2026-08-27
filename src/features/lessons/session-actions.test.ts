@@ -25,7 +25,6 @@ describe("startLessonSessionAction", () => {
     const rpc = vi.fn().mockResolvedValue({
       data: [{
         session_id: sessionId,
-        join_code: "ABC234",
         session_status: "ACTIVE",
         started_at: "2026-08-26T01:02:03.000Z",
       }],

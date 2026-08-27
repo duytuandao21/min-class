@@ -25,11 +25,11 @@ export function StudentSessionReflection({
 
   if (savedReflection) {
     return (
-      <section className="mt-6 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-6 shadow-sm sm:p-8" aria-labelledby="session-reflection-title">
+      <section className="mt-7 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-7 shadow-sm sm:p-9" aria-labelledby="session-reflection-title">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
-            <h2 className="mt-2 text-2xl font-semibold" id="session-reflection-title">Tổng kết của bạn đã được ghi nhận</h2>
+            <h2 className="mt-2 text-3xl font-semibold" id="session-reflection-title">Tổng kết của bạn đã được ghi nhận</h2>
           </div>
           <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-bold text-emerald-900">Đã gửi</span>
         </div>
@@ -40,7 +40,7 @@ export function StudentSessionReflection({
           </div>
           <div className="rounded-2xl border border-emerald-900/10 bg-white p-5">
             <p className="text-sm text-[var(--muted)]">Review buổi học</p>
-            <p className="mt-2 whitespace-pre-wrap break-words leading-7">
+            <p className="mt-2 whitespace-pre-wrap break-words text-lg leading-8">
               {savedReflection.reviewBody ?? "Bạn không viết review."}
             </p>
           </div>
@@ -51,12 +51,12 @@ export function StudentSessionReflection({
   }
 
   return (
-    <section className="mt-6 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-6 shadow-sm sm:p-8" aria-labelledby="session-reflection-title">
+    <section className="mt-7 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-7 shadow-sm sm:p-9" aria-labelledby="session-reflection-title">
       <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
-      <h2 className="mt-2 text-2xl font-semibold" id="session-reflection-title">
+      <h2 className="mt-2 text-3xl font-semibold" id="session-reflection-title">
         Bạn đã đóng góp gì trong buổi học?
       </h2>
-      <p className="mt-3 leading-7 text-[var(--muted)]">
+      <p className="mt-3 text-lg leading-8 text-[var(--muted)]">
         Tự ghi lại số lần phát biểu và một lời review ngắn về buổi học hôm nay.
       </p>
 
@@ -87,7 +87,7 @@ export function StudentSessionReflection({
             Review buổi học <span className="font-normal text-[var(--muted)]">(không bắt buộc)</span>
           </label>
           <textarea
-            className="mt-2 min-h-32 w-full resize-y rounded-xl border border-black/15 bg-white px-4 py-3 leading-7 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-emerald-100"
+            className="mt-2 min-h-36 w-full resize-y rounded-xl border border-black/15 bg-white px-5 py-4 text-lg leading-8 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-emerald-100"
             id="session-review-body"
             maxLength={1000}
             name="reviewBody"
@@ -108,7 +108,7 @@ export function StudentSessionReflection({
         ) : null}
 
         <button
-          className="w-full rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl bg-[var(--accent)] px-6 py-4 text-lg font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={pending}
           type="submit"
         >

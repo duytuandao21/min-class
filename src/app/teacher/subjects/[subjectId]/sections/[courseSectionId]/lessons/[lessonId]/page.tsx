@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
-import { MarkdownPreview } from "@/features/lessons/components/markdown-preview";
+import { LessonReviewPlayer } from "@/features/lessons/components/lesson-review-player";
 import { parseLessonMarkdown } from "@/features/lessons/markdown/parser";
 import { getPersistentLessonDetail } from "@/features/subjects/server/queries";
 
@@ -53,7 +53,7 @@ export default async function TeacherLessonHistoryPage({
           <p className="text-xs font-bold tracking-[0.16em] text-[var(--accent)]">MARKDOWN CONTENT</p>
           <h2 className="mt-2 text-2xl font-semibold" id="lesson-content-title">Nội dung Lesson</h2>
         </div>
-        <MarkdownPreview lesson={normalizedLesson} showHeader={false} />
+        <LessonReviewPlayer lesson={normalizedLesson} />
       </section>
 
       <section className="mt-8" aria-labelledby="session-history-title">
@@ -74,8 +74,7 @@ export default async function TeacherLessonHistoryPage({
               <li className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm sm:p-6" key={session.id}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold text-[var(--muted)]">SESSION {detail.sessions.length - index}</p>
-                    <h3 className="mt-1 font-mono text-xl font-semibold tracking-[0.12em]">{session.code}</h3>
+                    <p className="text-lg font-extrabold tracking-wide text-black">SESSION {detail.sessions.length - index}</p>
                     <p className="mt-2 text-sm text-[var(--muted)]">
                       Bắt đầu: {dateTimeFormatter.format(new Date(session.started_at))}
                     </p>

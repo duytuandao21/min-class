@@ -77,9 +77,9 @@ export function SectionReflection({ sectionId, selectedReaction, onReactionChang
   }
 
   return (
-    <section className="mt-6 rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
-      <h3 className="text-xl font-semibold">Reflection</h3>
-      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Phản hồi nhanh để thầy/cô biết bạn đang theo kịp tới đâu.</p>
+    <section className="mt-7 rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-9">
+      <h3 className="text-2xl font-semibold">Reflection</h3>
+      <p className="mt-2 text-base leading-7 text-[var(--muted)]">Phản hồi nhanh để thầy/cô biết bạn đang theo kịp tới đâu.</p>
 
       <div className="mt-5 grid gap-2 sm:grid-cols-3" aria-label="Reaction cho section">
         {reactionOptions.map((option) => {
@@ -87,13 +87,13 @@ export function SectionReflection({ sectionId, selectedReaction, onReactionChang
           return (
             <button
               aria-pressed={isSelected}
-              className={`rounded-2xl border px-4 py-3 text-left transition ${isSelected ? "border-[var(--accent)] bg-emerald-50 text-emerald-950" : "border-black/10 hover:border-black/30"}`}
+              className={`rounded-2xl border px-5 py-4 text-left transition ${isSelected ? "border-[var(--accent)] bg-emerald-50 text-emerald-950" : "border-black/10 hover:border-black/30"}`}
               key={option.value}
               onClick={() => chooseReaction(option.value)}
               type="button"
             >
-              <span className="mr-2 text-xl" aria-hidden>{option.emoji}</span>
-              <span className="font-semibold">{option.label}</span>
+              <span className="mr-2 text-2xl" aria-hidden>{option.emoji}</span>
+              <span className="text-base font-bold">{option.label}</span>
             </button>
           );
         })}
@@ -104,9 +104,9 @@ export function SectionReflection({ sectionId, selectedReaction, onReactionChang
       </div>
 
       <form className="mt-5 border-t border-black/10 pt-6" onSubmit={submitComment}>
-        <label className="font-semibold" htmlFor={`comment-${sectionId}`}>Comment</label>
+        <label className="text-lg font-semibold" htmlFor={`comment-${sectionId}`}>Comment</label>
         <textarea
-          className="mt-3 min-h-28 w-full resize-y rounded-2xl border border-black/15 bg-white px-4 py-3 outline-none transition focus:border-[var(--accent)]"
+          className="mt-3 min-h-32 w-full resize-y rounded-2xl border border-black/15 bg-white px-5 py-4 text-base leading-7 outline-none transition focus:border-[var(--accent)]"
           disabled={isSendingComment}
           id={`comment-${sectionId}`}
           maxLength={500}
@@ -136,7 +136,7 @@ export function SectionReflection({ sectionId, selectedReaction, onReactionChang
         </fieldset>
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
-          <button className="rounded-xl bg-[var(--accent)] px-5 py-2.5 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" disabled={isSendingComment} type="submit">
+          <button className="rounded-xl bg-[var(--accent)] px-6 py-3 text-base font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" disabled={isSendingComment} type="submit">
             {isSendingComment ? "Đang gửi…" : "Gửi comment"}
           </button>
           <div className="text-sm" aria-live="polite">

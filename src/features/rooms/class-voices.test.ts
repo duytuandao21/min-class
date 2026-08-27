@@ -10,7 +10,6 @@ import {
 
 const snapshot = classVoicesSnapshotSchema.parse({
   roomId: "39000000-0000-4000-8000-000000000001",
-  roomCode: "VCE234",
   roomTitle: "Class Voices",
   participantCount: 42,
   sections: [

@@ -50,7 +50,6 @@ const persistentLessonSchema = z.object({
 const lessonSessionSchema = z.object({
   id: z.string().uuid(),
   lesson_id: z.string().uuid(),
-  code: z.string(),
   status: z.enum(["ACTIVE", "ENDED"]),
   started_at: z.string(),
   ended_at: z.string().nullable(),
@@ -192,7 +191,7 @@ export async function getCourseSectionRosterDetail(
   if (lessonIds.length > 0) {
     const { data: sessionData, error: sessionError } = await supabase
       .from("rooms")
-      .select("id, lesson_id, code, status, started_at, ended_at")
+      .select("id, lesson_id, status, started_at, ended_at")
       .in("lesson_id", lessonIds)
       .in("status", ["ACTIVE", "ENDED"])
       .order("started_at", { ascending: false });
@@ -256,7 +255,7 @@ export async function getPersistentLessonDetail(
 
   const { data: sessionData, error: sessionError } = await supabase
     .from("rooms")
-    .select("id, lesson_id, code, status, started_at, ended_at")
+    .select("id, lesson_id, status, started_at, ended_at")
     .eq("lesson_id", lessonId.data)
     .in("status", ["ACTIVE", "ENDED"])
     .order("started_at", { ascending: false });

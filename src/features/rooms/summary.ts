@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { teacherFeedbackSnapshotSchema } from "@/features/rooms/feedback";
 import { teacherQuizAnalyticsSchema } from "@/features/rooms/quiz";
-import { roomCodeSchema } from "@/features/rooms/schemas";
 
 export const teacherAttendanceSchema = z.object({
   rosterCount: z.number().int().nonnegative(),
@@ -14,7 +13,6 @@ export const teacherAttendanceSchema = z.object({
 export const teacherRoomSummarySchema = z.object({
   room: z.object({
     id: z.string().uuid(),
-    code: roomCodeSchema,
     title: z.string().min(1),
     startedAt: z.string(),
     endedAt: z.string(),

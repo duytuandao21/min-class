@@ -2,6 +2,8 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
+grant execute on function public.start_room(uuid) to authenticated;
+grant execute on function public.join_room(text, text) to authenticated;
 
 select plan(11);
 

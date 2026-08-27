@@ -5,6 +5,7 @@ import { BackLink } from "@/components/back-link";
 import { CreateLessonButton } from "@/features/lessons/components/create-lesson-button";
 import { LessonChapterDisclosure } from "@/features/lessons/components/lesson-chapter-disclosure";
 import { StartLessonSessionButton } from "@/features/lessons/components/start-lesson-session-button";
+import { RosterStudentList } from "@/features/subjects/components/roster-student-list";
 import { RosterUploadForm } from "@/features/subjects/components/roster-upload-form";
 import { getCourseSectionRosterDetail } from "@/features/subjects/server/queries";
 
@@ -50,7 +51,23 @@ export default async function CourseSectionRosterPage({
             <p className="text-sm font-semibold text-[var(--muted)]">{detail.lessons.length} Lesson</p>
             <h2 className="mt-1 text-3xl font-semibold" id="lesson-list-title">Lessons</h2>
           </div>
-          <CreateLessonButton baseHref={createLessonHref} chapters={detail.chapters} />
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <CreateLessonButton baseHref={createLessonHref} chapters={detail.chapters} />
+            <a
+              className="group inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 font-bold text-sky-900 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-100 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 motion-reduce:transform-none"
+              href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/export`}
+            >
+              <svg
+                aria-hidden="true"
+                className="size-5 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.25" />
+              </svg>
+              Xuất dữ liệu
+            </a>
+          </div>
         </div>
         {detail.chapters.length === 0 ? (
           <p className="mt-5 rounded-3xl border border-dashed border-black/15 bg-white p-8 text-center text-[var(--muted)]">
@@ -110,32 +127,25 @@ export default async function CourseSectionRosterPage({
         )}
       </section>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <RosterUploadForm
-          courseSectionId={detail.courseSection.id}
-          currentCount={detail.students.length}
-          subjectId={detail.subject.id}
-        />
-        <section className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8" aria-labelledby="roster-list-title">
-          <p className="text-sm font-semibold text-[var(--muted)]">Sĩ số lớp</p>
-          <p className="mt-1 text-5xl font-semibold text-[var(--accent)]">{detail.students.length}</p>
-          <h2 className="mt-8 text-xl font-semibold" id="roster-list-title">Danh sách MSSV</h2>
-          {detail.students.length === 0 ? (
-            <p className="mt-4 rounded-2xl border border-dashed border-black/15 p-5 text-center text-sm text-[var(--muted)]">
-              Chưa có MSSV.
-            </p>
-          ) : (
-            <ol className="mt-4 max-h-[36rem] space-y-2 overflow-auto pr-1">
-              {detail.students.map((student, index) => (
-                <li className="flex items-center gap-3 rounded-xl bg-black/3 px-4 py-2.5" key={student.id}>
-                  <span className="w-8 shrink-0 text-right text-xs text-[var(--muted)]">{index + 1}</span>
-                  <span className="font-mono font-semibold">{student.mssv}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      </div>
+      <section className="border-t border-black/10 pt-9" aria-labelledby="roster-management-title">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-3xl font-semibold" id="roster-management-title">Quản lý danh sách sinh viên</h2>
+          </div>
+          <p className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-900">
+            Sĩ số hiện tại: {detail.students.length}
+          </p>
+        </div>
+
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.35fr)]">
+          <RosterUploadForm
+            courseSectionId={detail.courseSection.id}
+            currentCount={detail.students.length}
+            subjectId={detail.subject.id}
+          />
+          <RosterStudentList students={detail.students} />
+        </div>
+      </section>
     </main>
   );
 }

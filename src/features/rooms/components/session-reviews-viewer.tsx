@@ -177,11 +177,11 @@ export function SessionReviewsViewer({
             <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-950">{snapshot.submittedCount}/{snapshot.participantCount} đã gửi</span>
             <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-bold text-amber-950">{totalSpeaking} lượt phát biểu</span>
           </div>
-          <p className="mt-3 text-xs text-[var(--muted)]" aria-live="polite">
-            {connection === "connecting" ? "Đang kết nối realtime…" : null}
-            {connection === "connected" ? "Realtime đang hoạt động" : null}
-            {connection === "degraded" ? "Realtime đang kết nối lại…" : null}
-          </p>
+          {connection !== "connected" ? (
+            <p className="mt-3 text-xs text-[var(--muted)]" aria-live="polite">
+              {connection === "connecting" ? "Đang kết nối realtime…" : "Realtime đang kết nối lại…"}
+            </p>
+          ) : null}
         </div>
         <button
           className="rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"

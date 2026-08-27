@@ -1,6 +1,9 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 
-import type { NormalizedLesson } from "@/features/lessons/markdown/schema";
+import type {
+  NormalizedLesson,
+  NormalizedLessonSection,
+} from "@/features/lessons/markdown/schema";
 
 const markdownComponents: Components = {
   a: ({ children, ...props }) => (
@@ -19,10 +22,36 @@ const markdownComponents: Components = {
   ),
 };
 
-export function MarkdownContent({ source }: { source: string }) {
+export function MarkdownContent({ source, className = "" }: { source: string; className?: string }) {
   return (
-    <div className="lesson-markdown leading-7 text-[#263129]">
+    <div className={`lesson-markdown leading-7 text-[#263129] ${className}`}>
       <ReactMarkdown components={markdownComponents}>{source}</ReactMarkdown>
+    </div>
+  );
+}
+
+export function LessonSectionContent({ section }: { section: NormalizedLessonSection }) {
+  if (section.type !== "QUIZ") {
+    return <MarkdownContent source={section.contentMd} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {section.quiz.questions.map((question) => (
+        <div key={question.id}>
+          <p className="font-medium leading-7">{question.questionText}</p>
+          <ul className="mt-3 space-y-2">
+            {question.options.map((option) => (
+              <li className="flex gap-3 rounded-xl border border-black/10 px-4 py-3" key={option.id}>
+                <span aria-hidden className={option.isCorrect ? "text-[var(--accent)]" : "text-black/25"}>
+                  {option.isCorrect ? "✓" : "○"}
+                </span>
+                <span className="min-w-0 break-words">{option.content}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
@@ -54,27 +83,7 @@ export function MarkdownPreview({
             <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">{section.type}</span>
           </div>
 
-          {section.type === "QUIZ" ? (
-            <div className="space-y-6">
-              {section.quiz.questions.map((question) => (
-                <div key={question.id}>
-                  <p className="font-medium leading-7">{question.questionText}</p>
-                  <ul className="mt-3 space-y-2">
-                    {question.options.map((option) => (
-                      <li className="flex gap-3 rounded-xl border border-black/10 px-4 py-3" key={option.id}>
-                        <span aria-hidden className={option.isCorrect ? "text-[var(--accent)]" : "text-black/25"}>
-                          {option.isCorrect ? "✓" : "○"}
-                        </span>
-                        <span className="min-w-0 break-words">{option.content}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <MarkdownContent source={section.contentMd} />
-          )}
+          <LessonSectionContent section={section} />
         </section>
       ))}
     </article>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
+import { AddActionIcon, addActionButtonClassName } from "@/components/add-action-button";
 import {
   createCourseSectionAction,
   createSubjectAction,
@@ -114,11 +115,12 @@ export function CreateSubjectForm() {
     <div className="relative shrink-0">
       <button
         aria-expanded={open}
-        className={primaryButtonClassName}
+        className={addActionButtonClassName}
         onClick={() => setOpen((current) => !current)}
         type="button"
       >
-        + Thêm môn học
+        <AddActionIcon />
+        <span>Thêm môn học</span>
       </button>
       {open ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 p-4 backdrop-blur-[2px]">
@@ -134,7 +136,10 @@ export function CreateSubjectForm() {
           <input aria-describedby="subject-code-error" autoCapitalize="characters" className={inputClassName} id="subject-code" maxLength={32} name="code" />
           <div id="subject-code-error"><FieldError messages={state.fieldErrors?.code} /></div>
           <FormMessage state={state} />
-          <button className={`mt-6 w-full ${primaryButtonClassName}`} disabled={pending} type="submit">{pending ? "Đang tạo…" : "Tạo môn học"}</button>
+          <button className={`mt-6 w-full ${addActionButtonClassName}`} disabled={pending} type="submit">
+            <AddActionIcon />
+            <span>{pending ? "Đang tạo…" : "Tạo môn học"}</span>
+          </button>
         </form>
         </div>
       ) : null}
@@ -216,7 +221,10 @@ export function CreateCourseSectionForm({ subjectId }: { subjectId: string }) {
   }, initialManagementActionState);
   return (
     <div className="relative shrink-0">
-      <button aria-expanded={open} className={primaryButtonClassName} onClick={() => setOpen((current) => !current)} type="button">+ Thêm lớp học phần</button>
+      <button aria-expanded={open} className={addActionButtonClassName} onClick={() => setOpen((current) => !current)} type="button">
+        <AddActionIcon />
+        <span>Thêm lớp học phần</span>
+      </button>
       {open ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 p-4 backdrop-blur-[2px]">
         <form action={action} aria-labelledby="create-course-section-title" aria-modal="true" className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-2xl sm:p-7" role="dialog">
@@ -231,7 +239,10 @@ export function CreateCourseSectionForm({ subjectId }: { subjectId: string }) {
           <input className={inputClassName} id="new-section-name" maxLength={120} name="displayName" placeholder="Ca sáng" />
           <FieldError messages={state.fieldErrors?.displayName} />
           <FormMessage state={state} />
-          <button className={`mt-6 w-full ${primaryButtonClassName}`} disabled={pending} type="submit">{pending ? "Đang thêm…" : "Thêm lớp học phần"}</button>
+          <button className={`mt-6 w-full ${addActionButtonClassName}`} disabled={pending} type="submit">
+            <AddActionIcon />
+            <span>{pending ? "Đang thêm…" : "Thêm lớp học phần"}</span>
+          </button>
         </form>
         </div>
       ) : null}

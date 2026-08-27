@@ -70,29 +70,40 @@ export function RosterUploadForm({
 
   return (
     <form action={action} className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-2xl font-semibold">Tải lên danh sách MSSV</h2>
-      <p className="mt-2 leading-7 text-[var(--muted)]">
-        Mỗi dòng là một MSSV. Tải lên danh sách mới sẽ thay thế danh sách hiện tại.
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold tracking-[0.16em] text-[var(--accent)]">CẬP NHẬT ROSTER</p>
+          <h2 className="mt-2 text-2xl font-semibold">Tải lên file MSSV</h2>
+        </div>
+        <span className="shrink-0 rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-[var(--muted)]">
+          {currentCount} hiện tại
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+        Mỗi dòng là một MSSV. Danh sách hợp lệ mới sẽ thay thế roster hiện tại.
       </p>
-      <label className="mt-6 block font-semibold" htmlFor="roster-file">File .txt</label>
-      <input
-        accept=".txt,text/plain"
-        className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-900/8 file:px-4 file:py-2.5 file:font-semibold file:text-[var(--accent)]"
-        id="roster-file"
-        onChange={(event) => void handleFileChange(event)}
-        type="file"
-      />
+      <div className="mt-6 rounded-2xl border border-dashed border-emerald-900/25 bg-emerald-50/45 p-5">
+        <label className="block font-semibold text-[#263129]" htmlFor="roster-file">Chọn file .txt</label>
+        <p className="mt-1 text-xs text-[var(--muted)]">Tối đa 256 KB · một MSSV trên mỗi dòng</p>
+        <input
+          accept=".txt,text/plain"
+          className="mt-4 block w-full text-sm file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--accent)] file:px-4 file:py-2.5 file:font-semibold file:text-white hover:file:bg-emerald-800"
+          id="roster-file"
+          onChange={(event) => void handleFileChange(event)}
+          type="file"
+        />
+      </div>
       <input name="fileName" type="hidden" value={fileName} />
       <textarea name="rosterSource" readOnly value={source} hidden />
 
       {reading ? <p className="mt-5 text-sm text-[var(--muted)]" role="status">Đang đọc file…</p> : null}
       {preview ? (
-        <section className="mt-6 rounded-2xl border border-black/10 bg-black/2 p-5" aria-labelledby="roster-preview-title">
-          <h3 className="font-semibold" id="roster-preview-title">Preview</h3>
+        <section className="mt-5 rounded-2xl border border-black/10 bg-black/[0.02] p-4" aria-labelledby="roster-preview-title">
+          <h3 className="font-semibold" id="roster-preview-title">Kết quả kiểm tra</h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <p className="rounded-xl bg-emerald-50 p-4 text-emerald-900"><strong className="block text-2xl">{preview.validCount}</strong>MSSV hợp lệ</p>
-            <p className="rounded-xl bg-amber-50 p-4 text-amber-900"><strong className="block text-2xl">{preview.duplicates.length}</strong>Dòng trùng</p>
-            <p className="rounded-xl bg-red-50 p-4 text-red-900"><strong className="block text-2xl">{preview.invalidLines.length}</strong>Dòng không hợp lệ</p>
+            <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900"><strong className="block text-2xl">{preview.validCount}</strong>Hợp lệ</p>
+            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><strong className="block text-2xl">{preview.duplicates.length}</strong>Trùng</p>
+            <p className="rounded-xl bg-red-50 p-3 text-sm text-red-900"><strong className="block text-2xl">{preview.invalidLines.length}</strong>Không hợp lệ</p>
           </div>
           {preview.fileErrors.map((message) => <p className="mt-4 text-sm font-semibold text-red-800" key={message} role="alert">{message}</p>)}
           {preview.duplicates.length > 0 ? (
@@ -120,7 +131,7 @@ export function RosterUploadForm({
         </p>
       ) : null}
       <button
-        className="mt-6 rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-6 w-full rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
         disabled={pending || reading || !preview?.canSave}
         type="submit"
       >

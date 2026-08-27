@@ -4,7 +4,6 @@ import { BackLink } from "@/components/back-link";
 import { MarkdownContent } from "@/features/lessons/components/markdown-preview";
 import { EndSessionButton } from "@/features/rooms/components/end-session-button";
 import { NextSectionButton } from "@/features/rooms/components/next-section-button";
-import { StartRoomButton } from "@/features/rooms/components/start-room-button";
 import { TeacherLiveFeedback } from "@/features/rooms/components/teacher-live-feedback";
 import { TeacherQuizAnalytics } from "@/features/rooms/components/teacher-quiz-analytics";
 import { TeacherRoomOverview } from "@/features/rooms/components/teacher-room-overview";
@@ -47,57 +46,47 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
         <span className={`w-fit rounded-full px-3 py-1 text-sm font-semibold ${room.status === "ACTIVE" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>{room.status}</span>
       </header>
 
-      <TeacherRoomOverview initialAttendance={room.attendance} roomCode={room.code} roomId={room.id} />
+      <TeacherRoomOverview initialAttendance={room.attendance} roomId={room.id} />
 
-      {room.status === "DRAFT" ? (
-        <section className="mt-7 rounded-3xl border border-amber-200 bg-amber-50 p-7 sm:p-9">
-          <h2 className="text-xl font-semibold text-amber-950">Room đang ở trạng thái DRAFT</h2>
-          <p className="mt-2 mb-6 leading-7 text-amber-900">Student chỉ có thể join sau khi Room được bắt đầu.</p>
-          <StartRoomButton roomId={room.id} />
-        </section>
-      ) : (
-        <>
-          <section className="mt-7">
-            {!currentSection ? (
-              <div className="rounded-3xl border border-red-200 bg-red-50 p-7 text-red-900">Không tìm thấy teaching section hiện tại.</div>
+      <section className="mt-7">
+        {!currentSection ? (
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-7 text-red-900">Không tìm thấy teaching section hiện tại.</div>
+        ) : (
+          <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-7 shadow-sm sm:p-10">
+            <header className="mb-7 flex flex-col justify-between gap-5 border-b border-black/10 pb-6 sm:flex-row sm:items-start">
+              <div>
+                <p className="font-mono text-xs font-semibold text-[var(--accent)]">SECTION ĐANG DẠY · {currentSectionIndex + 1} / {room.sections.length}</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">{currentSection.title}</h2>
+              </div>
+              <span className="w-fit rounded-full bg-black/5 px-3 py-1 text-xs font-medium">{currentSection.type}</span>
+            </header>
+
+            {currentSection.type === "QUIZ" ? (
+              <p className="rounded-2xl bg-sky-50 p-5 leading-7 text-sky-950">Student đang làm Quiz trên thiết bị của mình. Theo dõi tiến độ ở Quiz Analytics bên dưới.</p>
             ) : (
-              <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-7 shadow-sm sm:p-10">
-                <header className="mb-7 flex flex-col justify-between gap-5 border-b border-black/10 pb-6 sm:flex-row sm:items-start">
-                  <div>
-                    <p className="font-mono text-xs font-semibold text-[var(--accent)]">SECTION ĐANG DẠY · {currentSectionIndex + 1} / {room.sections.length}</p>
-                    <h2 className="mt-3 text-3xl font-semibold tracking-tight">{currentSection.title}</h2>
-                  </div>
-                  <span className="w-fit rounded-full bg-black/5 px-3 py-1 text-xs font-medium">{currentSection.type}</span>
-                </header>
-
-                {currentSection.type === "QUIZ" ? (
-                  <p className="rounded-2xl bg-sky-50 p-5 leading-7 text-sky-950">Student đang làm Quiz trên thiết bị của mình. Theo dõi tiến độ ở Quiz Analytics bên dưới.</p>
-                ) : (
-                  <MarkdownContent source={currentSection.contentMd} />
-                )}
-
-                <div className="mt-8 border-t border-black/10 pt-6">
-                  {hasNextSection ? (
-                    <>
-                      <p className="mb-4 text-sm leading-6 text-[var(--muted)]">Bấm Done Section để chuyển cả lớp sang section kế tiếp.</p>
-                      <NextSectionButton roomId={room.id} />
-                    </>
-                  ) : (
-                    <div className="rounded-2xl bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">Đây là section cuối. Khi hoàn tất, hãy kết thúc buổi học.</div>
-                  )}
-                </div>
-              </article>
+              <MarkdownContent source={currentSection.contentMd} />
             )}
-          </section>
 
-          <TeacherLiveFeedback currentSectionId={currentSection?.id ?? null} initialSnapshot={feedback} roomId={room.id} />
-          <TeacherQuizAnalytics initialAnalytics={quizAnalytics} roomId={room.id} />
+            <div className="mt-8 border-t border-black/10 pt-6">
+              {hasNextSection ? (
+                <>
+                  <p className="mb-4 text-sm leading-6 text-[var(--muted)]">Bấm Done Section để chuyển cả lớp sang section kế tiếp.</p>
+                  <NextSectionButton roomId={room.id} />
+                </>
+              ) : (
+                <div className="rounded-2xl bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">Đây là section cuối. Khi hoàn tất, hãy kết thúc buổi học.</div>
+              )}
+            </div>
+          </article>
+        )}
+      </section>
 
-          <section className="mt-8 border-t border-black/10 pt-8">
-            <EndSessionButton roomId={room.id} />
-          </section>
-        </>
-      )}
+      <TeacherLiveFeedback currentSectionId={currentSection?.id ?? null} initialSnapshot={feedback} roomId={room.id} />
+      <TeacherQuizAnalytics initialAnalytics={quizAnalytics} roomId={room.id} />
+
+      <section className="mt-8 border-t border-black/10 pt-8">
+        <EndSessionButton roomId={room.id} />
+      </section>
     </main>
   );
 }

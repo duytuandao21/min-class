@@ -36,7 +36,6 @@ describe("student lesson reconciliation", () => {
   it("parses a waiting snapshot without inventing a section", () => {
     const snapshot = parseStudentLessonSnapshot([{
       room_id: "32000000-0000-4000-8000-000000000001",
-      room_code: "FLW234",
       room_title: "Flow Room",
       room_status: "ACTIVE",
       released_through: -1,

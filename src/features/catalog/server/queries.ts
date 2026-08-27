@@ -78,7 +78,9 @@ export async function getPublicLessonGateContext(rawLessonId: string): Promise<P
   return row ? publicLessonGateContextSchema.parse(row) : null;
 }
 
-export async function getStudentEndedLessonReview(rawSessionId: string): Promise<EndedLessonReview | null> {
+export async function getStudentEndedLessonReview(
+  rawSessionId: string,
+): Promise<(EndedLessonReview & { subjectId: string; courseSectionId: string }) | null> {
   const sessionId = idSchema.safeParse(rawSessionId);
   if (!sessionId.success) return null;
 
@@ -104,5 +106,21 @@ export async function getStudentEndedLessonReview(rawSessionId: string): Promise
     ...(data && typeof data === "object" && !Array.isArray(data) ? data : {}),
     sessionReflection,
   });
-  return review.success ? review.data : null;
+  if (!review.success) return null;
+
+  const { data: contextData, error: contextError } = await supabase.rpc(
+    "get_public_lesson_gate_context",
+    { p_lesson_id: review.data.lessonId },
+  );
+  if (contextError) return null;
+
+  const contextRow = Array.isArray(contextData) ? contextData[0] : null;
+  const context = publicLessonGateContextSchema.safeParse(contextRow);
+  if (!context.success) return null;
+
+  return {
+    ...review.data,
+    subjectId: context.data.subject_id,
+    courseSectionId: context.data.course_section_id,
+  };
 }

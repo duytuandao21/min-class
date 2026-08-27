@@ -50,8 +50,8 @@ select lives_ok(
   'Teacher starts a persistent Lesson Session'
 );
 select ok(
-  (select code ~ '^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$' from public.rooms where lesson_id = 'af300000-0000-0000-0000-000000000001'),
-  'A short unambiguous join code is generated'
+  (select code is null from public.rooms where lesson_id = 'af300000-0000-0000-0000-000000000001'),
+  'A Lesson Session is created without a join code'
 );
 select ok(
   (select status = 'ACTIVE' and started_at is not null from public.rooms where lesson_id = 'af300000-0000-0000-0000-000000000001'),

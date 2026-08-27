@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CopyRoomCodeButton } from "@/features/rooms/components/copy-room-code-button";
 import { fetchTeacherAttendance } from "@/features/rooms/dashboard-client";
 import type { TeacherAttendance } from "@/features/rooms/summary";
 import { createClient } from "@/lib/supabase/client";
 
-export function TeacherRoomOverview({ roomId, roomCode, initialAttendance }: { roomId: string; roomCode: string; initialAttendance: TeacherAttendance }) {
+export function TeacherRoomOverview({ roomId, initialAttendance }: { roomId: string; initialAttendance: TeacherAttendance }) {
   const [attendance, setAttendance] = useState(initialAttendance);
   const [isDegraded, setIsDegraded] = useState(false);
   const syncVersionRef = useRef(0);
@@ -56,20 +55,22 @@ export function TeacherRoomOverview({ roomId, roomCode, initialAttendance }: { r
   }, [roomId, syncCount]);
 
   return (
-    <section className="mt-7 grid gap-4 md:grid-cols-[1.5fr_0.5fr]">
-      <div className="rounded-3xl border-2 border-[var(--accent)] bg-white p-7 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold text-[var(--muted)]">ROOM CODE</p>
-        <div className="mt-3 flex flex-wrap items-center gap-5">
-          <p className="font-mono text-5xl font-bold tracking-[0.16em] text-[var(--accent)] sm:text-7xl">{roomCode}</p>
-          <CopyRoomCodeButton code={roomCode} />
+    <section className="mt-7 rounded-3xl border border-emerald-900/10 bg-gradient-to-r from-white to-emerald-50/70 px-6 py-5 shadow-sm sm:px-8 sm:py-6">
+      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="h-3.5 w-3.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_0_6px_rgba(16,185,129,0.14)] motion-reduce:animate-none" aria-hidden />
+            <p className="text-xs font-bold tracking-[0.16em] text-emerald-800">LỚP HỌC ĐANG DIỄN RA</p>
+          </div>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
+            Sinh viên chọn Lesson đang LIVE và nhập MSSV để tham gia.
+          </p>
+          {isDegraded ? <p className="mt-2 text-xs text-amber-800" role="status">Đang kết nối lại…</p> : null}
         </div>
-      </div>
-      <div className="rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold text-[var(--muted)]">SĨ SỐ LỚP</p>
-        <p className="mt-3 text-5xl font-semibold tracking-tight">{attendance.rosterCount}</p>
-        <p className="mt-4 text-sm text-[var(--muted)]">Đã tham gia</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight text-[var(--accent)]">{attendance.joinedCount}</p>
-        {isDegraded ? <p className="mt-2 text-xs text-amber-800" role="status">Đang kết nối lại…</p> : null}
+        <div className="flex shrink-0 items-baseline gap-3 rounded-2xl border border-emerald-900/10 bg-white/85 px-5 py-3.5">
+          <span className="text-3xl font-bold tracking-tight text-[var(--accent)]">{attendance.joinedCount}</span>
+          <span className="text-sm font-semibold text-[var(--muted)]">/ {attendance.rosterCount} sinh viên</span>
+        </div>
       </div>
     </section>
   );

@@ -1,6 +1,6 @@
 # MINCLASS
 
-MINCLASS là ứng dụng hỗ trợ lớp học trực tiếp. Giảng viên quản lý môn học, Lesson Plan, lớp học phần, danh sách sinh viên và bài học; sinh viên theo dõi nội dung, phản hồi, làm quiz và xem lại buổi học mà không cần tạo tài khoản.
+MINCLASS là ứng dụng hỗ trợ lớp học trực tiếp. Giảng viên quản lý môn học, Lesson Plan, lớp học phần, danh sách sinh viên và bài học; theo dõi dữ liệu tham gia và xuất báo cáo Excel. Sinh viên theo dõi nội dung, phản hồi, làm quiz và xem lại buổi học mà không cần tạo tài khoản.
 
 ## Chạy project
 
@@ -61,6 +61,18 @@ pnpm start
 
 Việc cập nhật roster sau này không làm thay đổi dữ liệu điểm danh của các buổi học đã diễn ra.
 
+### Xuất dữ liệu lớp học phần
+
+Tại trang Course Section, chọn **Xuất dữ liệu** để tải file Excel tổng hợp theo danh sách MSSV trong roster hiện tại. File gồm:
+
+- **MSSV**.
+- **Tổng số lần phát biểu** mà sinh viên đã tự ghi nhận trong các Session thuộc lớp học phần.
+- **Số buổi tham gia**, hiển thị theo dạng số Lesson đã tham gia trên tổng số Lesson của lớp học phần.
+
+Mỗi Lesson được tính là một buổi học. Nếu một Lesson có nhiều Session và sinh viên tham gia nhiều lần, Lesson đó vẫn chỉ được tính là một buổi tham gia. Tổng số lần phát biểu được cộng từ tất cả Session thuộc lớp học phần.
+
+File Excel có thông tin mã lớp, tên lớp, sĩ số, tổng số buổi học, bộ lọc cột và phần tiêu đề được cố định để dễ theo dõi.
+
 ### Tạo và chuẩn bị Lesson
 
 1. Trong lớp học phần, chọn **Tạo Lesson** rồi chọn chương chứa Lesson.
@@ -103,9 +115,8 @@ Sinh viên không cần email, mật khẩu hoặc tài khoản MINCLASS.
 
 1. Từ trang chủ, chọn **Khám phá bài học**.
 2. Chọn môn học, lớp học phần và Lesson đang **LIVE**.
-3. Nhập MSSV có trong roster của lớp học phần.
-4. MSSV phải có trong roster và attendance snapshot của đúng lớp học phần.
-5. Theo dõi section giảng viên đang trình bày và xem lại các section đã mở trước đó. Section tiếp theo chỉ xuất hiện khi giảng viên chuyển section.
+3. Nhập MSSV có trong danh sách của lớp học phần.
+4. Theo dõi section giảng viên đang trình bày và xem lại các section đã mở trước đó. Section tiếp theo chỉ xuất hiện khi giảng viên chuyển section.
 
 Sinh viên không cần tài khoản, mật khẩu hoặc Session Code. Số người tham gia và các thay đổi trong buổi học được đồng bộ realtime.
 

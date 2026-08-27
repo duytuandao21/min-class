@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { roomCodeSchema } from "./schemas";
-
 export const lessonSectionSchema = z.object({
   id: z.string().uuid(),
   position: z.number().int().nonnegative(),
@@ -12,7 +10,6 @@ export const lessonSectionSchema = z.object({
 
 export const studentLessonSnapshotSchema = z.object({
   id: z.string().uuid(),
-  code: roomCodeSchema,
   title: z.string().min(1),
   status: z.enum(["ACTIVE", "ENDED"]),
   releasedThrough: z.number().int(),
@@ -21,7 +18,6 @@ export const studentLessonSnapshotSchema = z.object({
 
 const studentSnapshotRowSchema = z.object({
   room_id: z.string().uuid(),
-  room_code: roomCodeSchema,
   room_title: z.string().min(1),
   room_status: z.enum(["ACTIVE", "ENDED"]),
   released_through: z.number().int(),
@@ -59,7 +55,6 @@ export function parseStudentLessonSnapshot(input: unknown): StudentLessonSnapsho
 
   return studentLessonSnapshotSchema.parse({
     id: first.room_id,
-    code: first.room_code,
     title: first.room_title,
     status: first.room_status,
     releasedThrough: first.released_through,

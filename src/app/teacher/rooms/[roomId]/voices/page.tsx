@@ -20,7 +20,7 @@ export default async function ClassVoicesPage({
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
       <BackLink href={`/teacher/rooms/${snapshot.roomId}/summary`} label="Summary" />
       <header className="mt-10 max-w-4xl border-b border-black/10 pb-8">
-        <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">CLASS VOICES - {snapshot.roomCode}</p>
+        <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">CLASS VOICES</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-6xl">Những điều lớp học muốn nói</h1>
         <p className="mt-4 text-lg leading-8 text-[var(--muted)]">{snapshot.roomTitle}</p>
       </header>

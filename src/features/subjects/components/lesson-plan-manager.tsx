@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import { AddActionIcon, addActionButtonClassName } from "@/components/add-action-button";
 import {
   createChapterAction,
   type ManagementActionState,
@@ -37,8 +38,9 @@ function AddChapterForm({ onCancel, subjectId }: { onCancel: () => void; subject
       <ActionMessage state={state} />
       <div className="mt-4 flex flex-wrap justify-end gap-3">
         <button className={cancelButtonClassName} disabled={pending} onClick={onCancel} type="button">Hủy</button>
-        <button className="min-h-10 rounded-xl bg-[var(--accent)] px-5 py-2 font-bold text-white transition hover:bg-emerald-800 disabled:opacity-50" disabled={pending} type="submit">
-          {pending ? "Đang thêm…" : "Thêm chương"}
+        <button className={addActionButtonClassName} disabled={pending} type="submit">
+          <AddActionIcon />
+          <span>{pending ? "Đang thêm…" : "Thêm chương"}</span>
         </button>
       </div>
     </form>
@@ -108,7 +110,7 @@ export function LessonPlanManager({ chapters, subjectId }: { chapters: Chapter[]
 
   return (
     <div className="shrink-0">
-      <button className="rounded-xl border border-[var(--accent)] bg-white px-5 py-3 font-semibold text-[var(--accent)] transition hover:bg-emerald-50" onClick={() => setOpen(true)} ref={triggerRef} type="button">
+      <button className="rounded-xl border border-[var(--accent)] bg-white px-5 py-3 font-semibold text-[var(--accent)] shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 motion-reduce:transform-none" onClick={() => setOpen(true)} ref={triggerRef} type="button">
         Lesson Plan
       </button>
       {open ? (
@@ -120,7 +122,10 @@ export function LessonPlanManager({ chapters, subjectId }: { chapters: Chapter[]
                 <h2 className="mt-2 text-2xl font-bold" id="lesson-plan-title">Danh sách chương</h2>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button className="rounded-xl bg-[var(--accent)] px-4 py-2.5 font-bold text-white transition hover:bg-emerald-800" onClick={() => setAdding(true)} type="button">+ Thêm</button>
+                <button className={addActionButtonClassName} onClick={() => setAdding(true)} type="button">
+                  <AddActionIcon />
+                  <span>Thêm</span>
+                </button>
                 <button className={cancelButtonClassName} onClick={closeDialog} ref={closeRef} type="button">Đóng</button>
               </div>
             </div>

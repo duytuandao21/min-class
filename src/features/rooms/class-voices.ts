@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { roomCodeSchema } from "./schemas";
-
 const classVoiceCommentSchema = z.object({
   id: z.string().uuid(),
   body: z.string().min(1).max(500),
@@ -24,7 +22,6 @@ const classVoiceSectionSchema = z.object({
 
 export const classVoicesSnapshotSchema = z.object({
   roomId: z.string().uuid(),
-  roomCode: roomCodeSchema,
   roomTitle: z.string().min(1),
   participantCount: z.number().int().nonnegative(),
   sections: z.array(classVoiceSectionSchema),

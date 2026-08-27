@@ -9,13 +9,13 @@ export default async function StudentRoomPage({ params }: { params: Promise<{ ro
   if (!room) notFound();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-10 sm:px-10">
-      <header className="flex flex-col items-start justify-between gap-5 border-b border-black/10 pb-6 sm:flex-row">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10 sm:px-10 lg:px-12">
+      <header className="flex flex-col items-start justify-between gap-5 border-b border-black/10 pb-8 sm:flex-row sm:items-center">
         <div>
-          <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">MINCLASS · {room.code}</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{room.title}</h1>
+          <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">MINCLASS · LESSON {room.status === "ACTIVE" ? "LIVE" : "REVIEW"}</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{room.title}</h1>
         </div>
-        <span className="max-w-full break-all rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Đã tham gia · {room.mssv}</span>
+        <span className="max-w-full break-all rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-900">Đã tham gia · {room.mssv}</span>
       </header>
 
       <StudentLessonPlayer
@@ -23,7 +23,6 @@ export default async function StudentRoomPage({ params }: { params: Promise<{ ro
         initialSessionReflection={room.sessionReflection}
         initialSnapshot={{
           id: room.id,
-          code: room.code,
           title: room.title,
           status: room.status,
           releasedThrough: room.releasedThrough,

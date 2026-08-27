@@ -1,15 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 
 import { requireTeacher } from "@/features/auth/teacher-session";
-import { mssvSchema, roomCodeSchema, roomIdSchema } from "@/features/rooms/schemas";
+import { roomIdSchema } from "@/features/rooms/schemas";
 import { createClient } from "@/lib/supabase/server";
-
-export type StartRoomResult =
-  | { ok: true }
-  | { ok: false; message: string };
 
 export type AdvanceSectionResult =
   | { ok: true }
@@ -22,40 +17,6 @@ export type EndRoomResult =
 export type DeleteRoomResult =
   | { ok: true }
   | { ok: false; message: string };
-
-export type JoinRoomState = {
-  status: "idle" | "error" | "success";
-  fieldErrors?: { roomCode?: string[]; mssv?: string[] };
-  message?: string;
-  roomId?: string;
-};
-
-const joinedRoomSchema = z.object({
-  room_id: z.string().uuid(),
-  room_code: roomCodeSchema,
-  room_title: z.string().min(1),
-  room_status: z.literal("ACTIVE"),
-  participant_id: z.string().uuid(),
-});
-
-export async function startRoomAction(input: unknown): Promise<StartRoomResult> {
-  await requireTeacher();
-
-  const roomId = roomIdSchema.safeParse(input);
-  if (!roomId.success) return { ok: false, message: "Room không hợp lệ." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("start_room", { p_room_id: roomId.data });
-  if (error) {
-    return {
-      ok: false,
-      message: error.code === "P0001" ? "Chỉ Room DRAFT có lesson mới có thể bắt đầu." : "Không thể bắt đầu Room.",
-    };
-  }
-
-  revalidatePath(`/teacher/rooms/${roomId.data}`);
-  return { ok: true };
-}
 
 export async function advanceSectionAction(input: unknown): Promise<AdvanceSectionResult> {
   await requireTeacher();
@@ -105,49 +66,4 @@ export async function deleteRoomAction(input: unknown): Promise<DeleteRoomResult
 
   revalidatePath("/");
   return { ok: true };
-}
-
-export async function joinRoomAction(
-  _previousState: JoinRoomState,
-  formData: FormData,
-): Promise<JoinRoomState> {
-  const input = z
-    .object({ roomCode: roomCodeSchema, mssv: mssvSchema })
-    .safeParse({ roomCode: formData.get("roomCode"), mssv: formData.get("mssv") });
-
-  if (!input.success) {
-    const flattened = input.error.flatten().fieldErrors;
-    return {
-      status: "error",
-      fieldErrors: { roomCode: flattened.roomCode, mssv: flattened.mssv },
-      message: "Kiểm tra lại thông tin tham gia.",
-    };
-  }
-
-  const supabase = await createClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
-    return { status: "error", message: "Phiên ẩn danh chưa sẵn sàng. Hãy thử lại." };
-  }
-
-  const { data, error } = await supabase.rpc("join_room", {
-    p_room_code: input.data.roomCode,
-    p_mssv: input.data.mssv,
-  });
-  if (error) {
-    if (error.code === "23505") {
-      return { status: "error", message: "MSSV hoặc phiên này đã tham gia Room." };
-    }
-    if (error.code === "P0001") {
-      return { status: "error", message: "Room không tồn tại hoặc chưa/không còn hoạt động." };
-    }
-    return { status: "error", message: "Không thể tham gia Room. Hãy thử lại." };
-  }
-
-  const joinedRoom = joinedRoomSchema.safeParse(Array.isArray(data) ? data[0] : null);
-  if (!joinedRoom.success) {
-    return { status: "error", message: "Phản hồi tham gia Room không hợp lệ." };
-  }
-
-  return { status: "success", roomId: joinedRoom.data.room_id };
 }

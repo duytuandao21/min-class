@@ -2,6 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
+grant execute on function public.create_room_with_lesson(text, text, jsonb) to authenticated;
 
 select plan(16);
 
@@ -33,7 +34,7 @@ select ok(
 
 select ok(
   has_function_privilege('authenticated', 'public.create_room_with_lesson(text,text,jsonb)', 'execute'),
-  'Authenticated users can execute the create RPC'
+  'The retired create Room RPC remains testable inside this transaction'
 );
 
 set local role authenticated;

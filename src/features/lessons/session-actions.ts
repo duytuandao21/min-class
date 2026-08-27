@@ -12,7 +12,6 @@ export type StartLessonSessionResult =
 
 const startedSessionSchema = z.object({
   session_id: z.string().uuid(),
-  join_code: z.string(),
   session_status: z.literal("ACTIVE"),
   started_at: z.string(),
 });

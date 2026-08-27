@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { AddActionIcon, addActionButtonClassName } from "@/components/add-action-button";
 import type { Chapter } from "@/features/subjects/server/queries";
 
 export function CreateLessonButton({ baseHref, chapters }: { baseHref: string; chapters: Chapter[] }) {
@@ -29,8 +30,9 @@ export function CreateLessonButton({ baseHref, chapters }: { baseHref: string; c
 
   return (
     <div className="shrink-0">
-      <button className="rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:bg-emerald-800" onClick={() => setOpen(true)} ref={triggerRef} type="button">
-        + Tạo Lesson
+      <button className={addActionButtonClassName} onClick={() => setOpen(true)} ref={triggerRef} type="button">
+        <AddActionIcon />
+        <span>Tạo Lesson</span>
       </button>
       {open ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4 backdrop-blur-[3px]">

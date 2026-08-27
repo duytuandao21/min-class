@@ -87,11 +87,11 @@ export function TeacherQuizAnalytics({
           <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">QUIZ ANALYTICS</p>
           <h2 className="mt-2 text-2xl font-semibold">Kết quả Quiz</h2>
         </div>
-        <p className="text-xs text-[var(--muted)]" aria-live="polite">
-          {connection === "connecting" ? "Đang kết nối realtime…" : null}
-          {connection === "connected" ? "Realtime đang hoạt động" : null}
-          {connection === "degraded" ? "Realtime đang kết nối lại…" : null}
-        </p>
+        {connection !== "connected" ? (
+          <p className="text-xs text-[var(--muted)]" aria-live="polite">
+            {connection === "connecting" ? "Đang kết nối realtime…" : "Realtime đang kết nối lại…"}
+          </p>
+        ) : null}
       </header>
 
       {syncError ? <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">{syncError}</p> : null}

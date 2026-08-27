@@ -18,7 +18,7 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
       <BackLink href={lessonManagementHref} label="Lesson" />
 
       <header className="mt-10 border-b border-black/10 pb-8">
-        <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">POST-CLASS SUMMARY · {summary.room.code}</p>
+        <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">POST-CLASS SUMMARY</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{summary.room.title}</h1>
         <p className="mt-3 text-[var(--muted)]">Buổi học đã kết thúc. Summary được tính trực tiếp từ dữ liệu của Room.</p>
       </header>

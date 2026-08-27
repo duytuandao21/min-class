@@ -24,12 +24,12 @@ type ConnectionState = "connecting" | "connected" | "degraded";
 
 function WaitingForSection() {
   return (
-    <div className="max-w-xl rounded-3xl border border-black/10 bg-white px-7 py-12 text-center shadow-sm sm:px-12">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-900/8 text-xl text-[var(--accent)]" aria-hidden>
+    <div className="max-w-2xl rounded-3xl border border-black/10 bg-white px-8 py-14 text-center shadow-sm sm:px-14 sm:py-16">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-900/8 text-3xl text-[var(--accent)]" aria-hidden>
         …
       </div>
-      <h2 className="mt-6 text-2xl font-semibold">Đang chờ nội dung</h2>
-      <p className="mt-4 text-lg leading-8 text-[var(--muted)]">
+      <h2 className="mt-7 text-3xl font-semibold">Đang chờ nội dung</h2>
+      <p className="mt-4 text-xl leading-9 text-[var(--muted)]">
         Thầy/cô đang trình bày nội dung. Nội dung sẽ xuất hiện khi section hoàn thành.
       </p>
     </div>
@@ -78,7 +78,7 @@ export function StudentLessonPlayer({
     } catch (error) {
       if (syncVersion !== syncVersionRef.current) return;
       if (error instanceof StudentRoomUnavailableError) {
-        router.replace("/join");
+        router.replace("/learn");
         router.refresh();
         return;
       }
@@ -151,8 +151,8 @@ export function StudentLessonPlayer({
   }
 
   return (
-    <section className="flex flex-1 flex-col py-8">
-      <div className="mb-5 flex min-h-10 items-center justify-between gap-4">
+    <section className="flex flex-1 flex-col py-10">
+      <div className="mb-6 flex min-h-11 items-center justify-between gap-4">
         {snapshot.status === "ENDED" ? <BackLink href="/" label="Trang chủ MINCLASS" /> : <span />}
         <div className="text-right text-xs text-[var(--muted)]" aria-live="polite">
           {connection === "connecting" ? "Đang kết nối realtime…" : null}
@@ -171,16 +171,16 @@ export function StudentLessonPlayer({
           <WaitingForSection />
         </div>
       ) : (
-        <div className="mx-auto w-full max-w-2xl">
-          <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-6 shadow-sm sm:p-10">
-            <header className="mb-7 border-b border-black/10 pb-5">
+        <div className="mx-auto w-full max-w-5xl">
+          <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-7 shadow-sm sm:p-10 lg:p-12">
+            <header className="mb-8 border-b border-black/10 pb-6">
               <div className="flex items-center justify-between gap-4">
-                <p className="font-mono text-xs font-semibold text-[var(--accent)]">
+                <p className="font-mono text-sm font-bold text-[var(--accent)]">
                   SECTION {currentIndex + 1} / {snapshot.sections.length}
                 </p>
-                <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium">{currentSection.type}</span>
+                <span className="rounded-full bg-black/5 px-4 py-1.5 text-sm font-semibold">{currentSection.type}</span>
               </div>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight">{currentSection.title}</h2>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{currentSection.title}</h2>
             </header>
 
             {currentSection.type === "QUIZ" ? (
@@ -191,13 +191,13 @@ export function StudentLessonPlayer({
                 sectionId={currentSection.id}
               />
             ) : (
-              <MarkdownContent source={currentSection.contentMd} />
+              <MarkdownContent className="text-lg leading-8 sm:text-xl sm:leading-9" source={currentSection.contentMd} />
             )}
           </article>
 
-          <nav className="mt-5 flex items-center justify-between gap-4" aria-label="Điều hướng section">
+          <nav className="mt-6 flex items-center justify-between gap-4" aria-label="Điều hướng section">
             <button
-              className="rounded-xl border border-black/15 bg-white px-4 py-2.5 font-semibold transition hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-35"
+              className="min-h-12 rounded-xl border border-black/15 bg-white px-6 py-3 text-base font-bold transition hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-35"
               disabled={currentIndex <= 0}
               onClick={() => moveTo(currentIndex - 1)}
               type="button"
@@ -205,7 +205,7 @@ export function StudentLessonPlayer({
               ← Previous
             </button>
             <button
-              className="rounded-xl border border-black/15 bg-white px-4 py-2.5 font-semibold transition hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-35"
+              className="min-h-12 rounded-xl border border-black/15 bg-white px-6 py-3 text-base font-bold transition hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-35"
               disabled={isLatest}
               onClick={() => moveTo(currentIndex + 1)}
               type="button"
@@ -223,7 +223,7 @@ export function StudentLessonPlayer({
             />
           ) : (
             <>
-              <p className="mt-6 rounded-2xl border border-black/10 bg-white p-5 text-center text-sm text-[var(--muted)]">
+              <p className="mt-7 rounded-2xl border border-black/10 bg-white p-6 text-center text-base text-[var(--muted)]">
                 Buổi học đã kết thúc. Bạn vẫn có thể xem lại các section đã release.
               </p>
               <StudentSessionReflection
