@@ -17,6 +17,7 @@ import {
   createChapterAction,
   createCourseSectionAction,
   createSubjectAction,
+  deleteCourseSectionAction,
   deleteSubjectAction,
   type ManagementActionState,
   updateChapterAction,
@@ -85,7 +86,7 @@ describe("Subject management actions", () => {
     await expect(createSubjectAction(initialManagementActionState, subjectForm())).rejects.toBe(redirectSignal);
 
     expect(query.insert).toHaveBeenCalledWith({ teacher_id: teacherId, name: "Mạng máy tính", code: "NETW420" });
-    expect(mocks.redirect).toHaveBeenCalledWith("/teacher/subjects");
+    expect(mocks.redirect).toHaveBeenCalledWith(`/teacher/subjects/${subjectId}?lessonPlan=setup`);
   });
 
   it("updates only the requested owned Subject", async () => {
@@ -121,17 +122,37 @@ describe("Subject management actions", () => {
   });
 
   it("creates a valid Course Section", async () => {
-    const query = createMutationQuery({ data: null, error: null });
-    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+    const rpc = vi.fn().mockResolvedValue({ data: "course-section-id", error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
 
     const result = await createCourseSectionAction(subjectId, initialManagementActionState, courseSectionForm());
 
-    expect(query.insert).toHaveBeenCalledWith({
-      subject_id: subjectId,
-      section_code: "24110NETW42001",
-      display_name: "Ca sáng",
+    expect(rpc).toHaveBeenCalledWith("create_course_section_from_template", {
+      p_subject_id: subjectId,
+      p_section_code: "24110NETW42001",
+      p_display_name: "Ca sáng",
     });
     expect(result.status).toBe("success");
+  });
+
+  it("requires a template Lesson before creating a Course Section", async () => {
+    mocks.createClient.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { code: "23514" } }),
+    });
+    const result = await createCourseSectionAction(subjectId, initialManagementActionState, courseSectionForm());
+    expect(result).toEqual(expect.objectContaining({ status: "error" }));
+    expect(result.message).toContain("Lesson mẫu");
+  });
+
+  it("deletes a Course Section through the owner-checked cascade RPC", async () => {
+    const courseSectionId = "aa200000-0000-4000-8000-000000000001";
+    const rpc = vi.fn().mockResolvedValue({ data: courseSectionId, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
+    await deleteCourseSectionAction(subjectId, courseSectionId);
+    expect(rpc).toHaveBeenCalledWith("delete_course_section", {
+      p_subject_id: subjectId,
+      p_course_section_id: courseSectionId,
+    });
   });
 
   it("creates a Chapter in the requested Subject", async () => {

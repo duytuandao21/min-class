@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
 import { CreateLessonButton } from "@/features/lessons/components/create-lesson-button";
+import { DeleteLessonButton } from "@/features/lessons/components/delete-lesson-button";
 import { LessonChapterDisclosure } from "@/features/lessons/components/lesson-chapter-disclosure";
-import { StartLessonSessionButton } from "@/features/lessons/components/start-lesson-session-button";
+import { StartChapterSessionButton } from "@/features/lessons/components/start-chapter-session-button";
 import { RosterStudentList } from "@/features/subjects/components/roster-student-list";
 import { RosterUploadForm } from "@/features/subjects/components/roster-upload-form";
 import { getCourseSectionRosterDetail } from "@/features/subjects/server/queries";
@@ -77,8 +78,21 @@ export default async function CourseSectionRosterPage({
           <div className="mt-5 space-y-4">
             {detail.chapters.map((chapter, chapterIndex) => {
               const chapterLessons = lessonsByChapter.get(chapter.id) ?? [];
+              const activeSession = chapterLessons.find((lesson) => lesson.latestSession?.status === "ACTIVE")?.latestSession ?? null;
               return (
-                <LessonChapterDisclosure defaultOpen={chapterIndex === initiallyOpenChapterIndex} key={chapter.id} lessonCount={chapterLessons.length} title={chapter.name}>
+                <LessonChapterDisclosure
+                  actions={activeSession ? (
+                    <Link className="inline-flex min-h-10 items-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-700 motion-reduce:transform-none" href={`/teacher/rooms/${activeSession.id}`}>
+                      Dashboard
+                    </Link>
+                  ) : chapterLessons.length > 0 ? (
+                    <StartChapterSessionButton chapterId={chapter.id} courseSectionId={detail.courseSection.id} />
+                  ) : null}
+                  defaultOpen={chapterIndex === initiallyOpenChapterIndex}
+                  key={chapter.id}
+                  lessonCount={chapterLessons.length}
+                  title={chapter.name}
+                >
                   <div className="border-t border-black/10 bg-black/[0.015] p-3 sm:p-4">
                     {chapterLessons.length === 0 ? (
                       <p className="rounded-xl border border-dashed border-black/15 bg-white p-5 text-center text-sm text-[var(--muted)]">Chưa có Lesson trong chương này.</p>
@@ -103,16 +117,15 @@ export default async function CourseSectionRosterPage({
                                 {lesson.latestSession?.status === "ACTIVE" ? "LIVE" : lesson.latestSession ? "ĐÃ KẾT THÚC" : "CHƯA LIVE"}
                               </span>
                               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                {lesson.latestSession?.status === "ACTIVE" ? (
-                                  <Link className="inline-flex min-h-9 items-center justify-center rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600" href={`/teacher/rooms/${lesson.latestSession.id}`}>
-                                    Dashboard
-                                  </Link>
-                                ) : (
-                                  <StartLessonSessionButton className="" lessonId={lesson.id} />
-                                )}
                                 <Link className="inline-flex min-h-9 items-center justify-center rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold transition hover:border-[var(--accent)] hover:text-[var(--accent)]" href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/lessons/${lesson.id}`}>
                                   Xem lịch sử
                                 </Link>
+                                <DeleteLessonButton
+                                  courseSectionId={detail.courseSection.id}
+                                  lessonId={lesson.id}
+                                  lessonTitle={lesson.title}
+                                  subjectId={detail.subject.id}
+                                />
                               </div>
                             </div>
                           </li>

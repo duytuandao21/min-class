@@ -18,8 +18,8 @@ values
   ('ae200000-0000-0000-0000-000000000001', 'ae100000-0000-0000-0000-000000000001', 'CLASSA', 'Class A'),
   ('ae200000-0000-0000-0000-000000000002', 'ae100000-0000-0000-0000-000000000001', 'CLASSB', 'Class B');
 
-insert into public.chapters (id, subject_id, name)
-values ('ae250000-0000-0000-0000-000000000001', 'ae100000-0000-0000-0000-000000000001', 'Chương 1: Public');
+insert into public.chapters (id, course_section_id, name)
+values ('ae250000-0000-0000-0000-000000000001', 'ae200000-0000-0000-0000-000000000001', 'Chương 1: Public');
 
 insert into public.course_section_students (course_section_id, mssv)
 values

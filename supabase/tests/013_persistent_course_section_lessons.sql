@@ -65,9 +65,9 @@ select is(
 );
 
 select is(
-  (select chapter_id from public.lessons where title = 'TCP Introduction'),
-  'ad250000-0000-0000-0000-000000000001'::uuid,
-  'Persistent Lesson is linked to the selected Chapter'
+  (select chapters.course_section_id from public.lessons join public.chapters on chapters.id = lessons.chapter_id where lessons.title = 'TCP Introduction'),
+  'ad200000-0000-0000-0000-000000000001'::uuid,
+  'Persistent Lesson receives a Course Section-specific Chapter copy'
 );
 
 select ok(

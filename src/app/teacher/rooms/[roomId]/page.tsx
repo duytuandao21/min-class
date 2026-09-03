@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
@@ -13,9 +14,16 @@ import {
   getTeacherRoom,
 } from "@/features/rooms/server/queries";
 
-export default async function TeacherRoomPage({ params }: { params: Promise<{ roomId: string }> }) {
+export default async function TeacherRoomPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ lessonId?: string }>;
+}) {
   const { roomId } = await params;
-  const room = await getTeacherRoom(roomId);
+  const { lessonId } = await searchParams;
+  const room = await getTeacherRoom(roomId, lessonId);
   if (!room) notFound();
   if (room.status === "ENDED") redirect(`/teacher/rooms/${room.id}/summary`);
 
@@ -48,6 +56,19 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
 
       <TeacherRoomOverview initialAttendance={room.attendance} roomId={room.id} />
 
+      <nav aria-label="Các Lesson đang dạy" className="mt-7 flex gap-2 overflow-x-auto pb-2">
+        {room.lessons.map((lesson) => (
+          <Link
+            aria-current={lesson.lesson_id === room.selectedLessonId ? "page" : undefined}
+            className={`shrink-0 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${lesson.lesson_id === room.selectedLessonId ? "border-sky-700 bg-sky-700 text-white" : "border-black/10 bg-white hover:border-sky-400 hover:text-sky-800"}`}
+            href={`/teacher/rooms/${room.id}?lessonId=${lesson.lesson_id}`}
+            key={lesson.lesson_id}
+          >
+            {lesson.lesson_title}
+          </Link>
+        ))}
+      </nav>
+
       <section className="mt-7">
         {!currentSection ? (
           <div className="rounded-3xl border border-red-200 bg-red-50 p-7 text-red-900">Không tìm thấy teaching section hiện tại.</div>
@@ -71,7 +92,7 @@ export default async function TeacherRoomPage({ params }: { params: Promise<{ ro
               {hasNextSection ? (
                 <>
                   <p className="mb-4 text-sm leading-6 text-[var(--muted)]">Bấm Done Section để chuyển cả lớp sang section kế tiếp.</p>
-                  <NextSectionButton roomId={room.id} />
+                  <NextSectionButton lessonId={room.selectedLessonId} roomId={room.id} />
                 </>
               ) : (
                 <div className="rounded-2xl bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">Đây là section cuối. Khi hoàn tất, hãy kết thúc buổi học.</div>

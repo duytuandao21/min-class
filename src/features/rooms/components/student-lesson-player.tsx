@@ -40,10 +40,12 @@ export function StudentLessonPlayer({
   initialSnapshot,
   initialReactions,
   initialSessionReflection,
+  lessonId,
 }: {
   initialSnapshot: StudentLessonSnapshot;
   initialReactions: OwnReactions;
   initialSessionReflection: SessionReflection | null;
+  lessonId: string;
 }) {
   const router = useRouter();
   const initialPosition = initialSnapshot.sections.at(-1)?.position ?? null;
@@ -71,7 +73,7 @@ export function StudentLessonPlayer({
   const syncSnapshot = useCallback(async () => {
     const syncVersion = ++syncVersionRef.current;
     try {
-      const nextSnapshot = await fetchStudentLessonSnapshot(initialSnapshot.id);
+      const nextSnapshot = await fetchStudentLessonSnapshot(initialSnapshot.id, lessonId);
       if (syncVersion !== syncVersionRef.current) return;
       applySnapshot(nextSnapshot);
       setSyncError(null);
@@ -84,7 +86,7 @@ export function StudentLessonPlayer({
       }
       setSyncError("Mất đồng bộ tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi.");
     }
-  }, [applySnapshot, initialSnapshot.id, router]);
+  }, [applySnapshot, initialSnapshot.id, lessonId, router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -101,6 +103,16 @@ export function StudentLessonPlayer({
         () => {
           void syncSnapshot();
         },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "session_lessons",
+          filter: `session_id=eq.${initialSnapshot.id}`,
+        },
+        () => void syncSnapshot(),
       )
       .on(
         "postgres_changes",

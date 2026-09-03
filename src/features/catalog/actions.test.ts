@@ -51,6 +51,7 @@ describe("accessPublicLessonAction", () => {
       status: "success",
       message: "Đã tham gia Lesson Session.",
       sessionId,
+      lessonId,
     });
 
     expect(rpc).toHaveBeenCalledWith("join_live_lesson", {

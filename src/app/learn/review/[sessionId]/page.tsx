@@ -11,11 +11,14 @@ const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
 
 export default async function StudentEndedLessonReviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ sessionId: string }>;
+  searchParams: Promise<{ lessonId?: string }>;
 }) {
   const { sessionId } = await params;
-  const review = await getStudentEndedLessonReview(sessionId);
+  const { lessonId } = await searchParams;
+  const review = await getStudentEndedLessonReview(sessionId, lessonId);
   if (!review) notFound();
 
   return (

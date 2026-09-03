@@ -32,6 +32,17 @@ export const publicChapterSchema = z.object({
   chapter_name: z.string().min(1),
 });
 
+export const publicLiveSessionSchema = z.object({
+  session_id: z.string().uuid(),
+  subject_name: z.string().min(1),
+  section_code: z.string().min(1),
+  section_display_name: z.string().nullable(),
+  chapter_name: z.string().min(1),
+  first_lesson_id: z.string().uuid(),
+  lesson_count: z.number().int().positive(),
+  started_at: z.string(),
+});
+
 export const publicLessonGateContextSchema = publicLessonSchema.extend({
   subject_id: z.string().uuid(),
   subject_name: z.string(),
@@ -100,5 +111,6 @@ export type PublicCourseSection = z.infer<typeof publicCourseSectionSchema>;
 export type PublicLesson = z.infer<typeof publicLessonSchema>;
 export type PublicCatalogLesson = z.infer<typeof publicCatalogLessonSchema>;
 export type PublicChapter = z.infer<typeof publicChapterSchema>;
+export type PublicLiveSession = z.infer<typeof publicLiveSessionSchema>;
 export type PublicLessonGateContext = z.infer<typeof publicLessonGateContextSchema>;
 export type EndedLessonReview = z.infer<typeof endedLessonReviewSchema>;

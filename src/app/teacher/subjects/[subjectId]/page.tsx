@@ -9,8 +9,15 @@ import {
 import { LessonPlanManager } from "@/features/subjects/components/lesson-plan-manager";
 import { getSubjectDetail } from "@/features/subjects/server/queries";
 
-export default async function SubjectDetailPage({ params }: { params: Promise<{ subjectId: string }> }) {
+export default async function SubjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ subjectId: string }>;
+  searchParams: Promise<{ lessonPlan?: string | string[] }>;
+}) {
   const { subjectId } = await params;
+  const query = await searchParams;
   const subject = await getSubjectDetail(subjectId);
   if (!subject) notFound();
 
@@ -31,10 +38,20 @@ export default async function SubjectDetailPage({ params }: { params: Promise<{ 
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-2xl font-semibold" id="course-section-title">Lớp học phần</h2>
             <div className="flex flex-wrap justify-end gap-3">
-              <CreateCourseSectionForm subjectId={subject.id} />
-              <LessonPlanManager chapters={subject.chapters} subjectId={subject.id} />
+              <CreateCourseSectionForm hasTemplateLessons={subject.templateLessons.length > 0} subjectId={subject.id} />
+              <LessonPlanManager
+                chapters={subject.chapters}
+                defaultOpen={query.lessonPlan === "setup" || query.lessonPlan === "open"}
+                subjectId={subject.id}
+                templateLessons={subject.templateLessons}
+              />
             </div>
           </div>
+          {subject.templateLessons.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-900">
+              Hoàn thiện Lesson Plan với ít nhất một Lesson mẫu trước khi tạo lớp học phần.
+            </p>
+          ) : null}
           {subject.courseSections.length === 0 ? (
             <p className="mt-5 rounded-3xl border border-dashed border-black/15 bg-white p-8 text-center text-[var(--muted)]">Chưa có lớp học phần.</p>
           ) : (

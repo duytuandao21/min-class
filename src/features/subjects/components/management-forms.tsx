@@ -211,7 +211,7 @@ export function EditSubjectForm({ subject }: { subject: Subject }) {
   );
 }
 
-export function CreateCourseSectionForm({ subjectId }: { subjectId: string }) {
+export function CreateCourseSectionForm({ hasTemplateLessons, subjectId }: { hasTemplateLessons: boolean; subjectId: string }) {
   const actionWithSubject = createCourseSectionAction.bind(null, subjectId);
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(async (previousState: ManagementActionState, formData: FormData) => {
@@ -221,7 +221,14 @@ export function CreateCourseSectionForm({ subjectId }: { subjectId: string }) {
   }, initialManagementActionState);
   return (
     <div className="relative shrink-0">
-      <button aria-expanded={open} className={addActionButtonClassName} onClick={() => setOpen((current) => !current)} type="button">
+      <button
+        aria-expanded={open}
+        className={addActionButtonClassName}
+        disabled={!hasTemplateLessons}
+        onClick={() => setOpen((current) => !current)}
+        title={!hasTemplateLessons ? "Hãy tạo ít nhất một Lesson mẫu trong Lesson Plan trước" : undefined}
+        type="button"
+      >
         <AddActionIcon />
         <span>Thêm lớp học phần</span>
       </button>

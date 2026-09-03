@@ -84,9 +84,9 @@ select extensions.lives_ok(
 );
 
 select extensions.is(
-  (select chapter_id from public.lessons where title = 'Valid Chapter Lesson'),
-  'ac250000-0000-0000-0000-000000000001'::uuid,
-  'Lesson persists the selected Chapter'
+  (select chapters.course_section_id from public.lessons join public.chapters on chapters.id = lessons.chapter_id where lessons.title = 'Valid Chapter Lesson'),
+  'ac200000-0000-0000-0000-000000000001'::uuid,
+  'Lesson persists an independent Course Section Chapter'
 );
 
 set local role authenticated;

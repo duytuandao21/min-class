@@ -48,6 +48,12 @@ export default async function HomePage() {
             >
               Khám phá bài học
             </Link>
+            <Link
+              className="inline-flex rounded-xl border border-emerald-700 bg-white/90 px-5 py-3 font-semibold text-emerald-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md motion-reduce:transform-none"
+              href="/learn/live"
+            >
+              Các bài học đang live
+            </Link>
           </div>
         </div>
       </section>

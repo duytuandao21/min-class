@@ -12,6 +12,7 @@ export type LessonAccessState = {
     mssv?: string[];
   };
   sessionId?: string;
+  lessonId?: string;
 };
 
 const accessResultSchema = z.object({
@@ -87,6 +88,7 @@ export async function accessPublicLessonAction(
       status: "success",
       message: "Đã tham gia Lesson Session.",
       sessionId: joinedRoom.data.room_id,
+      lessonId: input.data.lessonId,
     };
   }
 
@@ -112,5 +114,6 @@ export async function accessPublicLessonAction(
     status: "success",
     message: "Đã xác minh quyền truy cập Lesson.",
     sessionId: result.data.session_id,
+    lessonId: input.data.lessonId,
   };
 }

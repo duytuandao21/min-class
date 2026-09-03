@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(29);
+select plan(31);
 
 select has_table('public', 'session_attendance', 'Session attendance table exists');
 select has_function('public', 'join_live_lesson', array['uuid', 'text'], 'MSSV-only LIVE Lesson join RPC exists');
@@ -141,36 +141,34 @@ select lives_ok(
 select is(
   (select count(*) from public.session_attendance where session_id = current_setting('test.session_id')::uuid),
   3::bigint,
-  'Roster changes do not alter historical attendance size'
-);
-select ok(
-  exists (
-    select 1 from public.session_attendance
-    where session_id = current_setting('test.session_id')::uuid
-      and mssv = '23110003'
-  ),
-  'A removed roster MSSV remains in the Session snapshot'
+  'A LIVE Session attendance snapshot follows the latest roster size'
 );
 select ok(
   not exists (
     select 1 from public.session_attendance
     where session_id = current_setting('test.session_id')::uuid
+      and mssv = '23110003'
+  ),
+  'A removed, not-yet-joined MSSV is removed from the LIVE Session'
+);
+select ok(
+  exists (
+    select 1 from public.session_attendance
+    where session_id = current_setting('test.session_id')::uuid
       and mssv = '23110004'
   ),
-  'A newly added roster MSSV is not added to an old Session snapshot'
+  'A newly added roster MSSV is added to the LIVE Session immediately'
 );
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c7100000-0000-0000-0000-000000000002","role":"authenticated","is_anonymous":true}', true);
 
-select throws_ok(
+select lives_ok(
   $$select * from public.join_live_lesson(
     'a7130000-0000-0000-0000-000000000001',
     '23110004'
   )$$,
-  'P0003',
-  'Student is not in the Course Section.',
-  'A Student outside the Session snapshot cannot join'
+  'A newly synchronized Student can join the LIVE Session'
 );
 
 set local role authenticated;
@@ -187,18 +185,31 @@ select is(
 );
 select is(
   (public.get_teacher_session_attendance(current_setting('test.session_id')::uuid)->>'joinedCount')::integer,
-  1,
+  2,
   'Ended Summary reports joined Students'
 );
 select is(
   (public.get_teacher_session_attendance(current_setting('test.session_id')::uuid)->>'absentCount')::integer,
-  2,
+  1,
   'Ended Summary calculates absent Students'
 );
 select is(
   public.get_teacher_session_attendance(current_setting('test.session_id')::uuid)->'absentMssvs',
-  '["23110002", "23110003"]'::jsonb,
+  '["23110002"]'::jsonb,
   'Ended Summary returns the historical absent MSSV list'
+);
+
+select lives_ok(
+  $$select public.replace_course_section_roster(
+    'a7120000-0000-0000-0000-000000000001',
+    array['99990001']
+  )$$,
+  'Teacher can change the Course Section roster after Session End'
+);
+select is(
+  public.get_teacher_session_attendance(current_setting('test.session_id')::uuid)->'absentMssvs',
+  '["23110002"]'::jsonb,
+  'Roster changes after End do not alter historical attendance'
 );
 
 set local role authenticated;

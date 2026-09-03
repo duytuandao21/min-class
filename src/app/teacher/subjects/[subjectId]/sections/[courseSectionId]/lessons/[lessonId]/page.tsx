@@ -42,7 +42,15 @@ export default async function TeacherLessonHistoryPage({
             {detail.status}
           </span>
         </div>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">{detail.lesson.title}</h1>
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{detail.lesson.title}</h1>
+          <div className="flex flex-wrap gap-3">
+            <a className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 font-bold text-sky-900" href={`/teacher/lessons/${detail.lesson.id}/download`}>Tải file .md</a>
+            {detail.sessions.length === 0 ? (
+              <Link className="rounded-xl bg-[var(--accent)] px-4 py-2.5 font-bold text-white" href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/lessons/${detail.lesson.id}/edit`}>Chỉnh sửa Lesson</Link>
+            ) : null}
+          </div>
+        </div>
         <p className="mt-3 text-sm text-[var(--muted)]">
           Tạo lúc {dateTimeFormatter.format(new Date(detail.lesson.created_at))}
         </p>
@@ -90,7 +98,7 @@ export default async function TeacherLessonHistoryPage({
                     </span>
                     <Link
                       className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white"
-                      href={session.status === "ACTIVE" ? `/teacher/rooms/${session.id}` : `/teacher/rooms/${session.id}/summary`}
+                      href={session.status === "ACTIVE" ? `/teacher/rooms/${session.id}?lessonId=${detail.lesson.id}` : `/teacher/rooms/${session.id}/summary`}
                     >
                       Xem Lesson Review
                     </Link>

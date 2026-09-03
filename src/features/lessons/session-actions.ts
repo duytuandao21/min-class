@@ -16,6 +16,11 @@ const startedSessionSchema = z.object({
   started_at: z.string(),
 });
 
+const chapterSessionInputSchema = z.object({
+  courseSectionId: z.string().uuid(),
+  chapterId: z.string().uuid(),
+});
+
 export async function startLessonSessionAction(input: unknown): Promise<StartLessonSessionResult> {
   await requireTeacher();
 
@@ -38,6 +43,32 @@ export async function startLessonSessionAction(input: unknown): Promise<StartLes
   const result = startedSessionSchema.safeParse(Array.isArray(data) ? data[0] : null);
   if (!result.success) return { ok: false, message: "Lesson Session đã tạo nhưng phản hồi không hợp lệ." };
 
+  revalidatePath("/teacher/subjects");
+  return { ok: true, sessionId: result.data.session_id };
+}
+
+export async function startChapterSessionAction(input: unknown): Promise<StartLessonSessionResult> {
+  await requireTeacher();
+  const parsed = chapterSessionInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Chương không hợp lệ." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("start_chapter_session", {
+    p_course_section_id: parsed.data.courseSectionId,
+    p_chapter_id: parsed.data.chapterId,
+  });
+  if (error) {
+    return {
+      ok: false,
+      message: error.code === "23505"
+        ? "Lớp học phần này đang có một buổi học LIVE."
+        : error.code === "P0001"
+          ? "Chương cần có ít nhất một Lesson hợp lệ."
+          : "Không thể bắt đầu buổi học.",
+    };
+  }
+  const result = startedSessionSchema.safeParse(Array.isArray(data) ? data[0] : null);
+  if (!result.success) return { ok: false, message: "Session đã tạo nhưng phản hồi không hợp lệ." };
   revalidatePath("/teacher/subjects");
   return { ok: true, sessionId: result.data.session_id };
 }

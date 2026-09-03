@@ -11,7 +11,13 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/features/auth/teacher-session", () => ({ requireTeacher: mocks.requireTeacher }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
-import { previewCourseSectionLessonAction, saveCourseSectionLessonAction } from "./course-section-actions";
+import {
+  deleteOwnedLessonAction,
+  previewCourseSectionLessonAction,
+  saveCourseSectionLessonAction,
+  saveSubjectTemplateLessonAction,
+  updateOwnedLessonAction,
+} from "./course-section-actions";
 
 const subjectId = "ae100000-0000-4000-8000-000000000001";
 const courseSectionId = "ae200000-0000-4000-8000-000000000001";
@@ -126,5 +132,39 @@ describe("Persistent Course Section Lesson actions", () => {
 
     expect(result.ok).toBe(false);
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("creates a Subject template Lesson from the normalized Markdown", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ lesson_id: lessonId }], error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
+    const result = await saveSubjectTemplateLessonAction(subjectId, chapterId, {
+      lessonTitle: "TCP Introduction",
+      markdownSource: validMarkdown,
+    });
+    expect(result).toEqual({ ok: true, lessonId });
+    expect(rpc).toHaveBeenCalledWith("create_subject_template_lesson", expect.objectContaining({
+      p_subject_id: subjectId,
+      p_chapter_id: chapterId,
+      p_lesson_title: "TCP Introduction",
+    }));
+  });
+
+  it("updates an owned Lesson without trusting client-side parsed content", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: lessonId, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
+    const result = await updateOwnedLessonAction(subjectId, lessonId, chapterId, {
+      lessonTitle: "TCP Introduction",
+      markdownSource: validMarkdown,
+    });
+    expect(result).toEqual({ ok: true, lessonId });
+    expect(rpc).toHaveBeenCalledWith("update_owned_lesson", expect.objectContaining({ p_lesson_id: lessonId }));
+  });
+
+  it("deletes an owned Lesson even when its Sessions are cascaded by the RPC", async () => {
+    mocks.createClient.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: lessonId, error: null }),
+    });
+    const result = await deleteOwnedLessonAction(subjectId, courseSectionId, lessonId);
+    expect(result).toEqual({ ok: true, lessonId });
   });
 });

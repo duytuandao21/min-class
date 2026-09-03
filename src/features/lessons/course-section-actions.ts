@@ -10,7 +10,7 @@ import {
   parseLessonMarkdown,
 } from "@/features/lessons/markdown/parser";
 import type { NormalizedLesson } from "@/features/lessons/markdown/schema";
-import { chapterIdSchema, courseSectionIdSchema, subjectIdSchema } from "@/features/subjects/schemas";
+import { chapterIdSchema, courseSectionIdSchema, lessonIdSchema, subjectIdSchema } from "@/features/subjects/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 const lessonTitleSchema = z.string().trim().min(1, "Nhập tên Lesson.").max(200, "Tên Lesson tối đa 200 ký tự.");
@@ -39,8 +39,41 @@ export type SaveCourseSectionLessonResult =
   | { ok: true; lesson: { id: string; title: string; createdAt: string } }
   | { ok: false; errors: string[] };
 
+export type LessonMutationResult =
+  | { ok: true; lessonId: string }
+  | { ok: false; errors: string[] };
+
 function zodMessages(error: z.ZodError): string[] {
   return error.issues.map((issue) => issue.message);
+}
+
+function normalizeLessonInput(rawInput: unknown): { ok: true; title: string; source: string; lesson: NormalizedLesson } | { ok: false; errors: string[] } {
+  const input = saveInputSchema.safeParse(rawInput);
+  if (!input.success) return { ok: false, errors: zodMessages(input.error) };
+  try {
+    return {
+      ok: true,
+      title: input.data.lessonTitle,
+      source: input.data.markdownSource,
+      lesson: { ...parseLessonMarkdown(input.data.markdownSource), title: input.data.lessonTitle },
+    };
+  } catch (error) {
+    if (error instanceof MarkdownValidationError) return { ok: false, errors: error.issues };
+    return { ok: false, errors: ["Lesson không hợp lệ."] };
+  }
+}
+
+export async function previewLessonMarkdownAction(rawInput: unknown): Promise<CourseSectionLessonPreviewResult> {
+  await requireTeacher();
+  const normalized = normalizeLessonInput(rawInput);
+  if (!normalized.ok) return normalized;
+  return {
+    ok: true,
+    lessonTitle: normalized.title,
+    fileName: "Nội dung đang chỉnh sửa",
+    markdownSource: normalized.source,
+    lesson: normalized.lesson,
+  };
 }
 
 async function ownsLessonPlacement(subjectId: string, courseSectionId: string, chapterId: string): Promise<boolean> {
@@ -56,7 +89,7 @@ async function ownsLessonPlacement(subjectId: string, courseSectionId: string, c
       .from("chapters")
       .select("id")
       .eq("id", chapterId)
-      .eq("subject_id", subjectId)
+      .eq("course_section_id", courseSectionId)
       .maybeSingle(),
   ]);
   return !courseSectionResult.error
@@ -155,4 +188,81 @@ export async function saveCourseSectionLessonAction(
       createdAt: persisted.data[0].lesson_created_at,
     },
   };
+}
+
+export async function saveSubjectTemplateLessonAction(
+  rawSubjectId: string,
+  rawChapterId: string,
+  rawInput: unknown,
+): Promise<LessonMutationResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  const input = normalizeLessonInput(rawInput);
+  if (!subjectId.success || !chapterId.success) return { ok: false, errors: ["Môn học hoặc chương không hợp lệ."] };
+  if (!input.ok) return input;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_subject_template_lesson", {
+    p_subject_id: subjectId.data,
+    p_chapter_id: chapterId.data,
+    p_lesson_title: input.title,
+    p_markdown_source: input.source,
+    p_lesson: input.lesson,
+  });
+  const persisted = z.array(z.object({ lesson_id: z.string().uuid() })).length(1).safeParse(data);
+  if (error || !persisted.success) return { ok: false, errors: ["Không thể lưu Lesson mẫu. Hãy thử lại."] };
+  revalidatePath(`/teacher/subjects/${subjectId.data}`);
+  return { ok: true, lessonId: persisted.data[0].lesson_id };
+}
+
+export async function updateOwnedLessonAction(
+  rawSubjectId: string,
+  rawLessonId: string,
+  rawChapterId: string,
+  rawInput: unknown,
+): Promise<LessonMutationResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const lessonId = lessonIdSchema.safeParse(rawLessonId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  const input = normalizeLessonInput(rawInput);
+  if (!subjectId.success || !lessonId.success || !chapterId.success) return { ok: false, errors: ["Lesson hoặc chương không hợp lệ."] };
+  if (!input.ok) return input;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("update_owned_lesson", {
+    p_lesson_id: lessonId.data,
+    p_chapter_id: chapterId.data,
+    p_lesson_title: input.title,
+    p_markdown_source: input.source,
+    p_lesson: input.lesson,
+  });
+  if (error || data !== lessonId.data) {
+    return { ok: false, errors: ["Không thể cập nhật Lesson. Lesson đã có lịch sử Session sẽ được giữ nguyên."] };
+  }
+  revalidatePath(`/teacher/subjects/${subjectId.data}`);
+  return { ok: true, lessonId: lessonId.data };
+}
+
+export async function deleteOwnedLessonAction(
+  rawSubjectId: string,
+  rawCourseSectionId: string | null,
+  rawLessonId: string,
+): Promise<LessonMutationResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const lessonId = lessonIdSchema.safeParse(rawLessonId);
+  const courseSectionId = rawCourseSectionId === null ? null : courseSectionIdSchema.safeParse(rawCourseSectionId);
+  if (!subjectId.success || !lessonId.success || (courseSectionId !== null && !courseSectionId.success)) {
+    return { ok: false, errors: ["Lesson không hợp lệ."] };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("delete_owned_lesson", { p_lesson_id: lessonId.data });
+  if (error || data !== lessonId.data) {
+    return { ok: false, errors: ["Không thể xóa Lesson hoặc bạn không có quyền thực hiện thao tác này."] };
+  }
+  revalidatePath(`/teacher/subjects/${subjectId.data}`);
+  if (courseSectionId !== null) revalidatePath(`/teacher/subjects/${subjectId.data}/sections/${courseSectionId.data}`);
+  return { ok: true, lessonId: lessonId.data };
 }

@@ -28,7 +28,7 @@ export function TeacherRoomOverview({ roomId, initialAttendance }: { roomId: str
     const channel = supabase
       .channel(`room-participants:${roomId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants", filter: `room_id=eq.${roomId}` }, () => void syncCount())
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "session_attendance", filter: `session_id=eq.${roomId}` }, () => void syncCount())
+      .on("postgres_changes", { event: "*", schema: "public", table: "session_attendance", filter: `session_id=eq.${roomId}` }, () => void syncCount())
       .subscribe((status) => {
         if (status === "SUBSCRIBED") void syncCount();
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setIsDegraded(true);
@@ -63,7 +63,7 @@ export function TeacherRoomOverview({ roomId, initialAttendance }: { roomId: str
             <p className="text-xs font-bold tracking-[0.16em] text-emerald-800">LỚP HỌC ĐANG DIỄN RA</p>
           </div>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
-            Sinh viên chọn Lesson đang LIVE và nhập MSSV để tham gia.
+            Sinh viên nhập MSSV một lần, sau đó có thể chuyển giữa các Lesson trong chương đang LIVE.
           </p>
           {isDegraded ? <p className="mt-2 text-xs text-amber-800" role="status">Đang kết nối lại…</p> : null}
         </div>

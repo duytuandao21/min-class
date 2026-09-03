@@ -1,23 +1,25 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import {
   previewCourseSectionLessonAction,
+  previewLessonMarkdownAction,
   saveCourseSectionLessonAction,
   type CourseSectionLessonPreviewResult,
-  type SaveCourseSectionLessonResult,
 } from "@/features/lessons/course-section-actions";
 import { MarkdownPreview } from "@/features/lessons/components/markdown-preview";
+import { LessonModeSwitch, type LessonEditorMode } from "@/features/lessons/components/lesson-mode-switch";
 import type { Chapter } from "@/features/subjects/server/queries";
 
 type Preview = Extract<CourseSectionLessonPreviewResult, { ok: true }>;
-type CreatedLesson = Extract<SaveCourseSectionLessonResult, { ok: true }>["lesson"];
-
 export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectionId }: { chapter: Chapter; subjectId: string; courseSectionId: string }) {
+  const router = useRouter();
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [createdLesson, setCreatedLesson] = useState<CreatedLesson | null>(null);
+  const [mode, setMode] = useState<LessonEditorMode>("preview");
+  const [lessonTitle, setLessonTitle] = useState("");
+  const [markdownSource, setMarkdownSource] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [isPreviewing, startPreview] = useTransition();
   const [isSaving, startSaving] = useTransition();
@@ -36,7 +38,28 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
         setErrors(result.errors);
         return;
       }
+      setLessonTitle(result.lessonTitle);
+      setMarkdownSource(result.markdownSource);
       setPreview(result);
+      setMode("preview");
+    });
+  }
+
+  function switchMode(nextMode: LessonEditorMode) {
+    if (nextMode === "edit") {
+      setMode("edit");
+      return;
+    }
+    setErrors([]);
+    startPreview(async () => {
+      const result = await previewLessonMarkdownAction({ lessonTitle, markdownSource });
+      if (!result.ok) {
+        setPreview(null);
+        setErrors(result.errors);
+        return;
+      }
+      setPreview(result);
+      setMode("preview");
     });
   }
 
@@ -52,24 +75,9 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
         setErrors(result.errors);
         return;
       }
-      setCreatedLesson(result.lesson);
+      router.push(`/teacher/subjects/${subjectId}/sections/${courseSectionId}`);
+      router.refresh();
     });
-  }
-
-  if (createdLesson) {
-    return (
-      <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-7 shadow-sm sm:p-10">
-        <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">LESSON ĐÃ LƯU</p>
-        <h2 className="mt-3 text-3xl font-semibold">{createdLesson.title}</h2>
-        <p className="mt-4 text-emerald-900">Lesson đang ở thư viện Course Section và chưa LIVE.</p>
-        <Link
-          className="mt-7 inline-flex rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:bg-emerald-800"
-          href={`/teacher/subjects/${subjectId}/sections/${courseSectionId}`}
-        >
-          Quay về Course Section
-        </Link>
-      </section>
-    );
   }
 
   return (
@@ -90,7 +98,10 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
           id="lessonTitle"
           maxLength={200}
           name="lessonTitle"
-          onChange={invalidatePreview}
+          onChange={(event) => {
+            setLessonTitle(event.target.value);
+            invalidatePreview();
+          }}
           placeholder="Ví dụ: TCP Introduction"
           required
         />
@@ -100,7 +111,10 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
           className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-900/8 file:px-3 file:py-2 file:font-semibold file:text-[var(--accent)]"
           id="lessonFile"
           name="lessonFile"
-          onChange={invalidatePreview}
+          onChange={() => {
+            setMarkdownSource("");
+            invalidatePreview();
+          }}
           required
           type="file"
         />
@@ -113,13 +127,15 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
           </div>
         ) : null}
 
-        <button
-          className="mt-6 w-full rounded-xl bg-[#17201b] px-4 py-3 font-semibold text-white transition hover:bg-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={isPreviewing || isSaving}
-          type="submit"
-        >
-          {isPreviewing ? "Đang parse…" : preview ? "Preview lại" : "Parse & Preview"}
-        </button>
+        {!markdownSource ? (
+          <button
+            className="mt-6 w-full rounded-xl bg-[#17201b] px-4 py-3 font-semibold text-white transition hover:bg-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isPreviewing || isSaving}
+            type="submit"
+          >
+            {isPreviewing ? "Đang parse…" : "Đọc file & Preview"}
+          </button>
+        ) : null}
         {preview ? (
           <button
             className="mt-3 w-full rounded-xl bg-[var(--accent)] px-4 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
@@ -132,11 +148,32 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
         ) : null}
       </form>
 
-      <div>
-        {preview ? (
+      <div className="min-w-0">
+        {markdownSource ? (
           <>
-            <p className="mb-4 text-sm text-[var(--muted)]">Preview từ <span className="font-medium text-[var(--foreground)]">{preview.fileName}</span></p>
-            <MarkdownPreview lesson={preview.lesson} />
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm text-[var(--muted)]">Chỉnh sửa source hoặc xem kết quả hiển thị</p>
+              <LessonModeSwitch disabled={isPreviewing || isSaving} mode={mode} onChange={switchMode} />
+            </div>
+            {mode === "edit" ? (
+              <textarea
+                aria-label="Nội dung Markdown của Lesson"
+                autoFocus
+                className="min-h-[38rem] w-full resize-y rounded-3xl border border-black/15 bg-[#17201b] p-6 font-mono text-sm leading-7 text-slate-100 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-700/15"
+                onChange={(event) => {
+                  setMarkdownSource(event.target.value);
+                  invalidatePreview();
+                }}
+                spellCheck={false}
+                value={markdownSource}
+              />
+            ) : preview ? (
+              <MarkdownPreview lesson={preview.lesson} />
+            ) : (
+              <div className="flex min-h-80 items-center justify-center rounded-2xl border border-dashed border-black/20 px-8 text-center text-sm text-[var(--muted)]">
+                {isPreviewing ? "Đang cập nhật Preview…" : "Chuyển lại Preview mode để kiểm tra nội dung vừa chỉnh sửa."}
+              </div>
+            )}
           </>
         ) : (
           <div className="flex min-h-80 items-center justify-center rounded-2xl border border-dashed border-black/20 px-8 text-center text-sm leading-6 text-[var(--muted)]">

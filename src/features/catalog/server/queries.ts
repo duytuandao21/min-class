@@ -8,18 +8,27 @@ import {
   publicChapterSchema,
   publicCourseSectionSchema,
   publicLessonGateContextSchema,
+  publicLiveSessionSchema,
   publicSubjectSchema,
   type PublicCourseSection,
   type PublicCatalogLesson,
   type PublicChapter,
   type EndedLessonReview,
   type PublicLessonGateContext,
+  type PublicLiveSession,
   type PublicSubject,
 } from "@/features/catalog/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { parseSessionReflectionRow } from "@/features/rooms/session-reflection";
 
 const idSchema = z.string().uuid();
+
+export async function getPublicLiveSessions(): Promise<PublicLiveSession[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_live_sessions");
+  if (error) throw new Error("Không thể tải danh sách buổi học đang LIVE.");
+  return z.array(publicLiveSessionSchema).parse(data);
+}
 
 export async function getPublicSubjects(): Promise<PublicSubject[]> {
   const supabase = await createClient();
@@ -80,13 +89,18 @@ export async function getPublicLessonGateContext(rawLessonId: string): Promise<P
 
 export async function getStudentEndedLessonReview(
   rawSessionId: string,
+  rawLessonId?: string,
 ): Promise<(EndedLessonReview & { subjectId: string; courseSectionId: string }) | null> {
   const sessionId = idSchema.safeParse(rawSessionId);
-  if (!sessionId.success) return null;
+  const lessonId = idSchema.safeParse(rawLessonId);
+  if (!sessionId.success || !lessonId.success) return null;
 
   const supabase = await createClient();
   const [reviewResult, reflectionResult] = await Promise.all([
-    supabase.rpc("get_student_ended_lesson_review", { p_room_id: sessionId.data }),
+    supabase.rpc("get_student_ended_lesson_review", {
+      p_room_id: sessionId.data,
+      p_lesson_id: lessonId.data,
+    }),
     supabase.rpc("get_ended_session_reflection", { p_room_id: sessionId.data }),
   ]);
   const { data, error } = reviewResult;

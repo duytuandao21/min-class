@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 
 import { advanceSectionAction } from "@/features/rooms/lifecycle-actions";
 
-export function NextSectionButton({ roomId }: { roomId: string }) {
+export function NextSectionButton({ lessonId, roomId }: { lessonId: string; roomId: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -13,7 +13,7 @@ export function NextSectionButton({ roomId }: { roomId: string }) {
   function showNextSection() {
     setError(null);
     startTransition(async () => {
-      const result = await advanceSectionAction(roomId);
+      const result = await advanceSectionAction(roomId, lessonId);
       if (!result.ok) {
         setError(result.message);
         return;

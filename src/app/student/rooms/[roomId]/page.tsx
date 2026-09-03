@@ -1,11 +1,19 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StudentLessonPlayer } from "@/features/rooms/components/student-lesson-player";
 import { getStudentRoom } from "@/features/rooms/server/queries";
 
-export default async function StudentRoomPage({ params }: { params: Promise<{ roomId: string }> }) {
+export default async function StudentRoomPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ lessonId?: string }>;
+}) {
   const { roomId } = await params;
-  const room = await getStudentRoom(roomId);
+  const { lessonId } = await searchParams;
+  const room = await getStudentRoom(roomId, lessonId);
   if (!room) notFound();
 
   return (
@@ -18,7 +26,21 @@ export default async function StudentRoomPage({ params }: { params: Promise<{ ro
         <span className="max-w-full break-all rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-900">Đã tham gia · {room.mssv}</span>
       </header>
 
+      <nav aria-label="Các Lesson trong buổi học" className="mt-7 flex gap-2 overflow-x-auto pb-2">
+        {room.lessons.map((lesson) => (
+          <Link
+            aria-current={lesson.lesson_id === room.selectedLessonId ? "page" : undefined}
+            className={`shrink-0 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${lesson.lesson_id === room.selectedLessonId ? "border-emerald-700 bg-emerald-700 text-white" : "border-black/10 bg-white hover:border-emerald-400 hover:text-[var(--accent)]"}`}
+            href={`/student/rooms/${room.id}?lessonId=${lesson.lesson_id}`}
+            key={lesson.lesson_id}
+          >
+            {lesson.lesson_title}
+          </Link>
+        ))}
+      </nav>
+
       <StudentLessonPlayer
+        key={room.selectedLessonId}
         initialReactions={room.reactions}
         initialSessionReflection={room.sessionReflection}
         initialSnapshot={{
@@ -28,6 +50,7 @@ export default async function StudentRoomPage({ params }: { params: Promise<{ ro
           releasedThrough: room.releasedThrough,
           sections: room.sections,
         }}
+        lessonId={room.selectedLessonId}
       />
     </main>
   );

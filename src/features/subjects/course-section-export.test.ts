@@ -12,10 +12,10 @@ const exportData: CourseSectionExportData = {
   courseSectionId: "22222222-2222-4222-8222-222222222222",
   courseSectionCode: "23162LTW1",
   courseSectionName: "Lập trình web",
-  totalLessons: 5,
+  totalClassMeetings: 5,
   students: [
-    { mssv: "00123456", speakingCount: 7, attendedLessonCount: 4 },
-    { mssv: "23162012", speakingCount: 0, attendedLessonCount: 2 },
+    { mssv: "00123456", speakingCount: 7, attendedClassMeetingCount: 4 },
+    { mssv: "23162012", speakingCount: 0, attendedClassMeetingCount: 2 },
   ],
 };
 

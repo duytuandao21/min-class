@@ -16,10 +16,10 @@ export function LessonAccessForm({ lessonId, status }: { lessonId: string; statu
   useEffect(() => {
     if (state.status === "success" && state.sessionId) {
       router.push(status === "ENDED"
-        ? `/learn/review/${state.sessionId}`
-        : `/student/rooms/${state.sessionId}`);
+        ? `/learn/review/${state.sessionId}?lessonId=${state.lessonId ?? lessonId}`
+        : `/student/rooms/${state.sessionId}?lessonId=${state.lessonId ?? lessonId}`);
     }
-  }, [router, state.sessionId, state.status, status]);
+  }, [lessonId, router, state.lessonId, state.sessionId, state.status, status]);
 
   if (status === "UPCOMING") {
     return (

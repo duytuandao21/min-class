@@ -4,7 +4,7 @@ import { z } from "zod";
 const courseSectionExportStudentSchema = z.object({
   mssv: z.string().min(1),
   speakingCount: z.number().int().nonnegative(),
-  attendedLessonCount: z.number().int().nonnegative(),
+  attendedClassMeetingCount: z.number().int().nonnegative(),
 });
 
 export const courseSectionExportDataSchema = z.object({
@@ -12,7 +12,7 @@ export const courseSectionExportDataSchema = z.object({
   courseSectionId: z.string().uuid(),
   courseSectionCode: z.string().min(1),
   courseSectionName: z.string().nullable(),
-  totalLessons: z.number().int().nonnegative(),
+  totalClassMeetings: z.number().int().nonnegative(),
   students: z.array(courseSectionExportStudentSchema),
 });
 
@@ -63,7 +63,7 @@ export async function buildCourseSectionWorkbook(data: CourseSectionExportData):
 
   worksheet.mergeCells("A3:C3");
   const overviewCell = worksheet.getCell("A3");
-  overviewCell.value = `Sĩ số: ${data.students.length} sinh viên  ·  Tổng số buổi học: ${data.totalLessons}`;
+  overviewCell.value = `Sĩ số: ${data.students.length} sinh viên  ·  Tổng số buổi học: ${data.totalClassMeetings}`;
   overviewCell.font = { color: { argb: "FF4B5C52" }, size: 11 };
   overviewCell.alignment = { horizontal: "left", vertical: "middle" };
   worksheet.getRow(3).height = 26;
@@ -92,7 +92,7 @@ export async function buildCourseSectionWorkbook(data: CourseSectionExportData):
     const row = worksheet.addRow({
       mssv: student.mssv,
       speakingCount: student.speakingCount,
-      attendance: `${student.attendedLessonCount} / ${data.totalLessons}`,
+      attendance: `${student.attendedClassMeetingCount} / ${data.totalClassMeetings}`,
     });
     row.height = 25;
     row.alignment = { horizontal: "center", vertical: "middle" };

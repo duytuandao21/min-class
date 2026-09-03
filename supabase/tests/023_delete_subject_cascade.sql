@@ -18,8 +18,8 @@ values ('d1100000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-0000000
 insert into public.course_sections (id, subject_id, section_code)
 values ('d1200000-0000-0000-0000-000000000001', 'd1100000-0000-0000-0000-000000000001', 'DELETE01');
 
-insert into public.chapters (id, subject_id, name)
-values ('d1300000-0000-0000-0000-000000000001', 'd1100000-0000-0000-0000-000000000001', 'Chapter');
+insert into public.chapters (id, course_section_id, name)
+values ('d1300000-0000-0000-0000-000000000001', 'd1200000-0000-0000-0000-000000000001', 'Chapter');
 
 insert into public.lessons (id, room_id, course_section_id, chapter_id, title, markdown_source)
 values (

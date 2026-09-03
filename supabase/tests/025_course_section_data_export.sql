@@ -36,8 +36,8 @@ values
   ('f1200000-0000-0000-0000-000000000001', '00123456'),
   ('f1200000-0000-0000-0000-000000000001', '23162012');
 
-insert into public.chapters (id, subject_id, name)
-values ('f1250000-0000-0000-0000-000000000001', 'f1100000-0000-0000-0000-000000000001', 'Chapter 1');
+insert into public.chapters (id, course_section_id, name)
+values ('f1250000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001', 'Chapter 1');
 
 insert into public.lessons (id, room_id, course_section_id, chapter_id, title, markdown_source)
 values
@@ -75,18 +75,18 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
 
 select is(
-  (public.get_teacher_course_section_export('f1100000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001')->>'totalLessons')::integer,
-  2,
-  'Total lessons uses the Course Section Lesson count'
+  (public.get_teacher_course_section_export('f1100000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001')->>'totalClassMeetings')::integer,
+  1,
+  'One Chapter counts as one class meeting regardless of Session count'
 );
 select is(
   (
-    select (student->>'attendedLessonCount')::integer
+    select (student->>'attendedClassMeetingCount')::integer
     from jsonb_array_elements(public.get_teacher_course_section_export('f1100000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001')->'students') student
     where student->>'mssv' = '00123456'
   ),
   1,
-  'Multiple attended Sessions of one Lesson count as one attended Lesson'
+  'Repeated joined Sessions in one Chapter count as one attended class meeting'
 );
 select is(
   (
