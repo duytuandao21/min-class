@@ -178,6 +178,38 @@ export async function updateChapterAction(
   return { status: "success", message: "Đã cập nhật chương." };
 }
 
+export async function updateCourseSectionChapterAction(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+  _previousState: ManagementActionState,
+  formData: FormData,
+): Promise<ManagementActionState> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  const input = chapterInputSchema.safeParse({ name: formData.get("name") });
+  if (!subjectId.success || !courseSectionId.success || !chapterId.success) {
+    return errorState("Chương không hợp lệ.");
+  }
+  if (!input.success) return errorState("Kiểm tra lại tên chương.", input.error.flatten().fieldErrors);
+
+  await requireTeacher();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chapters")
+    .update({ name: input.data.name })
+    .eq("id", chapterId.data)
+    .eq("course_section_id", courseSectionId.data)
+    .select("id")
+    .maybeSingle();
+
+  if (error) return errorState(databaseErrorMessage(error.code, "Chương"));
+  if (!data) return errorState("Không tìm thấy chương hoặc bạn không có quyền sửa.");
+  revalidatePath(`/teacher/subjects/${subjectId.data}/sections/${courseSectionId.data}`);
+  return { status: "success", message: "Đã đổi tên chương." };
+}
+
 export async function createCourseSectionAction(
   rawSubjectId: string,
   _previousState: ManagementActionState,

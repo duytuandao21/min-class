@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { BackLink } from "@/components/back-link";
 import type { PublicLessonStatus } from "@/features/catalog/schemas";
@@ -61,7 +62,23 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
               : `/learn/subjects/${subjectId}/sections/${courseSectionId}/chapters/${chapter.chapter_id}`;
             return (
               <LessonChapterDisclosure
-                actions={<span className={`w-fit shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusClass[chapterStatus]}`}>{statusLabel[chapterStatus]}</span>}
+                actions={chapterStatus === "LIVE" && chapterHref ? (
+                  <Link
+                    aria-label={`Tham gia ${chapter.chapter_name} đang LIVE`}
+                    className="group inline-flex min-h-10 shrink-0 items-center gap-2.5 rounded-xl border border-emerald-500/60 bg-emerald-600 px-3.5 py-2 text-xs font-black tracking-[0.08em] text-white shadow-[0_5px_14px_rgba(5,150,105,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-[0_7px_18px_rgba(5,150,105,0.28)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 motion-reduce:transform-none motion-reduce:transition-none"
+                    href={chapterHref}
+                  >
+                    <span aria-hidden className="flex size-5 items-center justify-center">
+                      <svg className="size-5 animate-pulse transition-transform duration-200 group-hover:scale-110 motion-reduce:animate-none motion-reduce:transform-none" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" fill="currentColor" r="2.2" />
+                        <path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.6 4.6a10.5 10.5 0 0 0 0 14.8M19.4 4.6a10.5 10.5 0 0 1 0 14.8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                      </svg>
+                    </span>
+                    LIVE
+                  </Link>
+                ) : (
+                  <span className={`w-fit shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusClass[chapterStatus]}`}>{statusLabel[chapterStatus]}</span>
+                )}
                 defaultOpen={chapterIndex === initiallyOpenChapterIndex}
                 key={chapter.chapter_id}
                 lessonCount={chapterLessons.length}
@@ -73,9 +90,8 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
                     <p className="rounded-xl border border-dashed border-black/15 bg-white p-5 text-center text-sm text-[var(--muted)]">Chưa có Lesson trong chương này.</p>
                   ) : (
                     <ul className="space-y-3">
-                      {chapterLessons.map((lesson, lessonIndex) => (
-                        <li className="flex items-center gap-3 rounded-xl border border-black/10 bg-white px-4 py-3 shadow-sm" key={lesson.lesson_id}>
-                          <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-black text-emerald-800">{lessonIndex + 1}</span>
+                      {chapterLessons.map((lesson) => (
+                        <li className="rounded-xl border border-black/10 bg-white px-4 py-3 shadow-sm" key={lesson.lesson_id}>
                           <span className="min-w-0 break-words font-semibold">{lesson.lesson_title}</span>
                         </li>
                       ))}

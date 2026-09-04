@@ -38,7 +38,7 @@ export function DeleteCourseSectionChapterButton({
   return (
     <>
       <button
-        className="inline-flex min-h-10 items-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-md motion-reduce:transform-none"
+        className="flex min-h-10 w-full items-center rounded-xl px-3 py-2 text-left text-sm font-bold text-red-700 transition hover:bg-red-50"
         onClick={() => {
           setError(null);
           setConfirming(true);

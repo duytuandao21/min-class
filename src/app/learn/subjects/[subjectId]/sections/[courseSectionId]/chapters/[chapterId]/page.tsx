@@ -67,14 +67,13 @@ export default async function PublicChapterAccessPage({
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900">{chapterLessons.length} Lesson</span>
         </div>
         {chapterLessons.length > 0 ? (
-          <ol className="mt-4 space-y-2">
-            {chapterLessons.map((lesson, index) => (
-              <li className="flex items-center gap-3 rounded-xl bg-black/[0.025] px-4 py-3" key={lesson.lesson_id}>
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-[var(--accent)] shadow-sm">{index + 1}</span>
+          <ul className="mt-4 space-y-2">
+            {chapterLessons.map((lesson) => (
+              <li className="rounded-xl bg-black/[0.025] px-4 py-3" key={lesson.lesson_id}>
                 <span className="font-semibold">{lesson.lesson_title}</span>
               </li>
             ))}
-          </ol>
+          </ul>
         ) : <p className="mt-4 text-sm text-[var(--muted)]">Chương này chưa có Lesson.</p>}
       </section>
 

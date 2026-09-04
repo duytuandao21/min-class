@@ -23,6 +23,7 @@ import {
   deleteSubjectAction,
   type ManagementActionState,
   updateChapterAction,
+  updateCourseSectionChapterAction,
   updateSubjectAction,
 } from "./actions";
 
@@ -239,6 +240,24 @@ describe("Subject management actions", () => {
     expect(query.update).toHaveBeenCalledWith({ name: "Chương 2: TCP" });
     expect(query.eq).toHaveBeenCalledWith("id", chapterId);
     expect(query.eq).toHaveBeenCalledWith("subject_id", subjectId);
+    expect(result.status).toBe("success");
+  });
+
+  it("renames only the requested Chapter in its Course Section", async () => {
+    const query = createMutationQuery({ data: { id: chapterId }, error: null });
+    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+
+    const result = await updateCourseSectionChapterAction(
+      subjectId,
+      courseSectionId,
+      chapterId,
+      initialManagementActionState,
+      chapterForm("Chương 2: TCP"),
+    );
+
+    expect(query.update).toHaveBeenCalledWith({ name: "Chương 2: TCP" });
+    expect(query.eq).toHaveBeenCalledWith("id", chapterId);
+    expect(query.eq).toHaveBeenCalledWith("course_section_id", courseSectionId);
     expect(result.status).toBe("success");
   });
 
