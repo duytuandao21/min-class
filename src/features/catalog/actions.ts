@@ -65,9 +65,7 @@ export async function accessPublicLessonAction(
       p_mssv: input.data.mssv,
     });
     if (joined.error) {
-      const message = joined.error.code === "23505"
-        ? "MSSV này đã tham gia bằng một phiên Student khác."
-        : joined.error.code === "P0003"
+      const message = joined.error.code === "P0003"
           ? "Bạn không thuộc lớp học phần này"
           : "Không thể tham gia Lesson Session.";
 
