@@ -30,6 +30,25 @@ const studentSnapshotRowSchema = z.object({
 
 export type LessonSection = z.infer<typeof lessonSectionSchema>;
 export type StudentLessonSnapshot = z.infer<typeof studentLessonSnapshotSchema>;
+export type TeacherSectionViewMode = "TEACHING" | "REVIEW" | "PREVIEW";
+
+export function getTeacherSectionViewMode(
+  viewingPosition: number,
+  teachingPosition: number,
+): TeacherSectionViewMode {
+  if (viewingPosition === teachingPosition) return "TEACHING";
+  return viewingPosition < teachingPosition ? "REVIEW" : "PREVIEW";
+}
+
+export function getAdjacentSectionPosition(
+  sections: readonly LessonSection[],
+  currentPosition: number,
+  offset: -1 | 1,
+): number | null {
+  const currentIndex = sections.findIndex((section) => section.position === currentPosition);
+  if (currentIndex < 0) return sections[0]?.position ?? null;
+  return sections[currentIndex + offset]?.position ?? null;
+}
 
 export function parseStudentLessonSnapshot(input: unknown): StudentLessonSnapshot {
   const rows = z.array(studentSnapshotRowSchema).min(1).parse(input);

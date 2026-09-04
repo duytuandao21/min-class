@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getAdjacentSectionPosition,
+  getTeacherSectionViewMode,
   parseStudentLessonSnapshot,
   reconcileStudentPosition,
   type LessonSection,
@@ -49,6 +51,23 @@ describe("student lesson reconciliation", () => {
 
     expect(snapshot.sections).toEqual([]);
     expect(snapshot.releasedThrough).toBe(-1);
+  });
+});
+
+describe("teacher section navigation", () => {
+  const sections = [section(0), section(1), section(2)];
+
+  it("moves locally to adjacent Sections without inventing a position", () => {
+    expect(getAdjacentSectionPosition(sections, 1, -1)).toBe(0);
+    expect(getAdjacentSectionPosition(sections, 1, 1)).toBe(2);
+    expect(getAdjacentSectionPosition(sections, 0, -1)).toBeNull();
+    expect(getAdjacentSectionPosition(sections, 2, 1)).toBeNull();
+  });
+
+  it("distinguishes the teaching Section from review and preview views", () => {
+    expect(getTeacherSectionViewMode(1, 1)).toBe("TEACHING");
+    expect(getTeacherSectionViewMode(0, 1)).toBe("REVIEW");
+    expect(getTeacherSectionViewMode(2, 1)).toBe("PREVIEW");
   });
 });
 
