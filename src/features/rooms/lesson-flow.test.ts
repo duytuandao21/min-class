@@ -5,6 +5,7 @@ import {
   reconcileStudentPosition,
   type LessonSection,
 } from "./lesson-flow";
+import { sortSessionLessons } from "@/features/lessons/order";
 
 const section = (position: number): LessonSection => ({
   id: `52000000-0000-0000-0000-${String(position + 1).padStart(12, "0")}`,
@@ -48,5 +49,22 @@ describe("student lesson reconciliation", () => {
 
     expect(snapshot.sections).toEqual([]);
     expect(snapshot.releasedThrough).toBe(-1);
+  });
+});
+
+describe("Session Lesson ordering", () => {
+  it("sorts numbered Lesson titles naturally without mutating the RPC result", () => {
+    const lessons = [
+      { lesson_id: "3", lesson_title: "Bài 10 - Tổng kết" },
+      { lesson_id: "2", lesson_title: "Bài 2 - Mảng động" },
+      { lesson_id: "1", lesson_title: "Bài 1 - Mảng tĩnh" },
+    ];
+
+    expect(sortSessionLessons(lessons).map((lesson) => lesson.lesson_title)).toEqual([
+      "Bài 1 - Mảng tĩnh",
+      "Bài 2 - Mảng động",
+      "Bài 10 - Tổng kết",
+    ]);
+    expect(lessons[0].lesson_title).toBe("Bài 10 - Tổng kết");
   });
 });

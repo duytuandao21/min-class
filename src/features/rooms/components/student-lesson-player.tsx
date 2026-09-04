@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { BackLink } from "@/components/back-link";
 import { MarkdownContent } from "@/features/lessons/components/markdown-preview";
 import { SectionReflection } from "@/features/rooms/components/section-reflection";
 import { StudentQuiz } from "@/features/rooms/components/student-quiz";
@@ -164,8 +163,7 @@ export function StudentLessonPlayer({
 
   return (
     <section className="flex flex-1 flex-col py-10">
-      <div className="mb-6 flex min-h-11 items-center justify-between gap-4">
-        {snapshot.status === "ENDED" ? <BackLink href="/" label="Trang chủ MINCLASS" /> : <span />}
+      <div className="mb-6 flex min-h-6 items-center justify-end">
         <div className="text-right text-xs text-[var(--muted)]" aria-live="polite">
           {connection === "connecting" ? "Đang kết nối realtime…" : null}
           {connection === "degraded" ? "Realtime đang kết nối lại…" : null}
@@ -184,6 +182,12 @@ export function StudentLessonPlayer({
         </div>
       ) : (
         <div className="mx-auto w-full max-w-5xl">
+          {snapshot.status === "ENDED" ? (
+            <p className="mb-4 w-fit rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-800" role="status">
+              Buổi học đã kết thúc · Bạn vẫn có thể xem lại các section đã release.
+            </p>
+          ) : null}
+
           <article className="rounded-3xl border border-blue-300 bg-blue-100/75 p-7 shadow-sm sm:p-10 lg:p-12">
             <header className="mb-8 border-b border-black/10 pb-6">
               <div className="flex items-center justify-between gap-4">
@@ -234,15 +238,10 @@ export function StudentLessonPlayer({
               selectedReaction={reactions[currentSection.id]}
             />
           ) : (
-            <>
-              <p className="mt-7 rounded-2xl border border-black/10 bg-white p-6 text-center text-base text-[var(--muted)]">
-                Buổi học đã kết thúc. Bạn vẫn có thể xem lại các section đã release.
-              </p>
-              <StudentSessionReflection
-                initialReflection={initialSessionReflection}
-                roomId={snapshot.id}
-              />
-            </>
+            <StudentSessionReflection
+              initialReflection={initialSessionReflection}
+              roomId={snapshot.id}
+            />
           )}
 
         </div>

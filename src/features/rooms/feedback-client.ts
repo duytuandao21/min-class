@@ -41,11 +41,14 @@ export async function createSectionComment(
 
 export async function fetchTeacherFeedbackSnapshot(
   roomIdInput: string,
+  lessonIdInput: string,
 ): Promise<TeacherFeedbackSnapshot> {
   const roomId = roomIdSchema.parse(roomIdInput);
+  const lessonId = roomIdSchema.parse(lessonIdInput);
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_teacher_feedback_snapshot", {
+  const { data, error } = await supabase.rpc("get_teacher_lesson_feedback_snapshot", {
     p_room_id: roomId,
+    p_lesson_id: lessonId,
   });
   if (error) throw new Error("Không thể đồng bộ Live Feedback.");
   return parseTeacherFeedbackSnapshot(data);

@@ -40,3 +40,29 @@ export const teacherRoomSummarySchema = z.object({
 
 export type TeacherRoomSummary = z.infer<typeof teacherRoomSummarySchema>;
 export type TeacherAttendance = z.infer<typeof teacherAttendanceSchema>;
+
+export type TeacherLessonSummary = {
+  lessonId: string;
+  lessonTitle: string;
+  reactions: TeacherRoomSummary["reactions"];
+  quizzes: TeacherRoomSummary["quizzes"];
+};
+
+export function groupTeacherSummaryByLesson(
+  summary: Pick<TeacherRoomSummary, "reactions" | "quizzes">,
+  lessons: ReadonlyArray<{
+    lessonId: string;
+    lessonTitle: string;
+    sectionIds: readonly string[];
+  }>,
+): TeacherLessonSummary[] {
+  return lessons.map((lesson) => {
+    const sectionIds = new Set(lesson.sectionIds);
+    return {
+      lessonId: lesson.lessonId,
+      lessonTitle: lesson.lessonTitle,
+      reactions: summary.reactions.filter((reaction) => sectionIds.has(reaction.sectionId)),
+      quizzes: summary.quizzes.filter((quiz) => sectionIds.has(quiz.sectionId)),
+    };
+  });
+}

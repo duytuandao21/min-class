@@ -9,6 +9,7 @@ import {
   updateOwnedLessonAction,
   type CourseSectionLessonPreviewResult,
 } from "@/features/lessons/course-section-actions";
+import { LessonImageUploader } from "@/features/lessons/components/lesson-image-uploader";
 import { MarkdownPreview } from "@/features/lessons/components/markdown-preview";
 import { LessonModeSwitch, type LessonEditorMode } from "@/features/lessons/components/lesson-mode-switch";
 import type { Chapter } from "@/features/subjects/server/queries";
@@ -77,9 +78,10 @@ export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectI
   }
 
   function handleSave() {
-    if (!preview) return;
+    if (!markdownSource.trim()) return;
     startTransition(async () => {
-      const input = { lessonTitle: preview.lessonTitle, markdownSource: preview.markdownSource };
+      setErrors([]);
+      const input = { lessonTitle: title, markdownSource };
       const result = mode === "create-template"
         ? await saveSubjectTemplateLessonAction(subjectId, chapterId, input)
         : await updateOwnedLessonAction(subjectId, initial?.id ?? "", chapterId, input);
@@ -133,6 +135,7 @@ export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectI
           />
         </div>
         <p className="mt-3 text-xs leading-5 text-[var(--muted)]">Upload file hiện tại hoặc chỉnh sửa trực tiếp source ở Edit mode.</p>
+        <LessonImageUploader disabled={pending} subjectId={subjectId} />
 
         {errors.length > 0 ? (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
@@ -140,7 +143,7 @@ export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectI
           </div>
         ) : null}
 
-        {preview ? (
+        {markdownSource.trim() ? (
           <button className="mt-5 w-full rounded-xl bg-[var(--accent)] px-5 py-3 font-bold text-white disabled:opacity-50" disabled={pending} onClick={handleSave} type="button">
             {pending ? "Đang lưu…" : mode === "create-template" ? "Lưu Lesson mẫu" : "Lưu thay đổi"}
           </button>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackLink } from "@/components/back-link";
 import { StudentLessonPlayer } from "@/features/rooms/components/student-lesson-player";
 import { getStudentRoom } from "@/features/rooms/server/queries";
 
@@ -18,7 +19,9 @@ export default async function StudentRoomPage({
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10 sm:px-10 lg:px-12">
-      <header className="flex flex-col items-start justify-between gap-5 border-b border-black/10 pb-8 sm:flex-row sm:items-center">
+      <BackLink href="/" label="Trang chủ MINCLASS" />
+
+      <header className="mt-8 flex flex-col items-start justify-between gap-5 border-b border-black/10 pb-8 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">MINCLASS · LESSON {room.status === "ACTIVE" ? "LIVE" : "REVIEW"}</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{room.title}</h1>

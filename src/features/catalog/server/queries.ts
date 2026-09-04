@@ -20,8 +20,14 @@ import {
 } from "@/features/catalog/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { parseSessionReflectionRow } from "@/features/rooms/session-reflection";
+import { sortSessionLessons } from "@/features/lessons/order";
 
 const idSchema = z.string().uuid();
+const sessionLessonLabelSchema = z.object({
+  lesson_id: z.string().uuid(),
+  lesson_title: z.string().min(1),
+  chapter_name: z.string().min(1),
+});
 
 export async function getPublicLiveSessions(): Promise<PublicLiveSession[]> {
   const supabase = await createClient();
@@ -58,7 +64,7 @@ export async function getPublicLessons(rawCourseSectionId: string): Promise<Publ
     p_course_section_id: courseSectionId.data,
   });
   if (error) throw new Error("Không thể tải danh sách Lesson.");
-  return z.array(publicCatalogLessonSchema).parse(data);
+  return sortSessionLessons(z.array(publicCatalogLessonSchema).parse(data));
 }
 
 export async function getPublicChapters(rawCourseSectionId: string): Promise<PublicChapter[]> {
@@ -137,4 +143,18 @@ export async function getStudentEndedLessonReview(
     subjectId: context.data.subject_id,
     courseSectionId: context.data.course_section_id,
   };
+}
+
+export async function getStudentEndedSessionLessons(rawSessionId: string) {
+  const sessionId = idSchema.safeParse(rawSessionId);
+  if (!sessionId.success) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_student_session_lessons", {
+    p_room_id: sessionId.data,
+  });
+  if (error) return [];
+
+  const lessons = z.array(sessionLessonLabelSchema).safeParse(data);
+  return lessons.success ? sortSessionLessons(lessons.data) : [];
 }

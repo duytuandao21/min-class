@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
@@ -17,6 +16,12 @@ const statusClass: Record<PublicLessonStatus, string> = {
   LIVE: "bg-emerald-100 text-emerald-900",
   ENDED: "bg-red-100 text-red-800",
 };
+
+function getChapterStatus(lessons: { lesson_status: PublicLessonStatus }[]): PublicLessonStatus {
+  if (lessons.some((lesson) => lesson.lesson_status === "LIVE")) return "LIVE";
+  if (lessons.some((lesson) => lesson.lesson_status === "ENDED")) return "ENDED";
+  return "UPCOMING";
+}
 
 export default async function PublicLessonsPage({ params }: { params: Promise<{ subjectId: string; courseSectionId: string }> }) {
   const { subjectId, courseSectionId } = await params;
@@ -41,7 +46,7 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
         <p className="text-sm font-bold tracking-[0.2em] text-[var(--muted)]">COURSE SECTION</p>
         <h1 className="mt-4 break-words text-4xl font-bold tracking-[-0.035em] text-[var(--accent)] sm:text-5xl">{courseSection.section_code}</h1>
         {courseSection.display_name ? <p className="mt-3 text-lg font-medium text-[var(--muted)]">{courseSection.display_name}</p> : null}
-        <p className="mt-4 text-lg text-[var(--muted)]">Chọn Lesson bạn muốn truy cập.</p>
+        <p className="mt-4 text-lg text-[var(--muted)]">Chọn chương để tham gia buổi học đang LIVE hoặc xem lại buổi học đã kết thúc.</p>
       </header>
 
       {chapters.length === 0 ? (
@@ -50,19 +55,28 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
         <div className="space-y-4">
           {chapters.map((chapter, chapterIndex) => {
             const chapterLessons = lessonsByChapter.get(chapter.chapter_id) ?? [];
+            const chapterStatus = getChapterStatus(chapterLessons);
+            const chapterHref = chapterStatus === "UPCOMING"
+              ? undefined
+              : `/learn/subjects/${subjectId}/sections/${courseSectionId}/chapters/${chapter.chapter_id}`;
             return (
-              <LessonChapterDisclosure defaultOpen={chapterIndex === initiallyOpenChapterIndex} key={chapter.chapter_id} lessonCount={chapterLessons.length} title={chapter.chapter_name}>
+              <LessonChapterDisclosure
+                actions={<span className={`w-fit shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusClass[chapterStatus]}`}>{statusLabel[chapterStatus]}</span>}
+                defaultOpen={chapterIndex === initiallyOpenChapterIndex}
+                key={chapter.chapter_id}
+                lessonCount={chapterLessons.length}
+                title={chapter.chapter_name}
+                titleHref={chapterHref}
+              >
                 <div className="border-t border-black/10 bg-black/[0.015] p-3 sm:p-4">
                   {chapterLessons.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-black/15 bg-white p-5 text-center text-sm text-[var(--muted)]">Chưa có Lesson trong chương này.</p>
                   ) : (
                     <ul className="space-y-3">
-                      {chapterLessons.map((lesson) => (
-                        <li key={lesson.lesson_id}>
-                          <Link className="flex flex-col gap-3 rounded-xl border border-black/10 bg-white px-4 py-3 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md sm:flex-row sm:items-center sm:justify-between" href={`/learn/lessons/${lesson.lesson_id}`}>
-                            <span className="min-w-0 break-words font-semibold">{lesson.lesson_title}</span>
-                            <span className={`w-fit shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusClass[lesson.lesson_status]}`}>{statusLabel[lesson.lesson_status]}</span>
-                          </Link>
+                      {chapterLessons.map((lesson, lessonIndex) => (
+                        <li className="flex items-center gap-3 rounded-xl border border-black/10 bg-white px-4 py-3 shadow-sm" key={lesson.lesson_id}>
+                          <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-black text-emerald-800">{lessonIndex + 1}</span>
+                          <span className="min-w-0 break-words font-semibold">{lesson.lesson_title}</span>
                         </li>
                       ))}
                     </ul>

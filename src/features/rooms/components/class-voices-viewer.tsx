@@ -6,14 +6,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   buildPresentationSteps,
   countSectionReactions,
-  filterClassVoiceSections,
+  filterClassVoiceLessons,
   flattenClassVoices,
+  groupClassVoicesByLesson,
   nextPresentationIndex,
   type ClassVoicesSnapshot,
   type PresentationStep,
 } from "@/features/rooms/class-voices";
-
-const ALL_SECTIONS = "ALL";
 
 function ReactionOverview({ section, large = false }: {
   section: ClassVoicesSnapshot["sections"][number];
@@ -52,10 +51,20 @@ function PresentationContent({ snapshot, step, meaningfulSectionCount, onReplay,
     );
   }
 
+  if (step.type === "LESSON_INTRO") {
+    return (
+      <div className="mx-auto w-full max-w-5xl text-center">
+        <p className="text-sm font-bold tracking-[0.25em] text-[var(--accent)]">LESSON {String(step.lessonNumber).padStart(2, "0")}</p>
+        <h2 className="mt-6 break-words text-4xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">{step.lesson.lessonTitle}</h2>
+        <p className="mt-8 text-lg text-[var(--muted)]">{step.lesson.sections.length} section có phản hồi</p>
+      </div>
+    );
+  }
+
   if (step.type === "SECTION_INTRO") {
     return (
       <div className="mx-auto w-full max-w-5xl text-center">
-        <p className="text-sm font-bold tracking-[0.25em] text-[var(--accent)]">SECTION {String(step.section.sectionPosition + 1).padStart(2, "0")}</p>
+        <p className="text-sm font-bold tracking-[0.25em] text-[var(--accent)]">{step.section.lessonTitle} · SECTION {String(step.section.sectionPosition + 1).padStart(2, "0")}</p>
         <h2 className="mt-6 break-words text-4xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">{step.section.sectionTitle}</h2>
       </div>
     );
@@ -65,7 +74,7 @@ function PresentationContent({ snapshot, step, meaningfulSectionCount, onReplay,
     const total = countSectionReactions(step.section);
     return (
       <div className="mx-auto w-full max-w-5xl text-center">
-        <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">SECTION {step.section.sectionPosition + 1}</p>
+        <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">{step.section.lessonTitle} · SECTION {step.section.sectionPosition + 1}</p>
         <h2 className="mt-3 break-words text-3xl font-semibold sm:text-5xl">{step.section.sectionTitle}</h2>
         <div className="mt-10"><ReactionOverview large section={step.section} /></div>
         <p className="mt-8 text-lg text-[var(--muted)]">{total} phản hồi reaction ở section này</p>
@@ -76,7 +85,7 @@ function PresentationContent({ snapshot, step, meaningfulSectionCount, onReplay,
   if (step.type === "COMMENT_SPOTLIGHT") {
     return (
       <article className="mx-auto w-full max-w-5xl text-center">
-        <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">SECTION {step.section.sectionPosition + 1} · {step.section.sectionTitle}</p>
+        <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">{step.section.lessonTitle} · SECTION {step.section.sectionPosition + 1} · {step.section.sectionTitle}</p>
         <p className="mt-8 whitespace-pre-wrap break-words text-2xl font-medium leading-[1.45] tracking-tight text-[#203027] sm:text-5xl lg:text-6xl">“{step.comment.body}”</p>
         <p className="mt-10 text-lg font-semibold text-[var(--accent)] sm:text-2xl">{step.comment.authorLabel}</p>
       </article>
@@ -106,11 +115,12 @@ export function ClassVoicesViewer({ snapshot, initialPresentation = false }: {
   initialPresentation?: boolean;
 }) {
   const voices = flattenClassVoices(snapshot);
+  const lessons = groupClassVoicesByLesson(snapshot);
   const steps = buildPresentationSteps(snapshot);
   const meaningfulSectionCount = snapshot.sections.filter(
     (section) => section.comments.length > 0 || countSectionReactions(section) > 0,
   ).length;
-  const [sectionFilter, setSectionFilter] = useState(ALL_SECTIONS);
+  const [lessonFilter, setLessonFilter] = useState(lessons[0]?.lessonId ?? "");
   const [isPresenting, setIsPresenting] = useState(initialPresentation && steps.length > 0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isStepVisible, setIsStepVisible] = useState(true);
@@ -199,17 +209,31 @@ export function ClassVoicesViewer({ snapshot, initialPresentation = false }: {
     if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
   }, []);
 
-  const visibleSections = filterClassVoiceSections(snapshot, sectionFilter);
+  const visibleLessons = filterClassVoiceLessons(snapshot, lessonFilter);
   const currentStep = steps[currentIndex] ?? null;
 
   return (
     <div ref={containerRef}>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex gap-2 overflow-x-auto pb-2" aria-label="Lọc Class Voices theo section">
-          <button aria-pressed={sectionFilter === ALL_SECTIONS} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${sectionFilter === ALL_SECTIONS ? "bg-[var(--accent)] text-white" : "border border-black/10 bg-white"}`} onClick={() => setSectionFilter(ALL_SECTIONS)} type="button">Tất cả · {voices.length}</button>
-          {snapshot.sections.map((section) => (
-            <button aria-pressed={sectionFilter === section.sectionId} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${sectionFilter === section.sectionId ? "bg-[var(--accent)] text-white" : "border border-black/10 bg-white"}`} key={section.sectionId} onClick={() => setSectionFilter(section.sectionId)} type="button">Section {section.sectionPosition + 1} · {section.comments.length}</button>
-          ))}
+        <div className="flex gap-2 overflow-x-auto pb-2" aria-label="Lọc Class Voices theo Lesson">
+          {lessons.map((lesson) => {
+            const commentCount = lesson.sections.reduce((total, section) => total + section.comments.length, 0);
+            const isSelected = lessonFilter === lesson.lessonId;
+            return (
+              <button
+                aria-pressed={isSelected}
+                className={`flex shrink-0 items-center gap-2 rounded-full py-1.5 pr-2 pl-4 text-sm font-semibold transition ${isSelected ? "bg-[var(--accent)] text-white" : "border border-black/10 bg-white hover:border-emerald-300"}`}
+                key={lesson.lessonId}
+                onClick={() => setLessonFilter(lesson.lessonId)}
+                type="button"
+              >
+                <span>{lesson.lessonTitle}</span>
+                <span className={`inline-flex min-w-7 items-center justify-center rounded-full px-2 py-1 text-xs font-black ${isSelected ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-900"}`}>
+                  {commentCount}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <button className="shrink-0 rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" disabled={steps.length === 0} onClick={enterPresentation} ref={enterButtonRef} type="button">Trình chiếu Class Voices ✨</button>
       </div>
@@ -222,25 +246,35 @@ export function ClassVoicesViewer({ snapshot, initialPresentation = false }: {
       ) : null}
 
       <div className="mt-10 space-y-14">
-        {visibleSections.map((section) => (
-          <section aria-labelledby={`voice-section-${section.sectionId}`} key={section.sectionId}>
-            <header className="mb-6 max-w-3xl">
-              <p className="text-xs font-bold tracking-[0.16em] text-[var(--accent)]">SECTION {String(section.sectionPosition + 1).padStart(2, "0")}</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight" id={`voice-section-${section.sectionId}`}>{section.sectionTitle}</h2>
-              <div className="mt-4"><ReactionOverview section={section} /></div>
+        {visibleLessons.map((lesson) => (
+          <section aria-labelledby={`voice-lesson-${lesson.lessonId}`} key={lesson.lessonId}>
+            <header className="mb-8 border-b border-emerald-200 pb-5">
+              <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">LESSON</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight" id={`voice-lesson-${lesson.lessonId}`}>{lesson.lessonTitle}</h2>
             </header>
-            {section.comments.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-black/15 bg-white p-6 text-sm text-[var(--muted)]">Section này chưa có comment.</p>
-            ) : (
-              <div className="grid gap-5 md:grid-cols-2">
-                {section.comments.map((comment) => (
-                  <article className="flex min-h-52 flex-col justify-between rounded-3xl border border-black/8 bg-white p-6 shadow-sm sm:p-8" key={comment.id}>
-                    <p className="whitespace-pre-wrap break-words text-xl leading-9 text-[#263129]">“{comment.body}”</p>
-                    <p className="mt-8 text-sm font-semibold text-[var(--accent)]">{comment.authorLabel}</p>
-                  </article>
-                ))}
-              </div>
-            )}
+            <div className="space-y-12">
+              {lesson.sections.map((section) => (
+                <section aria-labelledby={`voice-section-${section.sectionId}`} key={section.sectionId}>
+                  <header className="mb-6 max-w-3xl">
+                    <p className="text-xs font-bold tracking-[0.16em] text-[var(--accent)]">SECTION {String(section.sectionPosition + 1).padStart(2, "0")}</p>
+                    <h3 className="mt-2 text-2xl font-semibold tracking-tight" id={`voice-section-${section.sectionId}`}>{section.sectionTitle}</h3>
+                    <div className="mt-4"><ReactionOverview section={section} /></div>
+                  </header>
+                  {section.comments.length === 0 ? (
+                    <p className="rounded-2xl border border-dashed border-black/15 bg-white p-6 text-sm text-[var(--muted)]">Section này chưa có comment.</p>
+                  ) : (
+                    <div className="grid gap-5 md:grid-cols-2">
+                      {section.comments.map((comment) => (
+                        <article className="flex min-h-52 flex-col justify-between rounded-3xl border border-black/8 bg-white p-6 shadow-sm sm:p-8" key={comment.id}>
+                          <p className="whitespace-pre-wrap break-words text-xl leading-9 text-[#263129]">“{comment.body}”</p>
+                          <p className="mt-8 text-sm font-semibold text-[var(--accent)]">{comment.authorLabel}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ))}
+            </div>
           </section>
         ))}
       </div>

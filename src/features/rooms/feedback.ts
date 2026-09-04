@@ -80,3 +80,14 @@ export function parseOwnReactions(input: unknown): OwnReactions {
 export function parseTeacherFeedbackSnapshot(input: unknown): TeacherFeedbackSnapshot {
   return teacherFeedbackSnapshotSchema.parse(input);
 }
+
+export function filterFeedbackSnapshotBySections(
+  snapshot: TeacherFeedbackSnapshot,
+  sectionIds: readonly string[],
+): TeacherFeedbackSnapshot {
+  const visibleSectionIds = new Set(sectionIds);
+  return {
+    reactions: snapshot.reactions.filter((reaction) => visibleSectionIds.has(reaction.sectionId)),
+    comments: snapshot.comments.filter((comment) => visibleSectionIds.has(comment.sectionId)),
+  };
+}

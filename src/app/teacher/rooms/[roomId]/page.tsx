@@ -5,6 +5,7 @@ import { BackLink } from "@/components/back-link";
 import { MarkdownContent } from "@/features/lessons/components/markdown-preview";
 import { EndSessionButton } from "@/features/rooms/components/end-session-button";
 import { NextSectionButton } from "@/features/rooms/components/next-section-button";
+import { ReleaseChapterButton } from "@/features/rooms/components/release-chapter-button";
 import { TeacherLiveFeedback } from "@/features/rooms/components/teacher-live-feedback";
 import { TeacherQuizAnalytics } from "@/features/rooms/components/teacher-quiz-analytics";
 import { TeacherRoomOverview } from "@/features/rooms/components/teacher-room-overview";
@@ -28,12 +29,15 @@ export default async function TeacherRoomPage({
   if (room.status === "ENDED") redirect(`/teacher/rooms/${room.id}/summary`);
 
   const [feedback, quizAnalytics] = await Promise.all([
-    getTeacherFeedbackSnapshot(room.id),
+    getTeacherFeedbackSnapshot(room.id, room.selectedLessonId),
     getTeacherQuizAnalytics(room.id),
   ]);
   if (!feedback || !quizAnalytics) notFound();
 
   const currentSection = room.sections.find((section) => section.position === room.teaching_section) ?? null;
+  const selectedLessonTitle = room.lessons.find((lesson) => lesson.lesson_id === room.selectedLessonId)?.lesson_title
+    ?? room.title;
+  const selectedLessonSectionIds = room.sections.map((section) => section.id);
   const currentSectionIndex = currentSection
     ? room.sections.findIndex((section) => section.id === currentSection.id)
     : -1;
@@ -102,11 +106,28 @@ export default async function TeacherRoomPage({
         )}
       </section>
 
-      <TeacherLiveFeedback currentSectionId={currentSection?.id ?? null} initialSnapshot={feedback} roomId={room.id} />
-      <TeacherQuizAnalytics initialAnalytics={quizAnalytics} roomId={room.id} />
+      <TeacherLiveFeedback
+        currentSectionId={currentSection?.id ?? null}
+        initialSnapshot={feedback}
+        key={`feedback-${room.selectedLessonId}`}
+        lessonId={room.selectedLessonId}
+        lessonTitle={selectedLessonTitle}
+        roomId={room.id}
+        sectionIds={selectedLessonSectionIds}
+      />
+      <TeacherQuizAnalytics
+        initialAnalytics={quizAnalytics}
+        key={`quiz-${room.selectedLessonId}`}
+        lessonTitle={selectedLessonTitle}
+        roomId={room.id}
+        sectionIds={selectedLessonSectionIds}
+      />
 
       <section className="mt-8 border-t border-black/10 pt-8">
-        <EndSessionButton roomId={room.id} />
+        <div className="flex flex-wrap items-start gap-3">
+          <ReleaseChapterButton roomId={room.id} />
+          <EndSessionButton roomId={room.id} />
+        </div>
       </section>
     </main>
   );

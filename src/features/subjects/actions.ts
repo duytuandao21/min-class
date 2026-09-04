@@ -116,6 +116,40 @@ export async function createChapterAction(
   return { status: "success", message: "Đã thêm chương." };
 }
 
+export async function createCourseSectionChapterAction(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  _previousState: ManagementActionState,
+  formData: FormData,
+): Promise<ManagementActionState> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  const input = chapterInputSchema.safeParse({ name: formData.get("name") });
+  if (!subjectId.success || !courseSectionId.success) return errorState("Lớp học phần không hợp lệ.");
+  if (!input.success) return errorState("Kiểm tra lại tên chương.", input.error.flatten().fieldErrors);
+
+  await requireTeacher();
+  const supabase = await createClient();
+  const { data: courseSection, error: courseSectionError } = await supabase
+    .from("course_sections")
+    .select("id")
+    .eq("id", courseSectionId.data)
+    .eq("subject_id", subjectId.data)
+    .maybeSingle();
+  if (courseSectionError || !courseSection) {
+    return errorState("Không tìm thấy lớp học phần hoặc bạn không có quyền thêm chương.");
+  }
+
+  const { error } = await supabase.from("chapters").insert({
+    course_section_id: courseSectionId.data,
+    name: input.data.name,
+  });
+  if (error) return errorState(databaseErrorMessage(error.code, "Chương"));
+
+  revalidatePath(`/teacher/subjects/${subjectId.data}/sections/${courseSectionId.data}`);
+  return { status: "success", message: "Đã thêm chương cho lớp học phần." };
+}
+
 export async function updateChapterAction(
   rawSubjectId: string,
   rawChapterId: string,
@@ -188,6 +222,33 @@ export async function deleteChapterAction(rawSubjectId: string, rawChapterId: st
     throw new Error("Không thể xóa chương. Hãy xóa các Lesson trong chương trước.");
   }
   revalidatePath(`/teacher/subjects/${subjectId.data}`);
+}
+
+export async function deleteCourseSectionChapterAction(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+): Promise<ManagementActionState> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  if (!subjectId.success || !courseSectionId.success || !chapterId.success) {
+    return errorState("Chương không hợp lệ.");
+  }
+
+  await requireTeacher();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("delete_course_section_chapter", {
+    p_subject_id: subjectId.data,
+    p_course_section_id: courseSectionId.data,
+    p_chapter_id: chapterId.data,
+  });
+  if (error || data !== chapterId.data) {
+    return errorState("Không thể xóa chương hoặc bạn không có quyền xóa.");
+  }
+
+  revalidatePath(`/teacher/subjects/${subjectId.data}/sections/${courseSectionId.data}`);
+  return { status: "success", message: "Đã xóa chương." };
 }
 
 export async function updateCourseSectionAction(

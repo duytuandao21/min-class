@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { TeacherFeedbackSnapshot } from "@/features/rooms/feedback";
+import {
+  filterFeedbackSnapshotBySections,
+  type TeacherFeedbackSnapshot,
+} from "@/features/rooms/feedback";
 import { fetchTeacherFeedbackSnapshot } from "@/features/rooms/feedback-client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,21 +15,28 @@ export function TeacherLiveFeedback({
   roomId,
   initialSnapshot,
   currentSectionId,
+  lessonId,
+  lessonTitle,
+  sectionIds,
 }: {
   roomId: string;
   initialSnapshot: TeacherFeedbackSnapshot;
   currentSectionId: string | null;
+  lessonId: string;
+  lessonTitle: string;
+  sectionIds: string[];
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [syncError, setSyncError] = useState<string | null>(null);
   const syncVersionRef = useRef(0);
-  const currentReaction = snapshot.reactions.find((reaction) => reaction.sectionId === currentSectionId) ?? null;
+  const lessonSnapshot = filterFeedbackSnapshotBySections(snapshot, sectionIds);
+  const currentReaction = lessonSnapshot.reactions.find((reaction) => reaction.sectionId === currentSectionId) ?? null;
 
   const syncFeedback = useCallback(async () => {
     const syncVersion = ++syncVersionRef.current;
     try {
-      const nextSnapshot = await fetchTeacherFeedbackSnapshot(roomId);
+      const nextSnapshot = await fetchTeacherFeedbackSnapshot(roomId, lessonId);
       if (syncVersion !== syncVersionRef.current) return;
       setSnapshot(nextSnapshot);
       setSyncError(null);
@@ -34,7 +44,7 @@ export function TeacherLiveFeedback({
       if (syncVersion !== syncVersionRef.current) return;
       setSyncError("Mất đồng bộ Live Feedback tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi.");
     }
-  }, [roomId]);
+  }, [lessonId, roomId]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -86,7 +96,7 @@ export function TeacherLiveFeedback({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">LIVE FEEDBACK</p>
-          <h2 className="mt-2 text-2xl font-semibold">Phản hồi mới nhất</h2>
+          <h2 className="mt-2 text-2xl font-semibold">Phản hồi · {lessonTitle}</h2>
         </div>
         {connection !== "connected" ? (
           <p className="text-xs text-[var(--muted)]" aria-live="polite">
@@ -120,9 +130,9 @@ export function TeacherLiveFeedback({
         <div>
           <h3 className="font-semibold">Comment mới nhất</h3>
           <div className="mt-3 max-h-[30rem] space-y-3 overflow-y-auto">
-            {snapshot.comments.length === 0 ? (
+            {lessonSnapshot.comments.length === 0 ? (
               <p className="rounded-2xl bg-black/3 p-4 text-sm text-[var(--muted)]">Chưa có comment.</p>
-            ) : snapshot.comments.map((comment) => (
+            ) : lessonSnapshot.comments.map((comment) => (
               <article className="rounded-2xl border border-black/10 p-4" key={comment.id}>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="font-semibold text-[var(--accent)]">{comment.authorLabel}</span>

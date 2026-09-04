@@ -8,7 +8,15 @@ import type { PublicLessonStatus } from "@/features/catalog/schemas";
 
 const initialState: LessonAccessState = { status: "idle" };
 
-export function LessonAccessForm({ lessonId, status }: { lessonId: string; status: PublicLessonStatus }) {
+export function LessonAccessForm({
+  lessonId,
+  scope = "lesson",
+  status,
+}: {
+  lessonId: string;
+  scope?: "chapter" | "lesson";
+  status: PublicLessonStatus;
+}) {
   const action = accessPublicLessonAction.bind(null, lessonId, status);
   const [state, formAction, pending] = useActionState(action, initialState);
   const router = useRouter();
@@ -17,14 +25,14 @@ export function LessonAccessForm({ lessonId, status }: { lessonId: string; statu
     if (state.status === "success" && state.sessionId) {
       router.push(status === "ENDED"
         ? `/learn/review/${state.sessionId}?lessonId=${state.lessonId ?? lessonId}`
-        : `/student/rooms/${state.sessionId}?lessonId=${state.lessonId ?? lessonId}`);
+        : `/student/rooms/${state.sessionId}`);
     }
   }, [lessonId, router, state.lessonId, state.sessionId, state.status, status]);
 
   if (status === "UPCOMING") {
     return (
       <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950" role="status">
-        Lesson này chưa mở. Hãy quay lại khi giảng viên bắt đầu hoặc kết thúc buổi học.
+        {scope === "chapter" ? "Chương" : "Lesson"} này chưa mở. Hãy quay lại khi giảng viên bắt đầu hoặc kết thúc buổi học.
       </div>
     );
   }
@@ -60,7 +68,7 @@ export function LessonAccessForm({ lessonId, status }: { lessonId: string; statu
         disabled={pending || state.status === "success"}
         type="submit"
       >
-        {pending ? "Đang xác minh…" : state.status === "success" ? "Đã xác minh" : "Truy cập Lesson"}
+        {pending ? "Đang xác minh…" : state.status === "success" ? "Đã xác minh" : scope === "chapter" ? "Truy cập chương" : "Truy cập Lesson"}
       </button>
     </form>
   );

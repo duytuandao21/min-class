@@ -15,8 +15,10 @@ vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
 import {
   createChapterAction,
+  createCourseSectionChapterAction,
   createCourseSectionAction,
   createSubjectAction,
+  deleteCourseSectionChapterAction,
   deleteCourseSectionAction,
   deleteSubjectAction,
   type ManagementActionState,
@@ -26,6 +28,7 @@ import {
 
 const teacherId = "aa000000-0000-0000-0000-000000000001";
 const subjectId = "aa100000-0000-4000-8000-000000000001";
+const courseSectionId = "aa200000-0000-4000-8000-000000000001";
 const chapterId = "aa150000-0000-4000-8000-000000000001";
 const redirectSignal = new Error("NEXT_REDIRECT");
 const initialManagementActionState: ManagementActionState = { status: "idle" };
@@ -145,7 +148,6 @@ describe("Subject management actions", () => {
   });
 
   it("deletes a Course Section through the owner-checked cascade RPC", async () => {
-    const courseSectionId = "aa200000-0000-4000-8000-000000000001";
     const rpc = vi.fn().mockResolvedValue({ data: courseSectionId, error: null });
     mocks.createClient.mockResolvedValue({ rpc });
     await deleteCourseSectionAction(subjectId, courseSectionId);
@@ -166,6 +168,66 @@ describe("Subject management actions", () => {
       name: "Chương 1: Giới thiệu",
     });
     expect(result.status).toBe("success");
+  });
+
+  it("creates an independent Chapter in the requested Course Section", async () => {
+    const query = createMutationQuery({ data: { id: courseSectionId }, error: null });
+    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+
+    const result = await createCourseSectionChapterAction(
+      subjectId,
+      courseSectionId,
+      initialManagementActionState,
+      chapterForm("Chương 6: Cây"),
+    );
+
+    expect(query.eq).toHaveBeenCalledWith("id", courseSectionId);
+    expect(query.eq).toHaveBeenCalledWith("subject_id", subjectId);
+    expect(query.insert).toHaveBeenCalledWith({
+      course_section_id: courseSectionId,
+      name: "Chương 6: Cây",
+    });
+    expect(result.status).toBe("success");
+  });
+
+  it("does not create a Chapter in an unavailable Course Section", async () => {
+    const query = createMutationQuery({ data: null, error: null });
+    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+
+    const result = await createCourseSectionChapterAction(
+      subjectId,
+      courseSectionId,
+      initialManagementActionState,
+      chapterForm(),
+    );
+
+    expect(query.insert).not.toHaveBeenCalled();
+    expect(result.status).toBe("error");
+  });
+
+  it("deletes an empty owned Course Section Chapter through the guarded RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: chapterId, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
+
+    const result = await deleteCourseSectionChapterAction(subjectId, courseSectionId, chapterId);
+
+    expect(rpc).toHaveBeenCalledWith("delete_course_section_chapter", {
+      p_subject_id: subjectId,
+      p_course_section_id: courseSectionId,
+      p_chapter_id: chapterId,
+    });
+    expect(result.status).toBe("success");
+  });
+
+  it("reports a rejected Course Section Chapter cascade delete", async () => {
+    mocks.createClient.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { code: "42501" } }),
+    });
+
+    const result = await deleteCourseSectionChapterAction(subjectId, courseSectionId, chapterId);
+
+    expect(result).toEqual(expect.objectContaining({ status: "error" }));
+    expect(result.message).toContain("quyền");
   });
 
   it("updates only the requested Chapter in its Subject", async () => {

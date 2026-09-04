@@ -3,7 +3,8 @@ import "server-only";
 import { z } from "zod";
 
 import { requireTeacher } from "@/features/auth/teacher-session";
-import { courseSectionIdSchema, lessonIdSchema, subjectIdSchema } from "@/features/subjects/schemas";
+import { sortLessonsByTitle } from "@/features/lessons/order";
+import { chapterIdSchema, courseSectionIdSchema, lessonIdSchema, subjectIdSchema } from "@/features/subjects/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 const subjectSchema = z.object({
@@ -68,6 +69,11 @@ const persistentLessonDetailSchema = persistentLessonSchema.extend({
   markdown_source: z.string(),
 });
 
+const chapterLessonReviewSchema = persistentLessonDetailSchema;
+const chapterSessionSchema = lessonSessionSchema.extend({
+  title: z.string(),
+});
+
 export type Subject = z.infer<typeof subjectSchema>;
 export type SubjectListItem = Subject & { courseSectionCount: number };
 export type CourseSection = z.infer<typeof courseSectionSchema>;
@@ -95,6 +101,13 @@ export type PersistentLessonDetail = {
   lesson: z.infer<typeof persistentLessonDetailSchema>;
   status: "UPCOMING" | "LIVE" | "ENDED";
   sessions: z.infer<typeof lessonSessionSchema>[];
+};
+export type CourseSectionChapterHistory = {
+  subject: Subject;
+  courseSection: CourseSection;
+  chapter: Chapter;
+  lessons: z.infer<typeof chapterLessonReviewSchema>[];
+  sessions: z.infer<typeof chapterSessionSchema>[];
 };
 
 export async function getSubjects(): Promise<SubjectListItem[]> {
@@ -153,7 +166,7 @@ export async function getSubjectDetail(rawSubjectId: string): Promise<SubjectDet
     ...subjectSchema.parse(subjectData),
     chapters: z.array(chapterSchema).parse(chapterResult.data).sort((left, right) => left.name.localeCompare(right.name, "vi")),
     courseSections: z.array(courseSectionSchema).parse(courseSectionResult.data),
-    templateLessons: z.array(templateLessonSchema).parse(templateLessonResult.data),
+    templateLessons: sortLessonsByTitle(z.array(templateLessonSchema).parse(templateLessonResult.data)),
   };
 }
 
@@ -257,7 +270,7 @@ export async function getCourseSectionRosterDetail(
     courseSection: courseSectionSchema.parse(courseSectionData),
     chapters: z.array(chapterSchema).parse(chapterResult.data).sort((left, right) => left.name.localeCompare(right.name, "vi")),
     students: z.array(rosterStudentSchema).parse(rosterResult.data),
-    lessons: parsedLessons.map((lesson) => ({
+    lessons: sortLessonsByTitle(parsedLessons).map((lesson) => ({
       ...lesson,
       latestSession: sessionByLesson.get(lesson.id) ?? null,
     })),
@@ -332,5 +345,71 @@ export async function getPersistentLessonDetail(
     lesson: persistentLessonDetailSchema.parse(lessonData),
     status,
     sessions,
+  };
+}
+
+export async function getCourseSectionChapterHistory(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+): Promise<CourseSectionChapterHistory | null> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  if (!subjectId.success || !courseSectionId.success || !chapterId.success) return null;
+
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const { data: subjectData, error: subjectError } = await supabase
+    .from("subjects")
+    .select("id, name, code, created_at")
+    .eq("id", subjectId.data)
+    .eq("teacher_id", teacher.id)
+    .maybeSingle();
+  if (subjectError) throw new Error("Không thể tải môn học.");
+  if (!subjectData) return null;
+
+  const { data: courseSectionData, error: courseSectionError } = await supabase
+    .from("course_sections")
+    .select("id, subject_id, section_code, display_name, created_at")
+    .eq("id", courseSectionId.data)
+    .eq("subject_id", subjectId.data)
+    .maybeSingle();
+  if (courseSectionError) throw new Error("Không thể tải lớp học phần.");
+  if (!courseSectionData) return null;
+
+  const [chapterResult, lessonResult, sessionResult] = await Promise.all([
+    supabase
+      .from("chapters")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at")
+      .eq("id", chapterId.data)
+      .eq("course_section_id", courseSectionId.data)
+      .maybeSingle(),
+    supabase
+      .from("lessons")
+      .select("id, course_section_id, chapter_id, title, markdown_source, created_at, updated_at")
+      .eq("course_section_id", courseSectionId.data)
+      .eq("chapter_id", chapterId.data),
+    supabase
+      .from("rooms")
+      .select("id, title, status, started_at, ended_at")
+      .eq("course_section_id", courseSectionId.data)
+      .eq("chapter_id", chapterId.data)
+      .in("status", ["ACTIVE", "ENDED"])
+      .order("started_at", { ascending: false }),
+  ]);
+  if (chapterResult.error) throw new Error("Không thể tải chương.");
+  if (!chapterResult.data) return null;
+  if (lessonResult.error) throw new Error("Không thể tải nội dung chương.");
+  if (sessionResult.error) throw new Error("Không thể tải lịch sử Session của chương.");
+
+  const lessons = sortLessonsByTitle(z.array(chapterLessonReviewSchema).parse(lessonResult.data));
+
+  return {
+    subject: subjectSchema.parse(subjectData),
+    courseSection: courseSectionSchema.parse(courseSectionData),
+    chapter: chapterSchema.parse(chapterResult.data),
+    lessons,
+    sessions: z.array(chapterSessionSchema).parse(sessionResult.data),
   };
 }

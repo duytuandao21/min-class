@@ -11,6 +11,10 @@ export type AdvanceSectionResult =
   | { ok: true }
   | { ok: false; message: string };
 
+export type ReleaseChapterResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
 export type EndRoomResult =
   | { ok: true }
   | { ok: false; message: string };
@@ -38,6 +42,29 @@ export async function advanceSectionAction(input: unknown, lessonInput?: unknown
       message: error.code === "P0001"
         ? "Đây đã là section cuối cùng."
         : "Không thể chuyển sang Section tiếp theo.",
+    };
+  }
+
+  revalidatePath(`/teacher/rooms/${roomId.data}`);
+  return { ok: true };
+}
+
+export async function releaseEntireChapterAction(input: unknown): Promise<ReleaseChapterResult> {
+  await requireTeacher();
+
+  const roomId = roomIdSchema.safeParse(input);
+  if (!roomId.success) return { ok: false, message: "Buổi học không hợp lệ." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("release_entire_chapter", {
+    p_room_id: roomId.data,
+  });
+  if (error) {
+    return {
+      ok: false,
+      message: error.code === "P0001"
+        ? "Chỉ có thể Done chương đang LIVE."
+        : "Không thể Done toàn bộ chương.",
     };
   }
 

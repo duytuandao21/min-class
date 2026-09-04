@@ -8,6 +8,8 @@ import { LessonChapterDisclosure } from "@/features/lessons/components/lesson-ch
 import { StartChapterSessionButton } from "@/features/lessons/components/start-chapter-session-button";
 import { RosterStudentList } from "@/features/subjects/components/roster-student-list";
 import { RosterUploadForm } from "@/features/subjects/components/roster-upload-form";
+import { CourseSectionChapterButton } from "@/features/subjects/components/course-section-chapter-button";
+import { DeleteCourseSectionChapterButton } from "@/features/subjects/components/delete-course-section-chapter-button";
 import { getCourseSectionRosterDetail } from "@/features/subjects/server/queries";
 
 export default async function CourseSectionRosterPage({
@@ -54,6 +56,7 @@ export default async function CourseSectionRosterPage({
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-3">
             <CreateLessonButton baseHref={createLessonHref} chapters={detail.chapters} />
+            <CourseSectionChapterButton courseSectionId={detail.courseSection.id} subjectId={detail.subject.id} />
             <a
               className="group inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 font-bold text-sky-900 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-100 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 motion-reduce:transform-none"
               href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/export`}
@@ -79,15 +82,38 @@ export default async function CourseSectionRosterPage({
             {detail.chapters.map((chapter, chapterIndex) => {
               const chapterLessons = lessonsByChapter.get(chapter.id) ?? [];
               const activeSession = chapterLessons.find((lesson) => lesson.latestSession?.status === "ACTIVE")?.latestSession ?? null;
+              const hasSessionHistory = chapterLessons.some((lesson) => lesson.latestSession !== null);
               return (
                 <LessonChapterDisclosure
-                  actions={activeSession ? (
-                    <Link className="inline-flex min-h-10 items-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-700 motion-reduce:transform-none" href={`/teacher/rooms/${activeSession.id}`}>
-                      Dashboard
-                    </Link>
-                  ) : chapterLessons.length > 0 ? (
-                    <StartChapterSessionButton chapterId={chapter.id} courseSectionId={detail.courseSection.id} />
-                  ) : null}
+                  actions={(
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {chapterLessons.length > 0 ? (
+                        <>
+                          {activeSession ? (
+                            <Link className="inline-flex min-h-10 items-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-700 motion-reduce:transform-none" href={`/teacher/rooms/${activeSession.id}`}>
+                              Dashboard
+                            </Link>
+                          ) : (
+                            <StartChapterSessionButton chapterId={chapter.id} courseSectionId={detail.courseSection.id} />
+                          )}
+                          {hasSessionHistory ? (
+                            <Link
+                              className="inline-flex min-h-10 items-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-950 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-100 hover:shadow-md motion-reduce:transform-none"
+                              href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/chapters/${chapter.id}`}
+                            >
+                              Lịch sử
+                            </Link>
+                          ) : null}
+                        </>
+                      ) : null}
+                      <DeleteCourseSectionChapterButton
+                        chapterId={chapter.id}
+                        chapterName={chapter.name}
+                        courseSectionId={detail.courseSection.id}
+                        subjectId={detail.subject.id}
+                      />
+                    </div>
+                  )}
                   defaultOpen={chapterIndex === initiallyOpenChapterIndex}
                   key={chapter.id}
                   lessonCount={chapterLessons.length}
@@ -104,29 +130,16 @@ export default async function CourseSectionRosterPage({
                               <h3 className="font-semibold">{lesson.title}</h3>
                               <p className="mt-1 text-xs text-[var(--muted)]">Created: {dateFormatter.format(new Date(lesson.created_at))}</p>
                             </div>
-                            <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                  lesson.latestSession?.status === "ACTIVE"
-                                    ? "bg-emerald-100 text-emerald-900"
-                                    : lesson.latestSession
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-amber-100 text-amber-900"
-                                }`}
-                              >
-                                {lesson.latestSession?.status === "ACTIVE" ? "LIVE" : lesson.latestSession ? "ĐÃ KẾT THÚC" : "CHƯA LIVE"}
-                              </span>
-                              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                <Link className="inline-flex min-h-9 items-center justify-center rounded-lg border border-black/15 px-3 py-1.5 text-sm font-semibold transition hover:border-[var(--accent)] hover:text-[var(--accent)]" href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/lessons/${lesson.id}`}>
-                                  Xem lịch sử
-                                </Link>
-                                <DeleteLessonButton
-                                  courseSectionId={detail.courseSection.id}
-                                  lessonId={lesson.id}
-                                  lessonTitle={lesson.title}
-                                  subjectId={detail.subject.id}
-                                />
-                              </div>
+                            <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+                              <Link className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--accent)] px-3 py-1.5 text-sm font-bold text-white transition hover:bg-emerald-800" href={`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/lessons/${lesson.id}/edit`}>
+                                Sửa
+                              </Link>
+                              <DeleteLessonButton
+                                courseSectionId={detail.courseSection.id}
+                                lessonId={lesson.id}
+                                lessonTitle={lesson.title}
+                                subjectId={detail.subject.id}
+                              />
                             </div>
                           </li>
                         ))}

@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildPresentationSteps,
   classVoicesSnapshotSchema,
-  filterClassVoiceSections,
+  filterClassVoiceLessons,
   flattenClassVoices,
+  groupClassVoicesByLesson,
   nextPresentationIndex,
 } from "./class-voices";
 
@@ -14,6 +15,8 @@ const snapshot = classVoicesSnapshotSchema.parse({
   participantCount: 42,
   sections: [
     {
+      lessonId: "49000000-0000-4000-8000-000000000002",
+      lessonTitle: "Bài 2",
       sectionId: "59000000-0000-4000-8000-000000000001",
       sectionPosition: 0,
       sectionTitle: "Opening",
@@ -36,6 +39,8 @@ const snapshot = classVoicesSnapshotSchema.parse({
       ],
     },
     {
+      lessonId: "49000000-0000-4000-8000-000000000002",
+      lessonTitle: "Bài 2",
       sectionId: "59000000-0000-4000-8000-000000000002",
       sectionPosition: 1,
       sectionTitle: "No comments",
@@ -43,6 +48,8 @@ const snapshot = classVoicesSnapshotSchema.parse({
       comments: [],
     },
     {
+      lessonId: "49000000-0000-4000-8000-000000000001",
+      lessonTitle: "Bài 1",
       sectionId: "59000000-0000-4000-8000-000000000003",
       sectionPosition: 2,
       sectionTitle: "No feedback",
@@ -67,18 +74,26 @@ describe("Class Voices contract", () => {
     expect(voices[1]?.isAnonymous).toBe(true);
   });
 
-  it("filters the Voice Wall by Section while retaining empty comment sections", () => {
-    expect(filterClassVoiceSections(snapshot, "ALL")).toHaveLength(3);
-    expect(filterClassVoiceSections(snapshot, snapshot.sections[1].sectionId)).toEqual([
-      snapshot.sections[1],
+  it("groups sections by Lesson in natural Lesson order", () => {
+    const lessons = groupClassVoicesByLesson(snapshot);
+    expect(lessons.map((lesson) => lesson.lessonTitle)).toEqual(["Bài 1", "Bài 2"]);
+    expect(lessons[1]?.sections.map((section) => section.sectionTitle)).toEqual([
+      "Opening",
+      "No comments",
     ]);
-    expect(snapshot.sections[1].comments).toEqual([]);
+  });
+
+  it("filters the Voice Wall to one Lesson", () => {
+    const lessons = filterClassVoiceLessons(snapshot, "49000000-0000-4000-8000-000000000002");
+    expect(lessons).toHaveLength(1);
+    expect(lessons[0]?.lessonTitle).toBe("Bài 2");
   });
 
   it("builds Intro, Section, Reaction, Comment and Final presentation steps", () => {
     const steps = buildPresentationSteps(snapshot);
     expect(steps.map((step) => step.type)).toEqual([
       "INTRO",
+      "LESSON_INTRO",
       "SECTION_INTRO",
       "REACTION_OVERVIEW",
       "COMMENT_SPOTLIGHT",

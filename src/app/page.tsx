@@ -43,16 +43,17 @@ export default async function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              className="inline-flex rounded-xl bg-[var(--accent)] px-5 py-3 font-semibold text-white transition hover:bg-[#125438]"
+              className="inline-flex items-center gap-2.5 rounded-xl border border-emerald-800 bg-emerald-700 px-5 py-3 font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:bg-emerald-800 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-700 motion-reduce:transform-none"
+              href="/learn/live"
+            >
+              <span aria-hidden="true" className="size-3.5 animate-pulse rounded-full bg-emerald-300 shadow-[0_0_0_6px_rgba(167,243,208,0.2)] motion-reduce:animate-none" />
+              Các bài học đang live
+            </Link>
+            <Link
+              className="inline-flex items-center rounded-xl border border-emerald-700/30 bg-white/90 px-5 py-3 font-semibold text-emerald-950 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-50 hover:shadow-md motion-reduce:transform-none"
               href="/learn"
             >
               Khám phá bài học
-            </Link>
-            <Link
-              className="inline-flex rounded-xl border border-emerald-700 bg-white/90 px-5 py-3 font-semibold text-emerald-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md motion-reduce:transform-none"
-              href="/learn/live"
-            >
-              Các bài học đang live
             </Link>
           </div>
         </div>

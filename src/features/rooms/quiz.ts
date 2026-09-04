@@ -95,3 +95,13 @@ export type TeacherQuizAnalytics = z.infer<typeof teacherQuizAnalyticsSchema>;
 export function parseQuizSubmissionResult(input: unknown): QuizSubmissionResult {
   return z.array(quizSubmissionResultSchema).min(1).parse(input)[0];
 }
+
+export function filterTeacherQuizAnalyticsBySections(
+  analytics: TeacherQuizAnalytics,
+  sectionIds: readonly string[],
+): TeacherQuizAnalytics {
+  const visibleSectionIds = new Set(sectionIds);
+  return {
+    quizzes: analytics.quizzes.filter((quiz) => visibleSectionIds.has(quiz.sectionId)),
+  };
+}

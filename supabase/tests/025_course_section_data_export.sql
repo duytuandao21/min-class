@@ -45,12 +45,13 @@ values
   ('f1300000-0000-0000-0000-000000000002', null, 'f1200000-0000-0000-0000-000000000001', 'f1250000-0000-0000-0000-000000000001', 'Lesson 2', '# Lesson 2');
 
 insert into public.rooms (
-  id, code, teacher_user_id, title, status, teaching_section, released_through, started_at, ended_at, lesson_id
+  id, code, teacher_user_id, title, status, teaching_section, released_through, started_at, ended_at,
+  lesson_id, course_section_id, chapter_id
 )
 values
-  ('f1400000-0000-0000-0000-000000000001', 'EXP234', 'f1000000-0000-0000-0000-000000000001', 'Lesson 1 - A', 'ENDED', 0, 0, now(), now(), 'f1300000-0000-0000-0000-000000000001'),
-  ('f1400000-0000-0000-0000-000000000002', 'EXP235', 'f1000000-0000-0000-0000-000000000001', 'Lesson 1 - B', 'ENDED', 0, 0, now(), now(), 'f1300000-0000-0000-0000-000000000001'),
-  ('f1400000-0000-0000-0000-000000000003', 'EXP236', 'f1000000-0000-0000-0000-000000000001', 'Lesson 2', 'ENDED', 0, 0, now(), now(), 'f1300000-0000-0000-0000-000000000002');
+  ('f1400000-0000-0000-0000-000000000001', 'EXP234', 'f1000000-0000-0000-0000-000000000001', 'Lesson 1 - A', 'ENDED', 0, 0, now(), now(), 'f1300000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001', 'f1250000-0000-0000-0000-000000000001'),
+  ('f1400000-0000-0000-0000-000000000002', 'EXP235', 'f1000000-0000-0000-0000-000000000001', 'Lesson 1 - B', 'ENDED', 0, 0, now(), now(), 'f1300000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001', 'f1250000-0000-0000-0000-000000000001'),
+  ('f1400000-0000-0000-0000-000000000003', 'EXP236', 'f1000000-0000-0000-0000-000000000001', 'Lesson 2', 'ENDED', 0, 0, now(), now(), 'f1300000-0000-0000-0000-000000000002', 'f1200000-0000-0000-0000-000000000001', 'f1250000-0000-0000-0000-000000000001');
 
 insert into public.session_attendance (session_id, mssv, joined_at)
 values
@@ -76,8 +77,8 @@ select set_config('request.jwt.claims', '{"sub":"f1000000-0000-0000-0000-0000000
 
 select is(
   (public.get_teacher_course_section_export('f1100000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001')->>'totalClassMeetings')::integer,
-  1,
-  'One Chapter counts as one class meeting regardless of Session count'
+  3,
+  'Each started Chapter Session counts as one class meeting'
 );
 select is(
   (
@@ -85,8 +86,8 @@ select is(
     from jsonb_array_elements(public.get_teacher_course_section_export('f1100000-0000-0000-0000-000000000001', 'f1200000-0000-0000-0000-000000000001')->'students') student
     where student->>'mssv' = '00123456'
   ),
-  1,
-  'Repeated joined Sessions in one Chapter count as one attended class meeting'
+  2,
+  'Each joined Chapter Session counts as one attended class meeting'
 );
 select is(
   (

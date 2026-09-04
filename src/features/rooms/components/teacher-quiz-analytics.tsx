@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { TeacherQuizAnalytics } from "@/features/rooms/quiz";
+import {
+  filterTeacherQuizAnalyticsBySections,
+  type TeacherQuizAnalytics,
+} from "@/features/rooms/quiz";
 import { fetchTeacherQuizAnalytics } from "@/features/rooms/quiz-client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -11,14 +14,19 @@ type ConnectionState = "connecting" | "connected" | "degraded";
 export function TeacherQuizAnalytics({
   roomId,
   initialAnalytics,
+  lessonTitle,
+  sectionIds,
 }: {
   roomId: string;
   initialAnalytics: TeacherQuizAnalytics;
+  lessonTitle: string;
+  sectionIds: string[];
 }) {
   const [analytics, setAnalytics] = useState(initialAnalytics);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [syncError, setSyncError] = useState<string | null>(null);
   const syncVersionRef = useRef(0);
+  const lessonAnalytics = filterTeacherQuizAnalyticsBySections(analytics, sectionIds);
 
   const syncAnalytics = useCallback(async () => {
     const syncVersion = ++syncVersionRef.current;
@@ -85,7 +93,7 @@ export function TeacherQuizAnalytics({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">QUIZ ANALYTICS</p>
-          <h2 className="mt-2 text-2xl font-semibold">Kết quả Quiz</h2>
+          <h2 className="mt-2 text-2xl font-semibold">Kết quả Quiz · {lessonTitle}</h2>
         </div>
         {connection !== "connected" ? (
           <p className="text-xs text-[var(--muted)]" aria-live="polite">
@@ -97,9 +105,9 @@ export function TeacherQuizAnalytics({
       {syncError ? <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">{syncError}</p> : null}
 
       <div className="mt-6 space-y-6">
-        {analytics.quizzes.length === 0 ? (
+        {lessonAnalytics.quizzes.length === 0 ? (
           <p className="rounded-2xl bg-black/3 p-5 text-sm text-[var(--muted)]">Chưa có Quiz section được release.</p>
-        ) : analytics.quizzes.map((quiz) => (
+        ) : lessonAnalytics.quizzes.map((quiz) => (
           <article className="rounded-2xl border border-black/10 p-5 sm:p-6" key={quiz.quizId}>
             <p className="text-xs font-semibold text-[var(--muted)]">SECTION {quiz.sectionPosition + 1}</p>
             <h3 className="mt-1 text-xl font-semibold">{quiz.title}</h3>

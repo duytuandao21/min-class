@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  filterTeacherQuizAnalyticsBySections,
   quizSubmissionSchema,
   studentQuizSnapshotSchema,
   teacherQuizAnalyticsSchema,
@@ -97,5 +98,21 @@ describe("Quiz MVP contracts", () => {
         questions: [],
       }],
     }).success).toBe(true);
+  });
+
+  it("keeps Quiz analytics inside the selected Lesson", () => {
+    const analytics = teacherQuizAnalyticsSchema.parse({
+      quizzes: [
+        { quizId: "61000000-0000-4000-8000-000000000001", sectionId: "51000000-0000-4000-8000-000000000001", sectionPosition: 1, title: "Quiz A", submittedCount: 2, participantCount: 4, completionRate: 50, averageScore: 1, totalQuestions: 1, questions: [] },
+        { quizId: "61000000-0000-4000-8000-000000000002", sectionId: "51000000-0000-4000-8000-000000000002", sectionPosition: 1, title: "Quiz B", submittedCount: 3, participantCount: 4, completionRate: 75, averageScore: 1, totalQuestions: 1, questions: [] },
+      ],
+    });
+
+    const filtered = filterTeacherQuizAnalyticsBySections(
+      analytics,
+      ["51000000-0000-4000-8000-000000000002"],
+    );
+
+    expect(filtered.quizzes.map((quiz) => quiz.title)).toEqual(["Quiz B"]);
   });
 });

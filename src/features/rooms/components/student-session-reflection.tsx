@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
   saveSessionReflectionAction,
@@ -22,10 +22,60 @@ export function StudentSessionReflection({
   };
   const [state, formAction, pending] = useActionState(action, initialState);
   const savedReflection = state.reflection ?? initialReflection;
+  const [open, setOpen] = useState(initialReflection === null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    closeRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  function renderDialog(content: ReactNode) {
+    return (
+      <>
+        <section className="mt-7 flex flex-col gap-4 rounded-3xl border border-emerald-900/10 bg-gradient-to-r from-white to-emerald-50/60 p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Tổng kết cá nhân">
+          <div>
+            <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
+            <p className="mt-2 text-lg font-semibold">{savedReflection ? "Tổng kết của bạn đã được ghi nhận." : "Ghi lại đóng góp và cảm nhận của bạn về buổi học."}</p>
+          </div>
+          <button className="shrink-0 rounded-xl bg-[var(--accent)] px-5 py-3 font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 hover:shadow-md motion-reduce:transform-none" onClick={() => setOpen(true)} type="button">
+            {savedReflection ? "Xem tổng kết" : "Mở tổng kết"}
+          </button>
+        </section>
+
+        {open ? (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[3px]">
+            <section aria-labelledby="session-reflection-title" aria-modal="true" className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl border border-emerald-200 bg-[#f8fbf8] p-6 shadow-2xl sm:p-9" role="dialog">
+              <button
+                aria-label="Đóng tổng kết cá nhân"
+                className="absolute right-5 top-5 rounded-xl border border-black/15 bg-white px-4 py-2 text-sm font-bold shadow-sm transition hover:bg-black/5 sm:right-7 sm:top-7"
+                onClick={() => setOpen(false)}
+                ref={closeRef}
+                type="button"
+              >
+                Đóng
+              </button>
+              {content}
+            </section>
+          </div>
+        ) : null}
+      </>
+    );
+  }
 
   if (savedReflection) {
-    return (
-      <section className="mt-7 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-7 shadow-sm sm:p-9" aria-labelledby="session-reflection-title">
+    return renderDialog(
+      <div className="pr-16">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
@@ -46,12 +96,12 @@ export function StudentSessionReflection({
           </div>
         </div>
         <p className="mt-5 text-sm text-[var(--muted)]">Tổng kết chỉ được gửi một lần và vẫn có thể xem lại trong Lesson Review.</p>
-      </section>
+      </div>,
     );
   }
 
-  return (
-    <section className="mt-7 rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white to-emerald-50/60 p-7 shadow-sm sm:p-9" aria-labelledby="session-reflection-title">
+  return renderDialog(
+    <div className="pr-16">
       <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
       <h2 className="mt-2 text-3xl font-semibold" id="session-reflection-title">
         Bạn đã đóng góp gì trong buổi học?
@@ -115,6 +165,6 @@ export function StudentSessionReflection({
           {pending ? "Đang gửi…" : "Gửi tổng kết"}
         </button>
       </form>
-    </section>
+    </div>,
   );
 }

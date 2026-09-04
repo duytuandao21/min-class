@@ -9,6 +9,7 @@ import {
   saveCourseSectionLessonAction,
   type CourseSectionLessonPreviewResult,
 } from "@/features/lessons/course-section-actions";
+import { LessonImageUploader } from "@/features/lessons/components/lesson-image-uploader";
 import { MarkdownPreview } from "@/features/lessons/components/markdown-preview";
 import { LessonModeSwitch, type LessonEditorMode } from "@/features/lessons/components/lesson-mode-switch";
 import type { Chapter } from "@/features/subjects/server/queries";
@@ -119,6 +120,7 @@ export function CreateCourseSectionLessonForm({ chapter, subjectId, courseSectio
           type="file"
         />
         <p className="mt-2 text-xs leading-5 text-[var(--muted)]">File .md, tối đa 1 MB. Phải preview trước khi lưu.</p>
+        <LessonImageUploader disabled={isPreviewing || isSaving} subjectId={subjectId} />
 
         {errors.length > 0 ? (
           <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">

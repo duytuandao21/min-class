@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 
 export function LessonChapterDisclosure({
@@ -8,12 +9,14 @@ export function LessonChapterDisclosure({
   defaultOpen = false,
   lessonCount,
   title,
+  titleHref,
 }: {
   actions?: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
   lessonCount: number;
   title: string;
+  titleHref?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const contentId = useId();
@@ -21,15 +24,25 @@ export function LessonChapterDisclosure({
   return (
     <section className={`overflow-hidden rounded-2xl border bg-white transition-[border-color,box-shadow] duration-300 motion-reduce:transition-none ${open ? "border-emerald-200 shadow-md" : "border-black/10 shadow-sm"}`}>
       <div className={`flex items-center gap-3 px-3 py-2 transition-colors duration-300 motion-reduce:transition-none ${open ? "bg-emerald-50/70" : "bg-white"}`}>
-        <button
-          aria-controls={contentId}
-          aria-expanded={open}
-          className="min-w-0 flex-1 rounded-xl px-2 py-2 text-left hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-          onClick={() => setOpen((current) => !current)}
-          type="button"
-        >
-          <span className="block truncate font-bold text-[var(--accent)]">{title}</span>
-        </button>
+        {titleHref ? (
+          <Link
+            className="min-w-0 flex-1 rounded-xl px-2 py-2 text-left hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            href={titleHref}
+          >
+            <span className="block truncate font-bold text-[var(--accent)]">{title}</span>
+            <span className="mt-1 block text-xs font-semibold text-[var(--muted)]">Nhấn để truy cập chương</span>
+          </Link>
+        ) : (
+          <button
+            aria-controls={contentId}
+            aria-expanded={open}
+            className="min-w-0 flex-1 rounded-xl px-2 py-2 text-left hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            onClick={() => setOpen((current) => !current)}
+            type="button"
+          >
+            <span className="block truncate font-bold text-[var(--accent)]">{title}</span>
+          </button>
+        )}
         {actions ? <div className="shrink-0">{actions}</div> : null}
         <button
           aria-controls={contentId}

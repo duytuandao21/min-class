@@ -14,11 +14,11 @@ export default async function EditCourseLessonPage({ params }: {
     getCourseSectionRosterDetail(subjectId, courseSectionId),
   ]);
   if (!detail || !course) notFound();
-  const returnHref = `/teacher/subjects/${subjectId}/sections/${courseSectionId}/lessons/${lessonId}`;
+  const returnHref = `/teacher/subjects/${subjectId}/sections/${courseSectionId}`;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-10 sm:px-10 lg:px-12">
-      <BackLink href={returnHref} label={detail.lesson.title} />
+      <BackLink href={returnHref} label={course.courseSection.section_code} />
       <header className="my-10 flex flex-wrap items-start justify-between gap-6">
         <div>
           <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">COURSE LESSON</p>

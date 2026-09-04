@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
 import { EndedLessonReviewView } from "@/features/catalog/components/ended-lesson-review";
-import { getStudentEndedLessonReview } from "@/features/catalog/server/queries";
+import {
+  getStudentEndedLessonReview,
+  getStudentEndedSessionLessons,
+} from "@/features/catalog/server/queries";
 
 const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
   dateStyle: "long",
@@ -18,7 +22,10 @@ export default async function StudentEndedLessonReviewPage({
 }) {
   const { sessionId } = await params;
   const { lessonId } = await searchParams;
-  const review = await getStudentEndedLessonReview(sessionId, lessonId);
+  const [review, sessionLessons] = await Promise.all([
+    getStudentEndedLessonReview(sessionId, lessonId),
+    getStudentEndedSessionLessons(sessionId),
+  ]);
   if (!review) notFound();
 
   return (
@@ -41,6 +48,21 @@ export default async function StudentEndedLessonReviewPage({
           Nội dung ôn tập chỉ đọc. Bạn có thể xem toàn bộ Section và đáp án Quiz của buổi học đã kết thúc.
         </p>
       </header>
+
+      {sessionLessons.length > 1 ? (
+        <nav aria-label="Các Lesson trong chương" className="mt-7 flex gap-2 overflow-x-auto pb-3">
+          {sessionLessons.map((lesson) => (
+            <Link
+              aria-current={lesson.lesson_id === review.lessonId ? "page" : undefined}
+              className={`shrink-0 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${lesson.lesson_id === review.lessonId ? "border-emerald-700 bg-emerald-700 text-white" : "border-black/10 bg-white hover:border-emerald-400 hover:text-[var(--accent)]"}`}
+              href={`/learn/review/${sessionId}?lessonId=${lesson.lesson_id}`}
+              key={lesson.lesson_id}
+            >
+              {lesson.lesson_title}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
       <EndedLessonReviewView review={review} />
     </main>
