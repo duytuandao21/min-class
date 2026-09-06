@@ -17,14 +17,14 @@ export default async function NewSubjectTemplateLessonPage({ params }: { params:
         <div>
           <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">SUBJECT TEMPLATE</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">Tạo Lesson mẫu</h1>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">Lesson này sẽ được sao chép độc lập vào những lớp học phần tạo sau này.</p>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">Lesson này có thể được sao chép vào cả lớp học phần hiện có và lớp tạo sau này.</p>
         </div>
         <MarkdownWritingGuide />
       </header>
       {subject.chapters.length === 0 ? (
         <p className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-amber-900">Hãy tạo chương trong Lesson Plan trước khi thêm Lesson mẫu.</p>
       ) : (
-        <LessonEditorForm chapters={subject.chapters} mode="create-template" returnHref={`/teacher/subjects/${subject.id}?lessonPlan=open`} subjectId={subject.id} />
+        <LessonEditorForm chapters={subject.chapters} courseSectionCount={subject.courseSections.length} mode="create-template" returnHref={`/teacher/subjects/${subject.id}?lessonPlan=open`} subjectId={subject.id} />
       )}
     </main>
   );

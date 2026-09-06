@@ -17,7 +17,7 @@ export default async function EditSubjectTemplateLessonPage({ params }: { params
         <div>
           <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">EDIT SUBJECT TEMPLATE</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">{detail.lesson.title}</h1>
-          <p className="mt-4 text-[var(--muted)]">Thay đổi chỉ áp dụng cho mẫu và các lớp học phần tạo trong tương lai.</p>
+          <p className="mt-4 text-[var(--muted)]">Khi lưu, bạn có thể áp dụng thay đổi cho các lớp học phần hiện có.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <a className="rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 font-bold text-sky-900" href={`/teacher/lessons/${detail.lesson.id}/download`}>Tải file .md</a>
@@ -26,8 +26,9 @@ export default async function EditSubjectTemplateLessonPage({ params }: { params
       </header>
       <LessonEditorForm
         chapters={detail.subject.chapters}
+        courseSectionCount={detail.subject.courseSections.length}
         initial={{ id: detail.lesson.id, chapterId: detail.lesson.chapter_id, title: detail.lesson.title, markdownSource: detail.lesson.markdown_source }}
-        mode="edit"
+        mode="edit-template"
         returnHref={`/teacher/subjects/${detail.subject.id}?lessonPlan=open`}
         subjectId={detail.subject.id}
       />

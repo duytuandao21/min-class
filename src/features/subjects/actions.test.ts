@@ -76,6 +76,12 @@ function chapterForm(name = "Chương 1: Giới thiệu") {
   return formData;
 }
 
+function syncedChapterForm(name = "Chương 1: Giới thiệu", applyToExisting = true) {
+  const formData = chapterForm(name);
+  formData.set("applyToExisting", String(applyToExisting));
+  return formData;
+}
+
 describe("Subject management actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -159,14 +165,15 @@ describe("Subject management actions", () => {
   });
 
   it("creates a Chapter in the requested Subject", async () => {
-    const query = createMutationQuery({ data: null, error: null });
-    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+    const rpc = vi.fn().mockResolvedValue({ data: { chapterId, appliedCount: 2 }, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
 
-    const result = await createChapterAction(subjectId, initialManagementActionState, chapterForm());
+    const result = await createChapterAction(subjectId, initialManagementActionState, syncedChapterForm());
 
-    expect(query.insert).toHaveBeenCalledWith({
-      subject_id: subjectId,
-      name: "Chương 1: Giới thiệu",
+    expect(rpc).toHaveBeenCalledWith("create_subject_chapter_synced", {
+      p_subject_id: subjectId,
+      p_name: "Chương 1: Giới thiệu",
+      p_apply_to_existing: true,
     });
     expect(result.status).toBe("success");
   });
@@ -232,20 +239,23 @@ describe("Subject management actions", () => {
   });
 
   it("updates only the requested Chapter in its Subject", async () => {
-    const query = createMutationQuery({ data: { id: chapterId }, error: null });
-    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+    const rpc = vi.fn().mockResolvedValue({ data: { chapterId, appliedCount: 2 }, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
 
-    const result = await updateChapterAction(subjectId, chapterId, initialManagementActionState, chapterForm("Chương 2: TCP"));
+    const result = await updateChapterAction(subjectId, chapterId, initialManagementActionState, syncedChapterForm("Chương 2: TCP", false));
 
-    expect(query.update).toHaveBeenCalledWith({ name: "Chương 2: TCP" });
-    expect(query.eq).toHaveBeenCalledWith("id", chapterId);
-    expect(query.eq).toHaveBeenCalledWith("subject_id", subjectId);
+    expect(rpc).toHaveBeenCalledWith("update_subject_chapter_synced", {
+      p_subject_id: subjectId,
+      p_chapter_id: chapterId,
+      p_name: "Chương 2: TCP",
+      p_apply_to_existing: false,
+    });
     expect(result.status).toBe("success");
   });
 
   it("renames only the requested Chapter in its Course Section", async () => {
-    const query = createMutationQuery({ data: { id: chapterId }, error: null });
-    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+    const rpc = vi.fn().mockResolvedValue({ data: chapterId, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
 
     const result = await updateCourseSectionChapterAction(
       subjectId,
@@ -255,9 +265,12 @@ describe("Subject management actions", () => {
       chapterForm("Chương 2: TCP"),
     );
 
-    expect(query.update).toHaveBeenCalledWith({ name: "Chương 2: TCP" });
-    expect(query.eq).toHaveBeenCalledWith("id", chapterId);
-    expect(query.eq).toHaveBeenCalledWith("course_section_id", courseSectionId);
+    expect(rpc).toHaveBeenCalledWith("update_course_section_chapter_independent", {
+      p_subject_id: subjectId,
+      p_course_section_id: courseSectionId,
+      p_chapter_id: chapterId,
+      p_name: "Chương 2: TCP",
+    });
     expect(result.status).toBe("success");
   });
 

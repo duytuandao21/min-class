@@ -30,6 +30,7 @@ export const publicCatalogLessonSchema = publicLessonSchema.extend({
 export const publicChapterSchema = z.object({
   chapter_id: z.string().uuid(),
   chapter_name: z.string().min(1),
+  preview_enabled: z.boolean(),
 });
 
 export const publicLiveSessionSchema = z.object({

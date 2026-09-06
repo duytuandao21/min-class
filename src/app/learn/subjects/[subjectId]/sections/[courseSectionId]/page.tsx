@@ -2,27 +2,23 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 
 import { BackLink } from "@/components/back-link";
-import type { PublicLessonStatus } from "@/features/catalog/schemas";
+import { getPublicChapterStatus, type PublicChapterStatus } from "@/features/catalog/chapter-preview";
 import { getPublicChapters, getPublicCourseSections, getPublicLessons } from "@/features/catalog/server/queries";
 import { LessonChapterDisclosure } from "@/features/lessons/components/lesson-chapter-disclosure";
 
-const statusLabel: Record<PublicLessonStatus, string> = {
+const statusLabel: Record<PublicChapterStatus, string> = {
+  PREVIEW: "Xem trước",
   UPCOMING: "Sắp diễn ra",
   LIVE: "LIVE",
   ENDED: "Đã kết thúc",
 };
 
-const statusClass: Record<PublicLessonStatus, string> = {
+const statusClass: Record<PublicChapterStatus, string> = {
+  PREVIEW: "bg-sky-100 text-sky-900",
   UPCOMING: "bg-amber-100 text-amber-900",
   LIVE: "bg-emerald-100 text-emerald-900",
   ENDED: "bg-red-100 text-red-800",
 };
-
-function getChapterStatus(lessons: { lesson_status: PublicLessonStatus }[]): PublicLessonStatus {
-  if (lessons.some((lesson) => lesson.lesson_status === "LIVE")) return "LIVE";
-  if (lessons.some((lesson) => lesson.lesson_status === "ENDED")) return "ENDED";
-  return "UPCOMING";
-}
 
 export default async function PublicLessonsPage({ params }: { params: Promise<{ subjectId: string; courseSectionId: string }> }) {
   const { subjectId, courseSectionId } = await params;
@@ -56,7 +52,7 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
         <div className="space-y-4">
           {chapters.map((chapter, chapterIndex) => {
             const chapterLessons = lessonsByChapter.get(chapter.chapter_id) ?? [];
-            const chapterStatus = getChapterStatus(chapterLessons);
+            const chapterStatus = getPublicChapterStatus(chapterLessons, chapter.preview_enabled);
             const chapterHref = chapterStatus === "UPCOMING"
               ? undefined
               : `/learn/subjects/${subjectId}/sections/${courseSectionId}/chapters/${chapter.chapter_id}`;

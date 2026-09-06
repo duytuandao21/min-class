@@ -6,6 +6,7 @@ import { useRef, useState, useTransition } from "react";
 import {
   previewLessonMarkdownAction,
   saveSubjectTemplateLessonAction,
+  updateSubjectTemplateLessonAction,
   updateOwnedLessonAction,
   type CourseSectionLessonPreviewResult,
 } from "@/features/lessons/course-section-actions";
@@ -13,18 +14,20 @@ import { LessonImageUploader } from "@/features/lessons/components/lesson-image-
 import { MarkdownPreview } from "@/features/lessons/components/markdown-preview";
 import { LessonModeSwitch, type LessonEditorMode } from "@/features/lessons/components/lesson-mode-switch";
 import type { Chapter } from "@/features/subjects/server/queries";
+import { TemplateSyncChoice } from "@/features/subjects/components/template-sync-choice";
 
 type Preview = Extract<CourseSectionLessonPreviewResult, { ok: true }>;
 
 type LessonEditorFormProps = {
   chapters: Chapter[];
   initial?: { id: string; chapterId: string; title: string; markdownSource: string };
-  mode: "create-template" | "edit";
+  courseSectionCount?: number;
+  mode: "create-template" | "edit-template" | "edit-course";
   returnHref: string;
   subjectId: string;
 };
 
-export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectId }: LessonEditorFormProps) {
+export function LessonEditorForm({ chapters, courseSectionCount = 0, initial, mode, returnHref, subjectId }: LessonEditorFormProps) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -33,6 +36,7 @@ export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectI
   const [displayMode, setDisplayMode] = useState<LessonEditorMode>("edit");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [applyToExisting, setApplyToExisting] = useState(true);
   const [pending, startTransition] = useTransition();
 
   function invalidate() {
@@ -83,8 +87,10 @@ export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectI
       setErrors([]);
       const input = { lessonTitle: title, markdownSource };
       const result = mode === "create-template"
-        ? await saveSubjectTemplateLessonAction(subjectId, chapterId, input)
-        : await updateOwnedLessonAction(subjectId, initial?.id ?? "", chapterId, input);
+        ? await saveSubjectTemplateLessonAction(subjectId, chapterId, input, applyToExisting)
+        : mode === "edit-template"
+          ? await updateSubjectTemplateLessonAction(subjectId, initial?.id ?? "", chapterId, input, applyToExisting)
+          : await updateOwnedLessonAction(subjectId, initial?.id ?? "", chapterId, input);
       if (!result.ok) {
         setErrors(result.errors);
         return;
@@ -136,6 +142,10 @@ export function LessonEditorForm({ chapters, initial, mode, returnHref, subjectI
         </div>
         <p className="mt-3 text-xs leading-5 text-[var(--muted)]">Upload file hiện tại hoặc chỉnh sửa trực tiếp source ở Edit mode.</p>
         <LessonImageUploader disabled={pending} subjectId={subjectId} />
+
+        {mode !== "edit-course" ? (
+          <TemplateSyncChoice checked={applyToExisting} courseSectionCount={courseSectionCount} onChange={setApplyToExisting} />
+        ) : null}
 
         {errors.length > 0 ? (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">

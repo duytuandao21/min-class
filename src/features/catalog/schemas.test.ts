@@ -36,9 +36,10 @@ describe("public Chapter catalog", () => {
   it("parses a sanitized Chapter and its Lesson relation", () => {
     const chapterId = "ae250000-0000-4000-8000-000000000001";
 
-    expect(publicChapterSchema.parse({ chapter_id: chapterId, chapter_name: "Chương 1" })).toEqual({
+    expect(publicChapterSchema.parse({ chapter_id: chapterId, chapter_name: "Chương 1", preview_enabled: false })).toEqual({
       chapter_id: chapterId,
       chapter_name: "Chương 1",
+      preview_enabled: false,
     });
     expect(publicCatalogLessonSchema.parse({
       chapter_id: chapterId,

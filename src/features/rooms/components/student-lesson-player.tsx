@@ -162,13 +162,13 @@ export function StudentLessonPlayer({
   }
 
   return (
-    <section className="flex flex-1 flex-col py-10">
-      <div className="mb-6 flex min-h-6 items-center justify-end">
+    <section className="flex flex-1 flex-col pb-10 pt-4 sm:pt-5">
+      {connection !== "connected" ? <div className="mb-3 flex min-h-5 items-center justify-end">
         <div className="text-right text-xs text-[var(--muted)]" aria-live="polite">
           {connection === "connecting" ? "Đang kết nối realtime…" : null}
           {connection === "degraded" ? "Realtime đang kết nối lại…" : null}
         </div>
-      </div>
+      </div> : null}
 
       {syncError ? (
         <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">

@@ -5,6 +5,7 @@ import { useActionState, useEffect, useId, useRef, useState, useTransition } fro
 
 import { DeleteLessonButton } from "@/features/lessons/components/delete-lesson-button";
 import { createChapterAction, deleteChapterAction, type ManagementActionState, updateChapterAction } from "@/features/subjects/actions";
+import { TemplateSyncChoice } from "@/features/subjects/components/template-sync-choice";
 import type { Chapter, TemplateLesson } from "@/features/subjects/server/queries";
 
 const initialState: ManagementActionState = { status: "idle" };
@@ -50,8 +51,9 @@ function ActionMessage({ state }: { state: ManagementActionState }) {
   return <p className="mt-3 text-sm text-red-800" role="alert">{state.message}</p>;
 }
 
-function AddChapterForm({ onCancel, subjectId }: { onCancel: () => void; subjectId: string }) {
+function AddChapterForm({ courseSectionCount, onCancel, subjectId }: { courseSectionCount: number; onCancel: () => void; subjectId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [applyToExisting, setApplyToExisting] = useState(true);
   const [state, action, pending] = useActionState(async (previous: ManagementActionState, data: FormData) => {
     const result = await createChapterAction(subjectId, previous, data);
     if (result.status === "success") { formRef.current?.reset(); onCancel(); }
@@ -61,6 +63,8 @@ function AddChapterForm({ onCancel, subjectId }: { onCancel: () => void; subject
     <form action={action} className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4" ref={formRef}>
       <label className="text-sm font-semibold" htmlFor="new-chapter-name">Tên chương</label>
       <input autoFocus className={`mt-2 ${inputClassName}`} id="new-chapter-name" maxLength={120} name="name" placeholder="Ví dụ: Chương 1: Giới thiệu" required />
+      <input name="applyToExisting" type="hidden" value={String(applyToExisting)} />
+      <TemplateSyncChoice checked={applyToExisting} courseSectionCount={courseSectionCount} onChange={setApplyToExisting} />
       <ActionMessage state={state} />
       <div className="mt-4 flex justify-end gap-3">
         <button className={cancelButtonClassName} disabled={pending} onClick={onCancel} type="button">Hủy</button>
@@ -76,10 +80,12 @@ function AddChapterForm({ onCancel, subjectId }: { onCancel: () => void; subject
   );
 }
 
-function ChapterGroup({ chapter, lessons, subjectId }: { chapter: Chapter; lessons: TemplateLesson[]; subjectId: string }) {
+function ChapterGroup({ chapter, courseSectionCount, lessons, subjectId }: { chapter: Chapter; courseSectionCount: number; lessons: TemplateLesson[]; subjectId: string }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [applyToExisting, setApplyToExisting] = useState(true);
   const [deleting, startDeleting] = useTransition();
   const contentId = useId();
   const [state, action, pending] = useActionState(async (previous: ManagementActionState, data: FormData) => {
@@ -90,7 +96,7 @@ function ChapterGroup({ chapter, lessons, subjectId }: { chapter: Chapter; lesso
 
   function removeChapter() {
     startDeleting(async () => {
-      try { await deleteChapterAction(subjectId, chapter.id); }
+      try { await deleteChapterAction(subjectId, chapter.id, applyToExisting); setConfirmingDelete(false); }
       catch { setDeleteError("Chỉ có thể xóa chương khi không còn Lesson mẫu hoặc Lesson của lớp học phần tham chiếu đến chương."); }
     });
   }
@@ -101,6 +107,8 @@ function ChapterGroup({ chapter, lessons, subjectId }: { chapter: Chapter; lesso
         {editing ? (
           <form action={action} className="flex min-w-0 flex-1 flex-wrap gap-2">
             <input autoFocus className={`min-w-52 flex-1 ${inputClassName}`} defaultValue={chapter.name} maxLength={120} name="name" required />
+            <input name="applyToExisting" type="hidden" value={String(applyToExisting)} />
+            <div className="basis-full"><TemplateSyncChoice checked={applyToExisting} courseSectionCount={courseSectionCount} onChange={setApplyToExisting} /></div>
             <button className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-bold text-white" disabled={pending}>Lưu</button>
             <button className={cancelButtonClassName} onClick={() => setEditing(false)} type="button">Hủy</button>
             <ActionMessage state={state} />
@@ -118,8 +126,8 @@ function ChapterGroup({ chapter, lessons, subjectId }: { chapter: Chapter; lesso
               <span className="mt-1 block text-xs text-[var(--muted)]">{lessons.length} Lesson mẫu</span>
             </button>
             <div className="flex shrink-0 gap-2">
-              <button className="rounded-lg border border-black/15 px-3 py-2 text-sm font-bold" onClick={() => setEditing(true)} type="button">Sửa</button>
-              <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" disabled={deleting} onClick={removeChapter} type="button">Xóa</button>
+              <button className="rounded-lg border border-black/15 px-3 py-2 text-sm font-bold" onClick={() => { setApplyToExisting(true); setEditing(true); }} type="button">Sửa</button>
+              <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" disabled={deleting} onClick={() => { setApplyToExisting(true); setConfirmingDelete(true); }} type="button">Xóa</button>
             </div>
             <button
               aria-controls={contentId}
@@ -155,7 +163,7 @@ function ChapterGroup({ chapter, lessons, subjectId }: { chapter: Chapter; lesso
                     <div className="flex flex-wrap gap-2">
                       <a className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-800" href={`/teacher/lessons/${lesson.id}/download`}>Tải .md</a>
                       <Link className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-bold text-white" href={`/teacher/subjects/${subjectId}/lessons/${lesson.id}`}>Chỉnh sửa</Link>
-                      <DeleteLessonButton courseSectionId={null} lessonId={lesson.id} lessonTitle={lesson.title} subjectId={subjectId} />
+                      <DeleteLessonButton courseSectionCount={courseSectionCount} courseSectionId={null} lessonId={lesson.id} lessonTitle={lesson.title} subjectId={subjectId} />
                     </div>
                   </li>
                 ))}
@@ -164,12 +172,28 @@ function ChapterGroup({ chapter, lessons, subjectId }: { chapter: Chapter; lesso
           </div>
         </div>
       </div>
+      {confirmingDelete ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4 backdrop-blur-[3px]">
+          <section aria-modal="true" className="w-full max-w-md rounded-3xl border border-red-200 bg-[#fff8f6] p-7 shadow-2xl" role="alertdialog">
+            <div aria-hidden="true" className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-red-100 text-2xl font-black text-red-700">!</div>
+            <h2 className="mt-5 text-xl font-bold">Xóa chương này?</h2>
+            <p className="mt-3 leading-7 text-[var(--muted)]">Chỉ có thể xóa chương khi không còn Lesson mẫu.</p>
+            <TemplateSyncChoice checked={applyToExisting} courseSectionCount={courseSectionCount} onChange={setApplyToExisting} />
+            {deleteError ? <p className="mt-3 text-sm font-semibold text-red-700" role="alert">{deleteError}</p> : null}
+            <div className="mt-6 flex justify-end gap-3">
+              <button className={cancelButtonClassName} disabled={deleting} onClick={() => setConfirmingDelete(false)} type="button">Hủy</button>
+              <button className="rounded-xl bg-red-700 px-5 py-3 font-bold text-white disabled:opacity-50" disabled={deleting} onClick={removeChapter} type="button">{deleting ? "Đang xóa…" : "Xóa chương"}</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </li>
   );
 }
 
-export function LessonPlanManager({ chapters, defaultOpen = false, subjectId, templateLessons }: {
+export function LessonPlanManager({ chapters, courseSectionCount, defaultOpen = false, subjectId, templateLessons }: {
   chapters: Chapter[];
+  courseSectionCount: number;
   defaultOpen?: boolean;
   subjectId: string;
   templateLessons: TemplateLesson[];
@@ -211,10 +235,10 @@ export function LessonPlanManager({ chapters, defaultOpen = false, subjectId, te
                 ) : null}
               </div>
             </div>
-            {adding ? <AddChapterForm onCancel={() => setAdding(false)} subjectId={subjectId} /> : null}
+            {adding ? <AddChapterForm courseSectionCount={courseSectionCount} onCancel={() => setAdding(false)} subjectId={subjectId} /> : null}
             <div className="mt-5 min-h-0 overflow-y-auto pr-1">
               {chapters.length === 0 ? <p className="rounded-2xl border border-dashed border-black/15 bg-white p-8 text-center text-[var(--muted)]">Bắt đầu bằng cách thêm chương, sau đó upload các Lesson mẫu.</p> : (
-                <ol className="space-y-4">{chapters.map((chapter) => <ChapterGroup chapter={chapter} key={chapter.id} lessons={lessonsByChapter.get(chapter.id) ?? []} subjectId={subjectId} />)}</ol>
+                <ol className="space-y-4">{chapters.map((chapter) => <ChapterGroup chapter={chapter} courseSectionCount={courseSectionCount} key={chapter.id} lessons={lessonsByChapter.get(chapter.id) ?? []} subjectId={subjectId} />)}</ol>
               )}
             </div>
           </section>

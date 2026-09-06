@@ -11,6 +11,7 @@ import { RosterStudentList } from "@/features/subjects/components/roster-student
 import { RosterUploadForm } from "@/features/subjects/components/roster-upload-form";
 import { CourseSectionChapterButton } from "@/features/subjects/components/course-section-chapter-button";
 import { ChapterOptionsMenu } from "@/features/subjects/components/chapter-options-menu";
+import { ChapterPreviewButton } from "@/features/subjects/components/chapter-preview-button";
 import { DeleteCourseSectionChapterButton } from "@/features/subjects/components/delete-course-section-chapter-button";
 import { RenameCourseSectionChapterButton } from "@/features/subjects/components/rename-course-section-chapter-button";
 import { getCourseSectionRosterDetail } from "@/features/subjects/server/queries";
@@ -86,6 +87,9 @@ export default async function CourseSectionRosterPage({
                 <LessonChapterDisclosure
                   actions={(
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      {chapter.preview_enabled && !hasSessionHistory ? (
+                        <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900">XEM TRƯỚC</span>
+                      ) : null}
                       <Link
                         className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3.5 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 motion-reduce:transform-none"
                         href={`${createLessonHref}?chapterId=${chapter.id}`}
@@ -104,6 +108,9 @@ export default async function CourseSectionRosterPage({
                         )
                       ) : null}
                       <ChapterOptionsMenu chapterName={chapter.name}>
+                          {!hasSessionHistory && chapterLessons.length > 0 ? (
+                            <ChapterPreviewButton chapterId={chapter.id} enabled={chapter.preview_enabled} />
+                          ) : null}
                           <RenameCourseSectionChapterButton
                             chapterId={chapter.id}
                             chapterName={chapter.name}

@@ -33,6 +33,7 @@ const chapterSchema = z.object({
   name: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
+  preview_enabled: z.boolean(),
 });
 
 const rosterStudentSchema = z.object({
@@ -150,7 +151,7 @@ export async function getSubjectDetail(rawSubjectId: string): Promise<SubjectDet
       .order("created_at", { ascending: true }),
     supabase
       .from("chapters")
-      .select("id, subject_id, course_section_id, name, created_at, updated_at")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
       .eq("subject_id", subjectId.data),
     supabase
       .from("lessons")
@@ -231,7 +232,7 @@ export async function getCourseSectionRosterDetail(
       .order("created_at", { ascending: false }),
     supabase
       .from("chapters")
-      .select("id, subject_id, course_section_id, name, created_at, updated_at")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
       .eq("course_section_id", courseSectionId.data),
   ]);
   if (rosterResult.error) throw new Error("Không thể tải roster lớp học phần.");
@@ -381,7 +382,7 @@ export async function getCourseSectionChapterHistory(
   const [chapterResult, lessonResult, sessionResult] = await Promise.all([
     supabase
       .from("chapters")
-      .select("id, subject_id, course_section_id, name, created_at, updated_at")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
       .eq("id", chapterId.data)
       .eq("course_section_id", courseSectionId.data)
       .maybeSingle(),

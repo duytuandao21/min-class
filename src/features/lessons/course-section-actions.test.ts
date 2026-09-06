@@ -16,6 +16,7 @@ import {
   previewCourseSectionLessonAction,
   saveCourseSectionLessonAction,
   saveSubjectTemplateLessonAction,
+  updateSubjectTemplateLessonAction,
   updateOwnedLessonAction,
 } from "./course-section-actions";
 
@@ -135,17 +136,32 @@ describe("Persistent Course Section Lesson actions", () => {
   });
 
   it("creates a Subject template Lesson from the normalized Markdown", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: [{ lesson_id: lessonId }], error: null });
+    const rpc = vi.fn().mockResolvedValue({ data: { lessonId, appliedCount: 2, skippedCount: 0 }, error: null });
     mocks.createClient.mockResolvedValue({ rpc });
     const result = await saveSubjectTemplateLessonAction(subjectId, chapterId, {
       lessonTitle: "TCP Introduction",
       markdownSource: validMarkdown,
     });
-    expect(result).toEqual({ ok: true, lessonId });
-    expect(rpc).toHaveBeenCalledWith("create_subject_template_lesson", expect.objectContaining({
+    expect(result).toEqual({ ok: true, lessonId, appliedCount: 2, skippedCount: 0 });
+    expect(rpc).toHaveBeenCalledWith("create_subject_template_lesson_synced", expect.objectContaining({
       p_subject_id: subjectId,
       p_chapter_id: chapterId,
       p_lesson_title: "TCP Introduction",
+      p_apply_to_existing: true,
+    }));
+  });
+
+  it("updates a template Lesson without applying when Teacher opts out", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { lessonId, appliedCount: 0, skippedCount: 0 }, error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
+    const result = await updateSubjectTemplateLessonAction(subjectId, lessonId, chapterId, {
+      lessonTitle: "TCP Introduction",
+      markdownSource: validMarkdown,
+    }, false);
+    expect(result).toEqual({ ok: true, lessonId, appliedCount: 0, skippedCount: 0 });
+    expect(rpc).toHaveBeenCalledWith("update_subject_template_lesson_synced", expect.objectContaining({
+      p_lesson_id: lessonId,
+      p_apply_to_existing: false,
     }));
   });
 

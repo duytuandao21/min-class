@@ -41,6 +41,7 @@ export default async function SubjectDetailPage({
               <CreateCourseSectionForm hasTemplateLessons={subject.templateLessons.length > 0} subjectId={subject.id} />
               <LessonPlanManager
                 chapters={subject.chapters}
+                courseSectionCount={subject.courseSections.length}
                 defaultOpen={query.lessonPlan === "setup" || query.lessonPlan === "open"}
                 subjectId={subject.id}
                 templateLessons={subject.templateLessons}

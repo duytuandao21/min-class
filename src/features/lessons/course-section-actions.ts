@@ -40,8 +40,14 @@ export type SaveCourseSectionLessonResult =
   | { ok: false; errors: string[] };
 
 export type LessonMutationResult =
-  | { ok: true; lessonId: string }
+  | { ok: true; lessonId: string; appliedCount?: number; skippedCount?: number }
   | { ok: false; errors: string[] };
+
+const syncedLessonResultSchema = z.object({
+  lessonId: z.string().uuid(),
+  appliedCount: z.number().int().nonnegative(),
+  skippedCount: z.number().int().nonnegative(),
+});
 
 function zodMessages(error: z.ZodError): string[] {
   return error.issues.map((issue) => issue.message);
@@ -194,6 +200,7 @@ export async function saveSubjectTemplateLessonAction(
   rawSubjectId: string,
   rawChapterId: string,
   rawInput: unknown,
+  applyToExisting = true,
 ): Promise<LessonMutationResult> {
   await requireTeacher();
   const subjectId = subjectIdSchema.safeParse(rawSubjectId);
@@ -203,17 +210,51 @@ export async function saveSubjectTemplateLessonAction(
   if (!input.ok) return input;
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_subject_template_lesson", {
+  const { data, error } = await supabase.rpc("create_subject_template_lesson_synced", {
     p_subject_id: subjectId.data,
     p_chapter_id: chapterId.data,
     p_lesson_title: input.title,
     p_markdown_source: input.source,
     p_lesson: input.lesson,
+    p_apply_to_existing: applyToExisting,
   });
-  const persisted = z.array(z.object({ lesson_id: z.string().uuid() })).length(1).safeParse(data);
+  const persisted = syncedLessonResultSchema.safeParse(data);
   if (error || !persisted.success) return { ok: false, errors: ["Không thể lưu Lesson mẫu. Hãy thử lại."] };
-  revalidatePath(`/teacher/subjects/${subjectId.data}`);
-  return { ok: true, lessonId: persisted.data[0].lesson_id };
+  revalidatePath(`/teacher/subjects/${subjectId.data}`, "layout");
+  revalidatePath(`/learn/subjects/${subjectId.data}`, "layout");
+  return { ok: true, ...persisted.data };
+}
+
+export async function updateSubjectTemplateLessonAction(
+  rawSubjectId: string,
+  rawLessonId: string,
+  rawChapterId: string,
+  rawInput: unknown,
+  applyToExisting = true,
+): Promise<LessonMutationResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const lessonId = lessonIdSchema.safeParse(rawLessonId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  const input = normalizeLessonInput(rawInput);
+  if (!subjectId.success || !lessonId.success || !chapterId.success) return { ok: false, errors: ["Lesson hoặc chương không hợp lệ."] };
+  if (!input.ok) return input;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("update_subject_template_lesson_synced", {
+    p_subject_id: subjectId.data,
+    p_lesson_id: lessonId.data,
+    p_chapter_id: chapterId.data,
+    p_lesson_title: input.title,
+    p_markdown_source: input.source,
+    p_lesson: input.lesson,
+    p_apply_to_existing: applyToExisting,
+  });
+  const persisted = syncedLessonResultSchema.safeParse(data);
+  if (error || !persisted.success) return { ok: false, errors: ["Không thể cập nhật Lesson mẫu. Hãy thử lại."] };
+  revalidatePath(`/teacher/subjects/${subjectId.data}`, "layout");
+  revalidatePath(`/learn/subjects/${subjectId.data}`, "layout");
+  return { ok: true, ...persisted.data };
 }
 
 export async function updateOwnedLessonAction(
@@ -241,7 +282,7 @@ export async function updateOwnedLessonAction(
   if (error || data !== lessonId.data) {
     return { ok: false, errors: ["Không thể cập nhật Lesson. Lesson đã có lịch sử Session sẽ được giữ nguyên."] };
   }
-  revalidatePath(`/teacher/subjects/${subjectId.data}`);
+  revalidatePath(`/teacher/subjects/${subjectId.data}`, "layout");
   return { ok: true, lessonId: lessonId.data };
 }
 
@@ -249,6 +290,7 @@ export async function deleteOwnedLessonAction(
   rawSubjectId: string,
   rawCourseSectionId: string | null,
   rawLessonId: string,
+  applyToExisting = true,
 ): Promise<LessonMutationResult> {
   await requireTeacher();
   const subjectId = subjectIdSchema.safeParse(rawSubjectId);
@@ -258,11 +300,19 @@ export async function deleteOwnedLessonAction(
     return { ok: false, errors: ["Lesson không hợp lệ."] };
   }
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("delete_owned_lesson", { p_lesson_id: lessonId.data });
-  if (error || data !== lessonId.data) {
+  const { data, error } = rawCourseSectionId === null
+    ? await supabase.rpc("delete_subject_template_lesson_synced", {
+        p_subject_id: subjectId.data,
+        p_lesson_id: lessonId.data,
+        p_apply_to_existing: applyToExisting,
+      })
+    : await supabase.rpc("delete_owned_lesson", { p_lesson_id: lessonId.data });
+  const synced = rawCourseSectionId === null ? syncedLessonResultSchema.safeParse(data) : null;
+  if (error || (rawCourseSectionId === null ? !synced?.success : data !== lessonId.data)) {
     return { ok: false, errors: ["Không thể xóa Lesson hoặc bạn không có quyền thực hiện thao tác này."] };
   }
-  revalidatePath(`/teacher/subjects/${subjectId.data}`);
+  revalidatePath(`/teacher/subjects/${subjectId.data}`, "layout");
+  if (rawCourseSectionId === null) revalidatePath(`/learn/subjects/${subjectId.data}`, "layout");
   if (courseSectionId !== null) revalidatePath(`/teacher/subjects/${subjectId.data}/sections/${courseSectionId.data}`);
-  return { ok: true, lessonId: lessonId.data };
+  return synced?.success ? { ok: true, ...synced.data } : { ok: true, lessonId: lessonId.data };
 }

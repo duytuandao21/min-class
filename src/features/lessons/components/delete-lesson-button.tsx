@@ -4,15 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { deleteOwnedLessonAction } from "@/features/lessons/course-section-actions";
+import { TemplateSyncChoice } from "@/features/subjects/components/template-sync-choice";
 
 export function DeleteLessonButton({
   courseSectionId,
+  courseSectionCount = 0,
   lessonId,
   lessonTitle,
   returnHref,
   subjectId,
 }: {
   courseSectionId: string | null;
+  courseSectionCount?: number;
   lessonId: string;
   lessonTitle: string;
   returnHref?: string;
@@ -21,11 +24,12 @@ export function DeleteLessonButton({
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [applyToExisting, setApplyToExisting] = useState(true);
   const [pending, startTransition] = useTransition();
 
   function remove() {
     startTransition(async () => {
-      const result = await deleteOwnedLessonAction(subjectId, courseSectionId, lessonId);
+      const result = await deleteOwnedLessonAction(subjectId, courseSectionId, lessonId, applyToExisting);
       if (!result.ok) {
         setError(result.errors[0] ?? "Không thể xóa Lesson.");
         return;
@@ -40,7 +44,7 @@ export function DeleteLessonButton({
     <>
       <button
         className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-45"
-        onClick={() => { setError(null); setConfirming(true); }}
+        onClick={() => { setError(null); setApplyToExisting(true); setConfirming(true); }}
         type="button"
       >
         Xóa
@@ -53,6 +57,9 @@ export function DeleteLessonButton({
             <p className="mt-3 leading-7 text-[var(--muted)]">
               “{lessonTitle}”{courseSectionId ? " cùng toàn bộ Session, điểm danh, phản hồi và kết quả quiz liên quan" : " cùng toàn bộ nội dung mẫu liên quan"} sẽ bị xóa vĩnh viễn.
             </p>
+            {courseSectionId === null ? (
+              <TemplateSyncChoice checked={applyToExisting} courseSectionCount={courseSectionCount} onChange={setApplyToExisting} />
+            ) : null}
             {error ? <p className="mt-3 text-sm font-semibold text-red-700" role="alert">{error}</p> : null}
             <div className="mt-6 flex justify-end gap-3">
               <button className="rounded-xl border border-black/20 bg-white px-5 py-3 font-bold" disabled={pending} onClick={() => setConfirming(false)} type="button">Hủy</button>

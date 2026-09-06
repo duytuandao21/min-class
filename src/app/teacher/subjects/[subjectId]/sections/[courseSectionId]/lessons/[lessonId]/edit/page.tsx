@@ -36,7 +36,7 @@ export default async function EditCourseLessonPage({ params }: {
         <LessonEditorForm
           chapters={course.chapters}
           initial={{ id: lessonId, chapterId: detail.lesson.chapter_id, title: detail.lesson.title, markdownSource: detail.lesson.markdown_source }}
-          mode="edit"
+          mode="edit-course"
           returnHref={returnHref}
           subjectId={subjectId}
         />
