@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { BackLink } from "@/components/back-link";
 import { getPublicChapterStatus, type PublicChapterStatus } from "@/features/catalog/chapter-preview";
-import { getPublicChapters, getPublicCourseSections, getPublicLessons } from "@/features/catalog/server/queries";
+import { CourseSectionStudentGate } from "@/features/catalog/components/course-section-student-gate";
+import { getRememberedCourseSectionStudent } from "@/features/catalog/preview-actions";
+import { getPublicCourseSectionCatalog } from "@/features/catalog/server/queries";
 import { LessonChapterDisclosure } from "@/features/lessons/components/lesson-chapter-disclosure";
 
 const statusLabel: Record<PublicChapterStatus, string> = {
@@ -22,29 +23,27 @@ const statusClass: Record<PublicChapterStatus, string> = {
 
 export default async function PublicLessonsPage({ params }: { params: Promise<{ subjectId: string; courseSectionId: string }> }) {
   const { subjectId, courseSectionId } = await params;
-  const [courseSections, chapters, lessons] = await Promise.all([
-    getPublicCourseSections(subjectId),
-    getPublicChapters(courseSectionId),
-    getPublicLessons(courseSectionId),
+  const [catalog, initialMssv] = await Promise.all([
+    getPublicCourseSectionCatalog(subjectId, courseSectionId),
+    getRememberedCourseSectionStudent(courseSectionId),
   ]);
-  const courseSection = courseSections.find((item) => item.course_section_id === courseSectionId);
-  if (!courseSection) notFound();
+  if (!catalog) notFound();
+  const { chapters, courseSection, lessons } = catalog;
   const lessonsByChapter = new Map(chapters.map((chapter) => [chapter.chapter_id, []] as [string, typeof lessons]));
   for (const lesson of lessons) lessonsByChapter.get(lesson.chapter_id)?.push(lesson);
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-10 sm:px-10">
-      <BackLink href={`/learn/subjects/${subjectId}`} label="Lớp học phần" />
-      <header className="my-10 max-w-3xl">
-        <p className="text-sm font-bold tracking-[0.2em] text-[var(--muted)]">COURSE SECTION</p>
-        <h1 className="mt-4 break-words text-4xl font-bold tracking-[-0.035em] text-[var(--accent)] sm:text-5xl">{courseSection.section_code}</h1>
-        {courseSection.display_name ? <p className="mt-3 text-lg font-medium text-[var(--muted)]">{courseSection.display_name}</p> : null}
-        <p className="mt-4 text-lg text-[var(--muted)]">Chọn chương để tham gia buổi học đang LIVE hoặc xem lại buổi học đã kết thúc.</p>
-      </header>
-
-      {chapters.length === 0 ? (
-        <p className="rounded-3xl border border-dashed border-black/15 bg-white p-8 text-center text-[var(--muted)]">Lớp học phần này chưa có Lesson Plan.</p>
-      ) : (
-        <div className="space-y-4">
+    <CourseSectionStudentGate
+      backHref={`/learn/subjects/${subjectId}`}
+      courseSectionCode={courseSection.section_code}
+      courseSectionId={courseSectionId}
+      displayName={courseSection.display_name}
+      initialMssv={initialMssv}
+      key={courseSectionId}
+    >
+        {chapters.length === 0 ? (
+          <p className="rounded-3xl border border-dashed border-black/15 bg-white p-8 text-center text-[var(--muted)]">Lớp học phần này chưa có Lesson Plan.</p>
+        ) : (
+          <div className="space-y-4">
           {chapters.map((chapter) => {
             const chapterLessons = lessonsByChapter.get(chapter.chapter_id) ?? [];
             const chapterStatus = getPublicChapterStatus(chapterLessons, chapter.preview_enabled);
@@ -91,8 +90,8 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
               </LessonChapterDisclosure>
             );
           })}
-        </div>
-      )}
-    </main>
+          </div>
+        )}
+    </CourseSectionStudentGate>
   );
 }

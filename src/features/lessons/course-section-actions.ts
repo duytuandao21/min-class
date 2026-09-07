@@ -76,6 +76,15 @@ function zodMessages(error: z.ZodError): string[] {
   return error.issues.map((issue) => issue.message);
 }
 
+function stripChapterPrefix(title: string): string {
+  const normalizedTitle = title.trim();
+  const titleWithoutPrefix = normalizedTitle.replace(
+    /^chương\s+(?:\d+(?:\.\d+)*|[ivxlcdm]+)\s*[-–—]\s*/iu,
+    "",
+  ).trim();
+  return titleWithoutPrefix || normalizedTitle;
+}
+
 function normalizeLessonInput(rawInput: unknown): { ok: true; title: string; source: string; lesson: NormalizedLesson } | { ok: false; errors: string[] } {
   const input = saveInputSchema.safeParse(rawInput);
   if (!input.success) return { ok: false, errors: zodMessages(input.error) };
@@ -149,7 +158,7 @@ async function prepareLessonFiles(formData: FormData): Promise<PrepareCourseSect
     if (!(value instanceof File)) {
       return { fileName: "File không hợp lệ", lessonTitle: "", markdownSource: "", lesson: null, errors: ["File không hợp lệ."] };
     }
-    const fallbackTitle = value.name.replace(/\.md$/i, "").trim().slice(0, 200);
+    const fallbackTitle = stripChapterPrefix(value.name.replace(/\.md$/i, "")).slice(0, 200);
     const fileValidation = lessonFileSchema.safeParse(value);
     if (!fileValidation.success) {
       return {
@@ -163,7 +172,14 @@ async function prepareLessonFiles(formData: FormData): Promise<PrepareCourseSect
     try {
       const markdownSource = await value.text();
       const lesson = parseLessonMarkdown(markdownSource);
-      return { fileName: value.name, lessonTitle: lesson.title, markdownSource, lesson, errors: [] };
+      const lessonTitle = stripChapterPrefix(lesson.title);
+      return {
+        fileName: value.name,
+        lessonTitle,
+        markdownSource,
+        lesson: { ...lesson, title: lessonTitle },
+        errors: [],
+      };
     } catch (error) {
       return {
         fileName: value.name,

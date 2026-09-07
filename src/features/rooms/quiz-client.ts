@@ -36,10 +36,12 @@ export async function submitQuiz(roomIdInput: string, quizIdInput: string, answe
   return parseQuizSubmissionResult(data);
 }
 
-export async function fetchTeacherQuizAnalytics(roomIdInput: string): Promise<TeacherQuizAnalytics> {
+export async function fetchTeacherQuizAnalytics(roomIdInput: string, lessonIdInput: string): Promise<TeacherQuizAnalytics> {
   const roomId = roomIdSchema.parse(roomIdInput);
+  const lessonId = roomIdSchema.parse(lessonIdInput);
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_teacher_quiz_analytics", {
+  const { data, error } = await supabase.rpc("get_teacher_lesson_quiz_analytics", {
+    p_lesson_id: lessonId,
     p_room_id: roomId,
   });
   if (error) throw new Error("Không thể đồng bộ Quiz Analytics.");

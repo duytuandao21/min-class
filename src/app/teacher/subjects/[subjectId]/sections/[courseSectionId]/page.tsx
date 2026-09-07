@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { AddActionIcon } from "@/components/add-action-button";
 import { BackLink } from "@/components/back-link";
@@ -14,7 +15,37 @@ import { ChapterOptionsMenu } from "@/features/subjects/components/chapter-optio
 import { ChapterPreviewButton } from "@/features/subjects/components/chapter-preview-button";
 import { DeleteCourseSectionChapterButton } from "@/features/subjects/components/delete-course-section-chapter-button";
 import { RenameCourseSectionChapterButton } from "@/features/subjects/components/rename-course-section-chapter-button";
-import { getCourseSectionRosterDetail } from "@/features/subjects/server/queries";
+import { getCourseSectionDetail, getCourseSectionRoster } from "@/features/subjects/server/queries";
+
+async function RosterManagement({ courseSectionId, subjectId }: { courseSectionId: string; subjectId: string }) {
+  const students = await getCourseSectionRoster(courseSectionId);
+  return (
+    <section className="border-t border-black/10 pt-9" aria-labelledby="roster-management-title">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <h2 className="text-3xl font-semibold" id="roster-management-title">Quản lý danh sách sinh viên</h2>
+        <p className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-900">
+          Sĩ số hiện tại: {students.length}
+        </p>
+      </div>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.35fr)]">
+        <RosterUploadForm courseSectionId={courseSectionId} currentCount={students.length} subjectId={subjectId} />
+        <RosterStudentList students={students} />
+      </div>
+    </section>
+  );
+}
+
+function RosterManagementFallback() {
+  return (
+    <section className="border-t border-black/10 pt-9" aria-busy="true" aria-label="Đang tải danh sách sinh viên">
+      <div className="h-9 w-80 max-w-full animate-pulse rounded-xl bg-black/10 motion-reduce:animate-none" />
+      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+        <div className="h-72 animate-pulse rounded-3xl bg-black/5 motion-reduce:animate-none" />
+        <div className="h-72 animate-pulse rounded-3xl bg-black/5 motion-reduce:animate-none" />
+      </div>
+    </section>
+  );
+}
 
 export default async function CourseSectionRosterPage({
   params,
@@ -22,7 +53,7 @@ export default async function CourseSectionRosterPage({
   params: Promise<{ subjectId: string; courseSectionId: string }>;
 }) {
   const { subjectId, courseSectionId } = await params;
-  const detail = await getCourseSectionRosterDetail(subjectId, courseSectionId);
+  const detail = await getCourseSectionDetail(subjectId, courseSectionId);
   if (!detail) notFound();
 
   const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
@@ -172,25 +203,9 @@ export default async function CourseSectionRosterPage({
         )}
       </section>
 
-      <section className="border-t border-black/10 pt-9" aria-labelledby="roster-management-title">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-3xl font-semibold" id="roster-management-title">Quản lý danh sách sinh viên</h2>
-          </div>
-          <p className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-900">
-            Sĩ số hiện tại: {detail.students.length}
-          </p>
-        </div>
-
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(19rem,0.8fr)_minmax(0,1.35fr)]">
-          <RosterUploadForm
-            courseSectionId={detail.courseSection.id}
-            currentCount={detail.students.length}
-            subjectId={detail.subject.id}
-          />
-          <RosterStudentList students={detail.students} />
-        </div>
-      </section>
+      <Suspense fallback={<RosterManagementFallback />}>
+        <RosterManagement courseSectionId={detail.courseSection.id} subjectId={detail.subject.id} />
+      </Suspense>
     </main>
   );
 }

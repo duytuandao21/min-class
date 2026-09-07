@@ -43,6 +43,12 @@ function getDuplicateTitleIds(drafts: LessonDraft[]): Set<string> {
   return new Set([...idsByTitle.values()].filter((ids) => ids.length > 1).flat());
 }
 
+function isDraftReadyToSave(draft: LessonDraft): boolean {
+  return draft.errors.length === 0
+    && Boolean(draft.lessonTitle.trim())
+    && Boolean(draft.markdownSource.trim());
+}
+
 type LessonBatchFormProps = {
   chapter: Chapter;
   subjectId: string;
@@ -66,10 +72,10 @@ function LessonBatchForm(props: LessonBatchFormProps) {
 
   const selectedDraft = drafts.find((draft) => draft.id === selectedId) ?? null;
   const duplicateTitleIds = useMemo(() => getDuplicateTitleIds(drafts), [drafts]);
-  const validCount = drafts.filter((draft) => draft.lesson && draft.errors.length === 0).length;
+  const validCount = drafts.filter(isDraftReadyToSave).length;
   const isBusy = isPreparing || isPreviewing || isSaving;
   const canSave = drafts.length > 0
-    && drafts.every((draft) => draft.lesson && draft.errors.length === 0 && draft.lessonTitle.trim() && draft.markdownSource.trim())
+    && drafts.every(isDraftReadyToSave)
     && duplicateTitleIds.size === 0
     && !isBusy;
 
@@ -202,11 +208,11 @@ function LessonBatchForm(props: LessonBatchFormProps) {
             {drafts.map((draft) => {
               const selected = draft.id === selectedId;
               const hasDuplicateTitle = duplicateTitleIds.has(draft.id);
-              const status = hasDuplicateTitle || draft.errors.length > 0 ? "error" : draft.lesson ? "ready" : "pending";
+              const status = hasDuplicateTitle || !isDraftReadyToSave(draft) ? "error" : "ready";
               return (
                 <button
                   aria-pressed={selected}
-                  className={`group inline-flex min-w-44 shrink-0 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition disabled:cursor-wait disabled:opacity-70 ${selected ? "border-emerald-600 bg-emerald-700 text-white shadow-sm" : "border-black/10 bg-white hover:border-emerald-300 hover:bg-emerald-50"}`}
+                  className={`group inline-flex w-72 max-w-[80vw] shrink-0 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition disabled:cursor-wait disabled:opacity-70 ${selected ? "border-emerald-600 bg-emerald-700 text-white shadow-sm" : "border-black/10 bg-white hover:border-emerald-300 hover:bg-emerald-50"}`}
                   disabled={isBusy}
                   key={draft.id}
                   onClick={() => {
@@ -216,14 +222,14 @@ function LessonBatchForm(props: LessonBatchFormProps) {
                   }}
                   type="button"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate font-bold">{draft.lessonTitle || draft.fileName}</span>
-                    <span className={`mt-0.5 block truncate text-xs ${selected ? "text-emerald-50" : "text-[var(--muted)]"}`}>{draft.fileName}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-bold" title={draft.lessonTitle || draft.fileName}>{draft.lessonTitle || draft.fileName}</span>
+                    <span className={`mt-0.5 block truncate text-xs ${selected ? "text-emerald-50" : "text-[var(--muted)]"}`} title={draft.fileName}>{draft.fileName}</span>
                   </span>
                   <span
-                    aria-label={status === "ready" ? "Hợp lệ" : status === "error" ? "Có lỗi" : "Cần preview"}
-                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${status === "ready" ? "bg-emerald-300" : status === "error" ? "bg-red-400" : "bg-amber-400"}`}
-                    title={status === "ready" ? "Hợp lệ" : status === "error" ? "Có lỗi" : "Cần preview"}
+                    aria-label={status === "ready" ? "Sẵn sàng lưu" : "Có lỗi"}
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${status === "ready" ? "bg-emerald-300" : "bg-red-400"}`}
+                    title={status === "ready" ? "Sẵn sàng lưu" : "Có lỗi"}
                   />
                 </button>
               );
@@ -248,7 +254,14 @@ function LessonBatchForm(props: LessonBatchFormProps) {
               className="mt-2 w-full rounded-xl border border-black/15 px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-emerald-700/15"
               id={`lesson-title-${selectedDraft.id}`}
               maxLength={200}
-              onChange={(event) => updateDraft(selectedDraft.id, { lessonTitle: event.target.value, lesson: null, errors: [] })}
+              onChange={(event) => {
+                const lessonTitle = event.target.value;
+                updateDraft(selectedDraft.id, {
+                  lessonTitle,
+                  lesson: selectedDraft.lesson ? { ...selectedDraft.lesson, title: lessonTitle } : null,
+                  errors: [],
+                });
+              }}
               value={selectedDraft.lessonTitle}
             />
             <p className="mt-2 truncate text-xs text-[var(--muted)]" title={selectedDraft.fileName}>File: {selectedDraft.fileName}</p>
@@ -291,7 +304,7 @@ function LessonBatchForm(props: LessonBatchFormProps) {
               {isSaving ? "Đang lưu…" : `Lưu ${drafts.length} ${props.kind === "template" ? "Lesson mẫu" : "Lesson"}`}
             </button>
             {!canSave && drafts.length > 0 && !isBusy ? (
-              <p className="mt-2 text-center text-xs leading-5 text-[var(--muted)]">Hãy Preview và sửa hết lỗi của từng Lesson trước khi lưu.</p>
+              <p className="mt-2 text-center text-xs leading-5 text-[var(--muted)]">Hãy hoàn thiện tên, nội dung và sửa hết lỗi của từng Lesson trước khi lưu.</p>
             ) : null}
           </aside>
 

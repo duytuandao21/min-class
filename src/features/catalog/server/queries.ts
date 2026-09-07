@@ -6,10 +6,15 @@ import {
   endedLessonReviewSchema,
   publicCatalogLessonSchema,
   publicChapterSchema,
+  publicChapterCatalogSchema,
+  publicCourseSectionCatalogSchema,
   publicCourseSectionSchema,
   publicLessonGateContextSchema,
   publicLiveSessionSchema,
   publicSubjectSchema,
+  publicSubjectCourseSectionsSchema,
+  type PublicChapterCatalog,
+  type PublicCourseSectionCatalog,
   type PublicCourseSection,
   type PublicCatalogLesson,
   type PublicChapter,
@@ -17,6 +22,7 @@ import {
   type PublicLessonGateContext,
   type PublicLiveSession,
   type PublicSubject,
+  type PublicSubjectCourseSections,
 } from "@/features/catalog/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { parseSessionReflectionRow } from "@/features/rooms/session-reflection";
@@ -53,6 +59,60 @@ export async function getPublicCourseSections(rawSubjectId: string): Promise<Pub
   });
   if (error) throw new Error("Không thể tải danh sách lớp học phần.");
   return z.array(publicCourseSectionSchema).parse(data);
+}
+
+export async function getPublicSubjectCourseSections(rawSubjectId: string): Promise<PublicSubjectCourseSections | null> {
+  const subjectId = idSchema.safeParse(rawSubjectId);
+  if (!subjectId.success) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_subject_course_sections", {
+    p_subject_id: subjectId.data,
+  });
+  if (error) throw new Error("Không thể tải môn học và danh sách lớp học phần.");
+  const result = publicSubjectCourseSectionsSchema.safeParse(data);
+  return result.success ? result.data : null;
+}
+
+export async function getPublicCourseSectionCatalog(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+): Promise<PublicCourseSectionCatalog | null> {
+  const subjectId = idSchema.safeParse(rawSubjectId);
+  const courseSectionId = idSchema.safeParse(rawCourseSectionId);
+  if (!subjectId.success || !courseSectionId.success) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_course_section_catalog", {
+    p_course_section_id: courseSectionId.data,
+    p_subject_id: subjectId.data,
+  });
+  if (error) throw new Error("Không thể tải nội dung lớp học phần.");
+  const result = publicCourseSectionCatalogSchema.safeParse(data);
+  if (!result.success) return null;
+  return { ...result.data, lessons: sortSessionLessons(result.data.lessons) };
+}
+
+export async function getPublicChapterCatalog(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+): Promise<PublicChapterCatalog | null> {
+  const subjectId = idSchema.safeParse(rawSubjectId);
+  const courseSectionId = idSchema.safeParse(rawCourseSectionId);
+  const chapterId = idSchema.safeParse(rawChapterId);
+  if (!subjectId.success || !courseSectionId.success || !chapterId.success) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_chapter_catalog", {
+    p_chapter_id: chapterId.data,
+    p_course_section_id: courseSectionId.data,
+    p_subject_id: subjectId.data,
+  });
+  if (error) throw new Error("Không thể tải thông tin chương.");
+  const result = publicChapterCatalogSchema.safeParse(data);
+  if (!result.success) return null;
+  return { ...result.data, lessons: sortSessionLessons(result.data.lessons) };
 }
 
 export async function getPublicLessons(rawCourseSectionId: string): Promise<PublicCatalogLesson[]> {

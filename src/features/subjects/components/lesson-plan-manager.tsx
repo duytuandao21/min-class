@@ -154,9 +154,9 @@ function ChapterGroup({ chapter, courseSectionCount, lessons, subjectId }: { cha
             {lessons.length === 0 ? <p className="p-3 text-sm text-[var(--muted)]">Chưa có Lesson mẫu.</p> : (
               <ul className="space-y-2">
                 {lessons.map((lesson) => (
-                  <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-3" key={lesson.id}>
-                    <span className="font-semibold">{lesson.title}</span>
-                    <div className="flex flex-wrap gap-2">
+                  <li className="flex flex-col items-stretch gap-3 rounded-xl border border-black/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" key={lesson.id}>
+                    <span className="min-w-0 flex-1 truncate font-semibold" title={lesson.title}>{lesson.title}</span>
+                    <div className="flex shrink-0 flex-wrap gap-2">
                       <a className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-800" href={`/teacher/lessons/${lesson.id}/download`}>Tải .md</a>
                       <Link className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-bold text-white" href={`/teacher/subjects/${subjectId}/lessons/${lesson.id}`}>Chỉnh sửa</Link>
                       <DeleteLessonButton courseSectionCount={courseSectionCount} courseSectionId={null} lessonId={lesson.id} lessonTitle={lesson.title} subjectId={subjectId} />
@@ -187,9 +187,10 @@ function ChapterGroup({ chapter, courseSectionCount, lessons, subjectId }: { cha
   );
 }
 
-export function LessonPlanManager({ chapters, courseSectionCount, defaultOpen = false, subjectId, templateLessons }: {
+export function LessonPlanManager({ chapters, courseSectionCount, dataLoaded, defaultOpen = false, subjectId, templateLessons }: {
   chapters: Chapter[];
   courseSectionCount: number;
+  dataLoaded: boolean;
   defaultOpen?: boolean;
   subjectId: string;
   templateLessons: TemplateLesson[];
@@ -211,7 +212,11 @@ export function LessonPlanManager({ chapters, courseSectionCount, defaultOpen = 
 
   return (
     <div className="shrink-0">
-      <button className="rounded-xl border border-[var(--accent)] bg-white px-5 py-3 font-semibold text-[var(--accent)] shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md motion-reduce:transform-none" onClick={() => setOpen(true)} ref={triggerRef} type="button">Lesson Plan</button>
+      {dataLoaded ? (
+        <button className="rounded-xl border border-[var(--accent)] bg-white px-5 py-3 font-semibold text-[var(--accent)] shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md motion-reduce:transform-none" onClick={() => setOpen(true)} ref={triggerRef} type="button">Lesson Plan</button>
+      ) : (
+        <Link className="inline-flex rounded-xl border border-[var(--accent)] bg-white px-5 py-3 font-semibold text-[var(--accent)] shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md motion-reduce:transform-none" href={`/teacher/subjects/${subjectId}?lessonPlan=open`} scroll={false}>Lesson Plan</Link>
+      )}
       {open ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4 backdrop-blur-[3px]">
           <section aria-labelledby="lesson-plan-title" aria-modal="true" className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col rounded-3xl border border-emerald-200 bg-[#f8fbf8] p-6 shadow-2xl sm:p-7" role="dialog">

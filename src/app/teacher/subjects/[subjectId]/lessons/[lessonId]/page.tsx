@@ -25,8 +25,8 @@ export default async function EditSubjectTemplateLessonPage({ params }: { params
         </div>
       </header>
       <LessonEditorForm
-        chapters={detail.subject.chapters}
-        courseSectionCount={detail.subject.courseSections.length}
+        chapters={detail.chapters}
+        courseSectionCount={detail.courseSectionCount}
         initial={{ id: detail.lesson.id, chapterId: detail.lesson.chapter_id, title: detail.lesson.title, markdownSource: detail.lesson.markdown_source }}
         mode="edit-template"
         returnHref={`/teacher/subjects/${detail.subject.id}?lessonPlan=open`}

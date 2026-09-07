@@ -129,6 +129,28 @@ describe("Persistent Course Section Lesson actions", () => {
     }
   });
 
+  it("removes a Chapter prefix from uploaded Markdown Lesson titles", async () => {
+    const query = courseSectionQuery({ id: courseSectionId });
+    mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });
+    const markdownWithChapterPrefix = validMarkdown.replace(
+      "title: Markdown title",
+      'title: "Chương 3 - Bài 2: Mảng động"',
+    );
+
+    const result = await prepareCourseSectionLessonsAction(
+      subjectId,
+      courseSectionId,
+      chapterId,
+      lessonBatchForm([{ name: "chapter-lesson.md", markdown: markdownWithChapterPrefix }]),
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.lessons[0]?.lessonTitle).toBe("Bài 2: Mảng động");
+      expect(result.lessons[0]?.lesson?.title).toBe("Bài 2: Mảng động");
+    }
+  });
+
   it("keeps an invalid file in the prepared list so the Teacher can edit it", async () => {
     const query = courseSectionQuery({ id: courseSectionId });
     mocks.createClient.mockResolvedValue({ from: vi.fn().mockReturnValue(query) });

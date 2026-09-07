@@ -44,6 +44,14 @@ export function LessonEditorForm({ chapters, courseSectionCount = 0, initial, mo
     setErrors([]);
   }
 
+  function updateTitle(nextTitle: string) {
+    setTitle(nextTitle);
+    setPreview((current) => current
+      ? { ...current, lesson: { ...current.lesson, title: nextTitle } }
+      : null);
+    setErrors([]);
+  }
+
   async function loadFile(file: File | undefined) {
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".md")) {
@@ -103,22 +111,26 @@ export function LessonEditorForm({ chapters, courseSectionCount = 0, initial, mo
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(19rem,0.78fr)_minmax(0,1.35fr)] lg:items-start">
       <section className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm lg:sticky lg:top-6">
-        <label className="text-sm font-bold" htmlFor="lesson-chapter">Chương</label>
-        <select
-          className="mt-2 w-full rounded-xl border border-black/15 bg-white px-4 py-3"
-          id="lesson-chapter"
-          onChange={(event) => { setChapterId(event.target.value); invalidate(); }}
-          value={chapterId}
-        >
-          {chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.name}</option>)}
-        </select>
+        {mode === "create-template" ? (
+          <>
+            <label className="text-sm font-bold" htmlFor="lesson-chapter">Chương</label>
+            <select
+              className="mt-2 w-full rounded-xl border border-black/15 bg-white px-4 py-3"
+              id="lesson-chapter"
+              onChange={(event) => { setChapterId(event.target.value); invalidate(); }}
+              value={chapterId}
+            >
+              {chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.name}</option>)}
+            </select>
+          </>
+        ) : null}
 
-        <label className="mt-5 block text-sm font-bold" htmlFor="lesson-title">Tên Lesson</label>
+        <label className={`${mode === "create-template" ? "mt-5 " : ""}block text-sm font-bold`} htmlFor="lesson-title">Tên Lesson</label>
         <input
           className="mt-2 w-full rounded-xl border border-black/15 bg-white px-4 py-3"
           id="lesson-title"
           maxLength={200}
-          onChange={(event) => { setTitle(event.target.value); invalidate(); }}
+          onChange={(event) => updateTitle(event.target.value)}
           value={title}
         />
 

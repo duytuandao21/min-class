@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import { LessonEditorForm } from "@/features/lessons/components/lesson-editor-form";
 import { MarkdownWritingGuide } from "@/features/lessons/components/markdown-writing-guide";
-import { getCourseSectionRosterDetail, getPersistentLessonDetail } from "@/features/subjects/server/queries";
+import { getCourseSectionEditorContext, getPersistentLessonDetail } from "@/features/subjects/server/queries";
 
 export default async function EditCourseLessonPage({ params }: {
   params: Promise<{ subjectId: string; courseSectionId: string; lessonId: string }>;
@@ -11,7 +11,7 @@ export default async function EditCourseLessonPage({ params }: {
   const { subjectId, courseSectionId, lessonId } = await params;
   const [detail, course] = await Promise.all([
     getPersistentLessonDetail(subjectId, courseSectionId, lessonId),
-    getCourseSectionRosterDetail(subjectId, courseSectionId),
+    getCourseSectionEditorContext(subjectId, courseSectionId),
   ]);
   if (!detail || !course) notFound();
   const returnHref = `/teacher/subjects/${subjectId}/sections/${courseSectionId}`;

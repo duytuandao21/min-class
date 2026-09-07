@@ -1,8 +1,48 @@
 import { describe, expect, it } from "vitest";
 
-import { groupTeacherSummaryByLesson } from "./summary";
+import {
+  groupTeacherSummaryByLesson,
+  teacherLessonSummarySchema,
+  teacherRoomAttendanceDetailSchema,
+  teacherRoomSummaryLessonListSchema,
+  teacherRoomSummaryOverviewSchema,
+} from "./summary";
 
 describe("Teacher Summary Lesson grouping", () => {
+  it("validates the lightweight streamed Summary contracts", () => {
+    const roomId = "41000000-0000-4000-8000-000000000001";
+    const lessonId = "41000000-0000-4000-8000-000000000002";
+    const overview = teacherRoomSummaryOverviewSchema.parse({
+      room: { id: roomId, title: "Buổi học", startedAt: "2026-09-07T01:00:00Z", endedAt: "2026-09-07T02:00:00Z" },
+      attendance: { rosterCount: 45, joinedCount: 42, absentCount: 3 },
+      comments: { total: 10, anonymous: 4, named: 6 },
+      mostEngagedSection: null,
+      lessonContext: {
+        lessonId,
+        courseSectionId: "41000000-0000-4000-8000-000000000003",
+        subjectId: "41000000-0000-4000-8000-000000000004",
+      },
+    });
+    const attendance = teacherRoomAttendanceDetailSchema.parse({
+      participants: [{ mssv: "23162011", joinedAt: "2026-09-07T01:05:00Z" }],
+      absentMssvs: ["23162012"],
+    });
+    const lessons = teacherRoomSummaryLessonListSchema.parse([
+      { lessonId, lessonTitle: "Lesson 1", sectionCount: 2, quizCount: 1 },
+    ]);
+    const lesson = teacherLessonSummarySchema.parse({
+      lessonId,
+      lessonTitle: "Lesson 1",
+      reactions: [],
+      quizzes: [],
+    });
+
+    expect(overview.attendance.joinedCount).toBe(42);
+    expect(attendance.absentMssvs).toEqual(["23162012"]);
+    expect(lessons[0].quizCount).toBe(1);
+    expect(lesson.reactions).toEqual([]);
+  });
+
   it("places section reactions and quizzes in their own Lesson", () => {
     const summary = {
       reactions: [

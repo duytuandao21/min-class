@@ -1,14 +1,15 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
 import { LessonAccessForm } from "@/features/catalog/components/lesson-access-form";
+import { accessPublicLessonAction } from "@/features/catalog/actions";
 import { getPublicChapterStatus, type PublicChapterStatus } from "@/features/catalog/chapter-preview";
 import { ChapterPreviewView } from "@/features/catalog/components/chapter-preview-view";
 import {
-  getPublicChapters,
-  getPublicCourseSections,
-  getPublicLessons,
-} from "@/features/catalog/server/queries";
+  getRememberedCourseSectionStudent,
+  readChapterPreviewAction,
+} from "@/features/catalog/preview-actions";
+import { getPublicChapterCatalog } from "@/features/catalog/server/queries";
 
 const statusLabel: Record<PublicChapterStatus, string> = {
   PREVIEW: "Xem trước",
@@ -30,24 +31,40 @@ export default async function PublicChapterAccessPage({
   params: Promise<{ subjectId: string; courseSectionId: string; chapterId: string }>;
 }) {
   const { subjectId, courseSectionId, chapterId } = await params;
-  const [courseSections, chapters, lessons] = await Promise.all([
-    getPublicCourseSections(subjectId),
-    getPublicChapters(courseSectionId),
-    getPublicLessons(courseSectionId),
+  const [catalog, rememberedMssv] = await Promise.all([
+    getPublicChapterCatalog(subjectId, courseSectionId, chapterId),
+    getRememberedCourseSectionStudent(courseSectionId),
   ]);
-  const courseSection = courseSections.find((item) => item.course_section_id === courseSectionId);
-  const chapter = chapters.find((item) => item.chapter_id === chapterId);
-  if (!courseSection || !chapter) notFound();
-
-  const chapterLessons = lessons.filter((lesson) => lesson.chapter_id === chapterId);
+  if (!catalog) notFound();
+  const { chapter, courseSection, lessons: chapterLessons } = catalog;
   const liveLesson = chapterLessons.find((lesson) => lesson.lesson_status === "LIVE");
   const endedLesson = chapterLessons.find((lesson) => lesson.lesson_status === "ENDED");
   const accessLesson = liveLesson ?? endedLesson ?? chapterLessons[0] ?? null;
   const chapterStatus = getPublicChapterStatus(chapterLessons, chapter.preview_enabled);
   const isPreview = chapterStatus === "PREVIEW";
+  const courseSectionHref = `/learn/subjects/${subjectId}/sections/${courseSectionId}`;
+
+  if ((chapterStatus === "PREVIEW" || chapterStatus === "ENDED") && !rememberedMssv) {
+    redirect(courseSectionHref);
+  }
+
+  const previewResult = chapterStatus === "PREVIEW" && rememberedMssv
+    ? await readChapterPreviewAction(chapterId, rememberedMssv)
+    : null;
+
+  let endedAccessMessage: string | undefined;
+  if (chapterStatus === "ENDED" && rememberedMssv && accessLesson) {
+    const formData = new FormData();
+    formData.set("mssv", rememberedMssv);
+    const result = await accessPublicLessonAction(accessLesson.lesson_id, "ENDED", { status: "idle" }, formData);
+    if (result.status === "success" && result.sessionId) {
+      redirect(`/learn/review/${result.sessionId}?lessonId=${result.lessonId ?? accessLesson.lesson_id}`);
+    }
+    endedAccessMessage = result.message ?? "Không thể mở nội dung chương.";
+  }
   const pageHeader = (
     <>
-      <BackLink href={`/learn/subjects/${subjectId}/sections/${courseSectionId}`} label={isPreview ? "Lessons" : "Lớp học phần"} />
+      <BackLink href={courseSectionHref} label={isPreview ? "Lessons" : "Lớp học phần"} />
       <header className="mt-10">
         <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">{courseSection.display_name ?? courseSection.section_code}</p>
         {isPreview ? (
@@ -65,7 +82,7 @@ export default async function PublicChapterAccessPage({
               {chapterStatus === "LIVE"
                 ? "Nhập MSSV một lần để tham gia toàn bộ Lesson trong chương đang LIVE."
                 : chapterStatus === "ENDED"
-                  ? "Nhập MSSV để xem lại toàn bộ Lesson trong Session gần nhất của chương."
+                  ? "Đang dùng MSSV đã xác minh tại lớp học phần để mở Session gần nhất của chương."
                   : "Chương này chưa có buổi học để truy cập."}
             </p>
           </>
@@ -78,11 +95,29 @@ export default async function PublicChapterAccessPage({
     <main className={`mx-auto flex min-h-screen w-full ${isPreview ? "max-w-5xl" : "max-w-2xl justify-center"} flex-col px-6 py-12 ${isPreview ? "" : "sm:px-10"}`}>
 
       {chapterStatus === "PREVIEW" ? (
-        <ChapterPreviewView chapterId={chapterId} header={pageHeader} key={chapterId} />
+        <ChapterPreviewView
+          chapterId={chapterId}
+          header={pageHeader}
+          initialMessage={previewResult?.status === "error" ? previewResult.message : undefined}
+          initialPreview={previewResult?.status === "success" ? previewResult.preview : null}
+          key={chapterId}
+          mssv={rememberedMssv ?? ""}
+        />
       ) : (
         <>
           <div>{pageHeader}</div>
-          {accessLesson ? <LessonAccessForm lessonId={accessLesson.lesson_id} scope="chapter" status={chapterStatus} /> : null}
+          {chapterStatus === "ENDED" && endedAccessMessage ? (
+            <p className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800" role="alert">
+              {endedAccessMessage}
+            </p>
+          ) : accessLesson ? (
+            <LessonAccessForm
+              courseSectionId={courseSectionId}
+              lessonId={accessLesson.lesson_id}
+              scope="chapter"
+              status={chapterStatus}
+            />
+          ) : null}
         </>
       )}
     </main>

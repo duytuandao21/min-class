@@ -15,11 +15,13 @@ type ConnectionState = "connecting" | "connected" | "degraded";
 export function TeacherQuizAnalytics({
   roomId,
   initialAnalytics,
+  lessonId,
   lessonTitle,
   sectionIds,
 }: {
   roomId: string;
   initialAnalytics: TeacherQuizAnalytics;
+  lessonId: string;
   lessonTitle: string;
   sectionIds: string[];
 }) {
@@ -31,7 +33,7 @@ export function TeacherQuizAnalytics({
   useEffect(() => {
     const supabase = createClient();
     const coordinator = createRealtimeSyncCoordinator({
-      fetchSnapshot: () => fetchTeacherQuizAnalytics(roomId),
+      fetchSnapshot: () => fetchTeacherQuizAnalytics(roomId, lessonId),
       onError: () => setSyncError("Mất đồng bộ Quiz Analytics tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi."),
       onSuccess: (nextAnalytics) => {
         setAnalytics(nextAnalytics);
@@ -93,7 +95,7 @@ export function TeacherQuizAnalytics({
       document.removeEventListener("visibilitychange", syncWhenVisible);
       void supabase.removeChannel(channel);
     };
-  }, [roomId]);
+  }, [lessonId, roomId]);
 
   return (
     <section className="mt-8 rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-9">

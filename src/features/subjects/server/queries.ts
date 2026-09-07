@@ -26,6 +26,11 @@ const courseSectionSchema = z.object({
   created_at: z.string(),
 });
 
+const subjectOverviewRowSchema = subjectSchema.extend({
+  course_sections: z.array(courseSectionSchema),
+  lessons: z.array(z.object({ count: z.number().int().nonnegative() })),
+});
+
 const chapterSchema = z.object({
   id: z.string().uuid(),
   subject_id: z.string().uuid().nullable(),
@@ -89,6 +94,23 @@ export type SubjectDetail = Subject & {
   courseSections: CourseSection[];
   templateLessons: TemplateLesson[];
 };
+export type SubjectOverview = Subject & {
+  courseSections: CourseSection[];
+  templateLessonCount: number;
+};
+export type SubjectLessonPlan = {
+  chapters: Chapter[];
+  templateLessons: TemplateLesson[];
+};
+export type CourseSectionDetail = Omit<CourseSectionRosterDetail, "students">;
+export type CourseSectionEditorContext = {
+  subject: Subject;
+  courseSection: CourseSection;
+  chapters: Chapter[];
+};
+export type CourseSectionChapterContext = CourseSectionEditorContext & {
+  chapter: Chapter;
+};
 export type CourseSectionRosterDetail = {
   subject: Subject;
   courseSection: CourseSection;
@@ -125,6 +147,102 @@ export async function getSubjects(): Promise<SubjectListItem[]> {
     ...subject,
     courseSectionCount: courseSections[0]?.count ?? 0,
   }));
+}
+
+export async function getSubjectOverview(rawSubjectId: string): Promise<SubjectOverview | null> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  if (!subjectId.success) return null;
+
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("subjects")
+    .select("id, name, code, created_at, course_sections(id, subject_id, section_code, display_name, created_at), lessons(count)")
+    .eq("id", subjectId.data)
+    .eq("teacher_id", teacher.id)
+    .maybeSingle();
+  if (error) throw new Error("Không thể tải môn học.");
+  if (!data) return null;
+
+  const row = subjectOverviewRowSchema.parse(data);
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    created_at: row.created_at,
+    courseSections: [...row.course_sections].sort((left, right) => left.created_at.localeCompare(right.created_at)),
+    templateLessonCount: row.lessons[0]?.count ?? 0,
+  };
+}
+
+export async function getSubjectLessonPlan(rawSubjectId: string): Promise<SubjectLessonPlan | null> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  if (!subjectId.success) return null;
+
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const [subjectResult, chapterResult, templateLessonResult] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select("id")
+      .eq("id", subjectId.data)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle(),
+    supabase
+      .from("chapters")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
+      .eq("subject_id", subjectId.data),
+    supabase
+      .from("lessons")
+      .select("id, subject_id, chapter_id, title, created_at, updated_at")
+      .eq("subject_id", subjectId.data)
+      .order("created_at", { ascending: true }),
+  ]);
+  if (subjectResult.error || chapterResult.error || templateLessonResult.error) {
+    throw new Error("Không thể tải Lesson Plan.");
+  }
+  if (!subjectResult.data) return null;
+
+  return {
+    chapters: z.array(chapterSchema).parse(chapterResult.data).sort((left, right) => left.name.localeCompare(right.name, "vi")),
+    templateLessons: sortLessonsByTitle(z.array(templateLessonSchema).parse(templateLessonResult.data)),
+  };
+}
+
+export async function getSubjectChapterContext(rawSubjectId: string, rawChapterId: string) {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  if (!subjectId.success || !chapterId.success) return null;
+
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const [subjectResult, chapterResult, courseSectionCountResult] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select("id, name, code, created_at")
+      .eq("id", subjectId.data)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle(),
+    supabase
+      .from("chapters")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
+      .eq("id", chapterId.data)
+      .eq("subject_id", subjectId.data)
+      .maybeSingle(),
+    supabase
+      .from("course_sections")
+      .select("id", { count: "exact", head: true })
+      .eq("subject_id", subjectId.data),
+  ]);
+  if (subjectResult.error || chapterResult.error || courseSectionCountResult.error) {
+    throw new Error("Không thể tải thông tin tạo Lesson mẫu.");
+  }
+  if (!subjectResult.data || !chapterResult.data) return null;
+  return {
+    subject: subjectSchema.parse(subjectResult.data),
+    chapter: chapterSchema.parse(chapterResult.data),
+    courseSectionCount: courseSectionCountResult.count ?? 0,
+  };
 }
 
 export async function getSubjectDetail(rawSubjectId: string): Promise<SubjectDetail | null> {
@@ -176,19 +294,185 @@ export async function getTemplateLessonDetail(rawSubjectId: string, rawLessonId:
   const lessonId = lessonIdSchema.safeParse(rawLessonId);
   if (!subjectId.success || !lessonId.success) return null;
 
-  const subject = await getSubjectDetail(subjectId.data);
-  if (!subject) return null;
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const [subjectResult, lessonResult, chapterResult, courseSectionCountResult] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select("id, name, code, created_at")
+      .eq("id", subjectId.data)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle(),
+    supabase
+      .from("lessons")
+      .select("id, subject_id, chapter_id, title, markdown_source, created_at, updated_at")
+      .eq("id", lessonId.data)
+      .eq("subject_id", subjectId.data)
+      .maybeSingle(),
+    supabase
+      .from("chapters")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
+      .eq("subject_id", subjectId.data),
+    supabase
+      .from("course_sections")
+      .select("id", { count: "exact", head: true })
+      .eq("subject_id", subjectId.data),
+  ]);
+  if (subjectResult.error || lessonResult.error || chapterResult.error || courseSectionCountResult.error) {
+    throw new Error("Không thể tải Lesson mẫu.");
+  }
+  if (!subjectResult.data || !lessonResult.data) return null;
+  return {
+    subject: subjectSchema.parse(subjectResult.data),
+    chapters: z.array(chapterSchema).parse(chapterResult.data).sort((left, right) => left.name.localeCompare(right.name, "vi")),
+    courseSectionCount: courseSectionCountResult.count ?? 0,
+    lesson: templateLessonSchema.extend({ markdown_source: z.string() }).parse(lessonResult.data),
+  };
+}
+
+export async function getCourseSectionEditorContext(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+): Promise<CourseSectionEditorContext | null> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  if (!subjectId.success || !courseSectionId.success) return null;
+
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const [subjectResult, courseSectionResult, chapterResult] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select("id, name, code, created_at")
+      .eq("id", subjectId.data)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle(),
+    supabase
+      .from("course_sections")
+      .select("id, subject_id, section_code, display_name, created_at")
+      .eq("id", courseSectionId.data)
+      .eq("subject_id", subjectId.data)
+      .maybeSingle(),
+    supabase
+      .from("chapters")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
+      .eq("course_section_id", courseSectionId.data),
+  ]);
+  if (subjectResult.error || courseSectionResult.error || chapterResult.error) {
+    throw new Error("Không thể tải thông tin lớp học phần.");
+  }
+  if (!subjectResult.data || !courseSectionResult.data) return null;
+
+  return {
+    subject: subjectSchema.parse(subjectResult.data),
+    courseSection: courseSectionSchema.parse(courseSectionResult.data),
+    chapters: z.array(chapterSchema).parse(chapterResult.data).sort((left, right) => left.name.localeCompare(right.name, "vi")),
+  };
+}
+
+export async function getCourseSectionChapterContext(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+): Promise<CourseSectionChapterContext | null> {
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  if (!chapterId.success) return null;
+  const context = await getCourseSectionEditorContext(rawSubjectId, rawCourseSectionId);
+  if (!context) return null;
+  const chapter = context.chapters.find((item) => item.id === chapterId.data);
+  return chapter ? { ...context, chapter } : null;
+}
+
+export async function getCourseSectionRoster(rawCourseSectionId: string): Promise<RosterStudent[]> {
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  if (!courseSectionId.success) return [];
+
+  await requireTeacher();
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("lessons")
-    .select("id, subject_id, chapter_id, title, markdown_source, created_at, updated_at")
-    .eq("id", lessonId.data)
-    .eq("subject_id", subjectId.data)
-    .maybeSingle();
-  if (error) throw new Error("Không thể tải Lesson mẫu.");
-  if (!data) return null;
-  const lesson = templateLessonSchema.extend({ markdown_source: z.string() }).parse(data);
-  return { subject, lesson };
+    .from("course_section_students")
+    .select("id, mssv, created_at")
+    .eq("course_section_id", courseSectionId.data)
+    .order("mssv", { ascending: true });
+  if (error) throw new Error("Không thể tải roster lớp học phần.");
+  return z.array(rosterStudentSchema).parse(data);
+}
+
+export async function getCourseSectionDetail(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+): Promise<CourseSectionDetail | null> {
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  if (!subjectId.success || !courseSectionId.success) return null;
+
+  const teacher = await requireTeacher();
+  const supabase = await createClient();
+  const [subjectResult, courseSectionResult, lessonResult, chapterResult] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select("id, name, code, created_at")
+      .eq("id", subjectId.data)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle(),
+    supabase
+      .from("course_sections")
+      .select("id, subject_id, section_code, display_name, created_at")
+      .eq("id", courseSectionId.data)
+      .eq("subject_id", subjectId.data)
+      .maybeSingle(),
+    supabase
+      .from("lessons")
+      .select("id, chapter_id, title, created_at, updated_at")
+      .eq("course_section_id", courseSectionId.data)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("chapters")
+      .select("id, subject_id, course_section_id, name, created_at, updated_at, preview_enabled")
+      .eq("course_section_id", courseSectionId.data),
+  ]);
+  if (subjectResult.error) throw new Error("Không thể tải môn học.");
+  if (courseSectionResult.error) throw new Error("Không thể tải lớp học phần.");
+  if (lessonResult.error) throw new Error("Không thể tải danh sách Lesson.");
+  if (chapterResult.error) throw new Error("Không thể tải Lesson Plan.");
+  if (!subjectResult.data || !courseSectionResult.data) return null;
+
+  const parsedLessons = z.array(persistentLessonSchema).parse(lessonResult.data);
+  const sessionByLesson = new Map<string, z.infer<typeof lessonSessionSchema>>();
+  if (parsedLessons.length > 0) {
+    const { data: sessionData, error: sessionError } = await supabase
+      .from("rooms")
+      .select("id, status, started_at, ended_at")
+      .eq("course_section_id", courseSectionId.data)
+      .in("status", ["ACTIVE", "ENDED"])
+      .order("started_at", { ascending: false });
+    if (sessionError) throw new Error("Không thể tải Lesson Session.");
+    const sessions = z.array(lessonSessionSchema).parse(sessionData);
+    if (sessions.length > 0) {
+      const { data: placementData, error: placementError } = await supabase
+        .from("session_lessons")
+        .select("session_id, lesson_id")
+        .in("session_id", sessions.map((session) => session.id));
+      if (placementError) throw new Error("Không thể tải Lesson trong Session.");
+      const sessionById = new Map(sessions.map((session) => [session.id, session]));
+      for (const placement of z.array(sessionLessonPlacementSchema).parse(placementData)) {
+        const session = sessionById.get(placement.session_id);
+        if (!session) continue;
+        const current = sessionByLesson.get(placement.lesson_id);
+        if (!current || session.status === "ACTIVE") sessionByLesson.set(placement.lesson_id, session);
+      }
+    }
+  }
+
+  return {
+    subject: subjectSchema.parse(subjectResult.data),
+    courseSection: courseSectionSchema.parse(courseSectionResult.data),
+    chapters: z.array(chapterSchema).parse(chapterResult.data).sort((left, right) => left.name.localeCompare(right.name, "vi")),
+    lessons: sortLessonsByTitle(parsedLessons).map((lesson) => ({
+      ...lesson,
+      latestSession: sessionByLesson.get(lesson.id) ?? null,
+    })),
+  };
 }
 
 export async function getCourseSectionRosterDetail(
@@ -290,37 +574,43 @@ export async function getPersistentLessonDetail(
 
   const teacher = await requireTeacher();
   const supabase = await createClient();
-  const { data: subjectData, error: subjectError } = await supabase
-    .from("subjects")
-    .select("id, name, code, created_at")
-    .eq("id", subjectId.data)
-    .eq("teacher_id", teacher.id)
-    .maybeSingle();
+  const [subjectResult, courseSectionResult, lessonResult, placementResult] = await Promise.all([
+    supabase
+      .from("subjects")
+      .select("id, name, code, created_at")
+      .eq("id", subjectId.data)
+      .eq("teacher_id", teacher.id)
+      .maybeSingle(),
+    supabase
+      .from("course_sections")
+      .select("id, subject_id, section_code, display_name, created_at")
+      .eq("id", courseSectionId.data)
+      .eq("subject_id", subjectId.data)
+      .maybeSingle(),
+    supabase
+      .from("lessons")
+      .select("id, course_section_id, chapter_id, title, markdown_source, created_at, updated_at")
+      .eq("id", lessonId.data)
+      .eq("course_section_id", courseSectionId.data)
+      .maybeSingle(),
+    supabase
+      .from("session_lessons")
+      .select("session_id")
+      .eq("lesson_id", lessonId.data),
+  ]);
+  const { data: subjectData, error: subjectError } = subjectResult;
   if (subjectError) throw new Error("Không thể tải môn học.");
   if (!subjectData) return null;
 
-  const { data: courseSectionData, error: courseSectionError } = await supabase
-    .from("course_sections")
-    .select("id, subject_id, section_code, display_name, created_at")
-    .eq("id", courseSectionId.data)
-    .eq("subject_id", subjectId.data)
-    .maybeSingle();
+  const { data: courseSectionData, error: courseSectionError } = courseSectionResult;
   if (courseSectionError) throw new Error("Không thể tải lớp học phần.");
   if (!courseSectionData) return null;
 
-  const { data: lessonData, error: lessonError } = await supabase
-    .from("lessons")
-    .select("id, course_section_id, chapter_id, title, markdown_source, created_at, updated_at")
-    .eq("id", lessonId.data)
-    .eq("course_section_id", courseSectionId.data)
-    .maybeSingle();
+  const { data: lessonData, error: lessonError } = lessonResult;
   if (lessonError) throw new Error("Không thể tải Lesson.");
   if (!lessonData) return null;
 
-  const { data: sessionData, error: sessionError } = await supabase
-    .from("session_lessons")
-    .select("session_id")
-    .eq("lesson_id", lessonId.data);
+  const { data: sessionData, error: sessionError } = placementResult;
   if (sessionError) throw new Error("Không thể tải lịch sử Session.");
   const placements = z.array(z.object({ session_id: z.string().uuid() })).parse(sessionData);
   const { data: roomData, error: roomError } = placements.length > 0

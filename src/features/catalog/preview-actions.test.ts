@@ -1,11 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPublicChapterStatus } from "./chapter-preview";
 
-const mocks = vi.hoisted(() => ({ createClient: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  cookieGet: vi.fn(),
+  cookieSet: vi.fn(),
+  createClient: vi.fn(),
+}));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
-import { readChapterPreviewAction } from "./preview-actions";
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({ get: mocks.cookieGet, set: mocks.cookieSet })),
+}));
+import {
+  forgetCourseSectionStudentAction,
+  getRememberedCourseSectionStudent,
+  readChapterPreviewAction,
+  verifyCourseSectionStudentAction,
+} from "./preview-actions";
 
 const chapterId = "aa300000-0000-4000-8000-000000000001";
+const courseSectionId = "aa200000-0000-4000-8000-000000000001";
 const lessonId = "aa400000-0000-4000-8000-000000000001";
 const content = { chapterId, title: "Chương 1", lessons: [
   { id: lessonId, title: "Bài 10", sections: [] },
@@ -83,5 +96,67 @@ describe("Student chapter preview", () => {
     expect(getPublicChapterStatus([{ lesson_status: "UPCOMING" }], true)).toBe("PREVIEW");
     expect(getPublicChapterStatus([{ lesson_status: "UPCOMING" }], false)).toBe("UPCOMING");
     expect(getPublicChapterStatus([], true)).toBe("UPCOMING");
+  });
+});
+
+describe("Course Section Student access", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("normalizes MSSV and verifies roster membership without returning roster data", async () => {
+    const { rpc } = setup();
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await expect(verifyCourseSectionStudentAction(courseSectionId, " sv001 ")).resolves.toEqual({
+      status: "success",
+      mssv: "SV001",
+    });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("verify_course_section_student", {
+      p_course_section_id: courseSectionId,
+      p_mssv: "SV001",
+    });
+    expect(mocks.cookieSet).toHaveBeenCalledWith(
+      `minclass-course-section-student-${courseSectionId}`,
+      "SV001",
+      expect.objectContaining({ httpOnly: true, path: "/learn/subjects", sameSite: "lax" }),
+    );
+  });
+
+  it("denies a Student outside the Course Section roster", async () => {
+    const { rpc } = setup();
+    rpc.mockResolvedValue({ data: null, error: { code: "P0003" } });
+
+    await expect(verifyCourseSectionStudentAction(courseSectionId, "SV999")).resolves.toEqual({
+      status: "error",
+      message: "Bạn không thuộc lớp học phần này",
+    });
+  });
+
+  it("rejects invalid input and Teacher identities", async () => {
+    await expect(verifyCourseSectionStudentAction("bad-id", "SV001")).resolves.toMatchObject({ status: "error" });
+    expect(mocks.createClient).not.toHaveBeenCalled();
+
+    const { rpc } = setup(false);
+    await expect(verifyCourseSectionStudentAction(courseSectionId, "SV001")).resolves.toMatchObject({ status: "error" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("restores and clears a valid Course Section access cookie", async () => {
+    mocks.cookieGet.mockReturnValue({ value: " sv001 " });
+
+    await expect(getRememberedCourseSectionStudent(courseSectionId)).resolves.toBe("SV001");
+    expect(mocks.cookieGet).toHaveBeenCalledWith(`minclass-course-section-student-${courseSectionId}`);
+
+    await forgetCourseSectionStudentAction(courseSectionId);
+    expect(mocks.cookieSet).toHaveBeenCalledWith(
+      `minclass-course-section-student-${courseSectionId}`,
+      "",
+      expect.objectContaining({ maxAge: 0, path: "/learn/subjects" }),
+    );
+  });
+
+  it("ignores malformed Course Section access cookies", async () => {
+    mocks.cookieGet.mockReturnValue({ value: "!" });
+    await expect(getRememberedCourseSectionStudent(courseSectionId)).resolves.toBeNull();
+    await expect(getRememberedCourseSectionStudent("bad-id")).resolves.toBeNull();
   });
 });

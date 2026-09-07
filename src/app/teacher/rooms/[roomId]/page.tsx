@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { BackLink } from "@/components/back-link";
 import { EndSessionButton } from "@/features/rooms/components/end-session-button";
@@ -9,9 +10,78 @@ import { TeacherRoomOverview } from "@/features/rooms/components/teacher-room-ov
 import { TeacherSectionPlayer } from "@/features/rooms/components/teacher-section-player";
 import {
   getTeacherFeedbackSnapshot,
-  getTeacherQuizAnalytics,
+  getTeacherLessonQuizAnalytics,
   getTeacherRoom,
 } from "@/features/rooms/server/queries";
+
+async function TeacherLessonContent({
+  feedbackPromise,
+  lessonId,
+  lessonTitle,
+  releasedThrough,
+  roomId,
+  sections,
+  teachingSection,
+}: {
+  feedbackPromise: ReturnType<typeof getTeacherFeedbackSnapshot>;
+  lessonId: string;
+  lessonTitle: string;
+  releasedThrough: number;
+  roomId: string;
+  sections: Parameters<typeof TeacherSectionPlayer>[0]["sections"];
+  teachingSection: number;
+}) {
+  const feedback = await feedbackPromise;
+  if (!feedback) notFound();
+  return (
+    <TeacherSectionPlayer
+      initialFeedback={feedback}
+      initialReleasedThrough={releasedThrough}
+      initialTeachingSection={teachingSection}
+      lessonId={lessonId}
+      lessonTitle={lessonTitle}
+      roomId={roomId}
+      sections={sections}
+    />
+  );
+}
+
+async function TeacherQuizContent({
+  analyticsPromise,
+  lessonId,
+  lessonTitle,
+  roomId,
+  sectionIds,
+}: {
+  analyticsPromise: ReturnType<typeof getTeacherLessonQuizAnalytics>;
+  lessonId: string;
+  lessonTitle: string;
+  roomId: string;
+  sectionIds: string[];
+}) {
+  const analytics = await analyticsPromise;
+  if (!analytics) notFound();
+  return (
+    <TeacherQuizAnalytics
+      initialAnalytics={analytics}
+      lessonId={lessonId}
+      lessonTitle={lessonTitle}
+      roomId={roomId}
+      sectionIds={sectionIds}
+    />
+  );
+}
+
+function LivePanelFallback({ label }: { label: string }) {
+  return (
+    <section className="mt-8 rounded-3xl border border-black/10 bg-white p-7 shadow-sm" aria-busy="true">
+      <div className="h-4 w-36 animate-pulse rounded bg-emerald-100 motion-reduce:animate-none" />
+      <div className="mt-4 h-8 w-64 max-w-full animate-pulse rounded-xl bg-black/10 motion-reduce:animate-none" />
+      <p className="sr-only">Đang tải {label}</p>
+      <div className="mt-6 h-64 animate-pulse rounded-2xl bg-black/5 motion-reduce:animate-none" />
+    </section>
+  );
+}
 
 export default async function TeacherRoomPage({
   params,
@@ -26,11 +96,8 @@ export default async function TeacherRoomPage({
   if (!room) notFound();
   if (room.status === "ENDED") redirect(`/teacher/rooms/${room.id}/summary`);
 
-  const [feedback, quizAnalytics] = await Promise.all([
-    getTeacherFeedbackSnapshot(room.id, room.selectedLessonId),
-    getTeacherQuizAnalytics(room.id),
-  ]);
-  if (!feedback || !quizAnalytics) notFound();
+  const feedbackPromise = getTeacherFeedbackSnapshot(room.id, room.selectedLessonId);
+  const quizAnalyticsPromise = getTeacherLessonQuizAnalytics(room.id, room.selectedLessonId);
 
   const selectedLessonTitle = room.lessons.find((lesson) => lesson.lesson_id === room.selectedLessonId)?.lesson_title
     ?? room.title;
@@ -66,23 +133,26 @@ export default async function TeacherRoomPage({
         ))}
       </nav>
 
-      <TeacherSectionPlayer
-        initialFeedback={feedback}
-        initialReleasedThrough={room.released_through}
-        initialTeachingSection={room.teaching_section}
-        key={room.selectedLessonId}
-        lessonId={room.selectedLessonId}
-        lessonTitle={selectedLessonTitle}
-        roomId={room.id}
-        sections={room.sections}
-      />
-      <TeacherQuizAnalytics
-        initialAnalytics={quizAnalytics}
-        key={`quiz-${room.selectedLessonId}`}
-        lessonTitle={selectedLessonTitle}
-        roomId={room.id}
-        sectionIds={selectedLessonSectionIds}
-      />
+      <Suspense fallback={<LivePanelFallback label="nội dung Lesson" />} key={`lesson-${room.selectedLessonId}`}>
+        <TeacherLessonContent
+          feedbackPromise={feedbackPromise}
+          lessonId={room.selectedLessonId}
+          lessonTitle={selectedLessonTitle}
+          releasedThrough={room.released_through}
+          roomId={room.id}
+          sections={room.sections}
+          teachingSection={room.teaching_section}
+        />
+      </Suspense>
+      <Suspense fallback={<LivePanelFallback label="kết quả Quiz" />} key={`quiz-${room.selectedLessonId}`}>
+        <TeacherQuizContent
+          analyticsPromise={quizAnalyticsPromise}
+          lessonId={room.selectedLessonId}
+          lessonTitle={selectedLessonTitle}
+          roomId={room.id}
+          sectionIds={selectedLessonSectionIds}
+        />
+      </Suspense>
 
       <section className="mt-8 border-t border-black/10 pt-8">
         <div className="flex flex-wrap items-start gap-3">

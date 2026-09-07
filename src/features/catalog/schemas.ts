@@ -33,6 +33,23 @@ export const publicChapterSchema = z.object({
   preview_enabled: z.boolean(),
 });
 
+export const publicSubjectCourseSectionsSchema = z.object({
+  subject: publicSubjectSchema,
+  courseSections: z.array(publicCourseSectionSchema),
+});
+
+export const publicCourseSectionCatalogSchema = z.object({
+  courseSection: publicCourseSectionSchema,
+  chapters: z.array(publicChapterSchema),
+  lessons: z.array(publicCatalogLessonSchema),
+});
+
+export const publicChapterCatalogSchema = z.object({
+  courseSection: publicCourseSectionSchema,
+  chapter: publicChapterSchema,
+  lessons: z.array(publicCatalogLessonSchema),
+});
+
 export const publicLiveSessionSchema = z.object({
   session_id: z.string().uuid(),
   subject_name: z.string().min(1),
@@ -112,6 +129,9 @@ export type PublicCourseSection = z.infer<typeof publicCourseSectionSchema>;
 export type PublicLesson = z.infer<typeof publicLessonSchema>;
 export type PublicCatalogLesson = z.infer<typeof publicCatalogLessonSchema>;
 export type PublicChapter = z.infer<typeof publicChapterSchema>;
+export type PublicSubjectCourseSections = z.infer<typeof publicSubjectCourseSectionsSchema>;
+export type PublicCourseSectionCatalog = z.infer<typeof publicCourseSectionCatalogSchema>;
+export type PublicChapterCatalog = z.infer<typeof publicChapterCatalogSchema>;
 export type PublicLiveSession = z.infer<typeof publicLiveSessionSchema>;
 export type PublicLessonGateContext = z.infer<typeof publicLessonGateContextSchema>;
 export type EndedLessonReview = z.infer<typeof endedLessonReviewSchema>;

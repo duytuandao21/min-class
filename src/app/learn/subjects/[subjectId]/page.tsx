@@ -2,16 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
-import { getPublicCourseSections, getPublicSubjects } from "@/features/catalog/server/queries";
+import { getPublicSubjectCourseSections } from "@/features/catalog/server/queries";
 
 export default async function PublicCourseSectionsPage({ params }: { params: Promise<{ subjectId: string }> }) {
   const { subjectId } = await params;
-  const [subjects, courseSections] = await Promise.all([
-    getPublicSubjects(),
-    getPublicCourseSections(subjectId),
-  ]);
-  const subject = subjects.find((item) => item.subject_id === subjectId);
-  if (!subject) notFound();
+  const catalog = await getPublicSubjectCourseSections(subjectId);
+  if (!catalog) notFound();
+  const { courseSections, subject } = catalog;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-10 sm:px-10">

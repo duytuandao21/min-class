@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import { CreateCourseSectionLessonForm } from "@/features/lessons/components/create-course-section-lesson-form";
 import { MarkdownWritingGuide } from "@/features/lessons/components/markdown-writing-guide";
-import { getCourseSectionRosterDetail } from "@/features/subjects/server/queries";
+import { getCourseSectionChapterContext } from "@/features/subjects/server/queries";
 import { chapterIdSchema } from "@/features/subjects/schemas";
 
 export default async function NewCourseSectionLessonPage({
@@ -15,12 +15,10 @@ export default async function NewCourseSectionLessonPage({
 }) {
   const { subjectId, courseSectionId } = await params;
   const query = await searchParams;
-  const detail = await getCourseSectionRosterDetail(subjectId, courseSectionId);
-  if (!detail) notFound();
-
   const chapterId = chapterIdSchema.safeParse(query.chapterId);
-  const chapter = chapterId.success ? detail.chapters.find((item) => item.id === chapterId.data) : null;
-  if (!chapter) redirect(`/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}`);
+  if (!chapterId.success) redirect(`/teacher/subjects/${subjectId}/sections/${courseSectionId}`);
+  const detail = await getCourseSectionChapterContext(subjectId, courseSectionId, chapterId.data);
+  if (!detail) notFound();
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-10 sm:px-10 lg:px-12">
@@ -33,13 +31,13 @@ export default async function NewCourseSectionLessonPage({
           <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">CREATE PERSISTENT LESSON</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Tạo Lesson</h1>
           <p className="mt-4 text-lg leading-8 text-[var(--muted)]">
-            Upload, chỉnh sửa, preview và lưu nhiều Lesson vào <strong>{chapter.name}</strong>.
+            Upload, chỉnh sửa, preview và lưu nhiều Lesson vào <strong>{detail.chapter.name}</strong>.
             <br /> Các Lesson chưa LIVE sau khi tạo.
           </p>
         </div>
         <MarkdownWritingGuide />
       </header>
-      <CreateCourseSectionLessonForm chapter={chapter} courseSectionId={detail.courseSection.id} subjectId={detail.subject.id} />
+      <CreateCourseSectionLessonForm chapter={detail.chapter} courseSectionId={detail.courseSection.id} subjectId={detail.subject.id} />
     </main>
   );
 }

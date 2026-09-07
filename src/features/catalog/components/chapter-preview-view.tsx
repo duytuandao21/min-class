@@ -2,26 +2,27 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { readChapterPreviewAction } from "@/features/catalog/preview-actions";
 import type { ChapterPreview } from "@/features/catalog/chapter-preview";
 import { LessonReviewPlayer } from "@/features/lessons/components/lesson-review-player";
 import { ensureAnonymousSession } from "@/lib/supabase/client";
 
-export function ChapterPreviewView({ chapterId, header }: { chapterId: string; header: ReactNode }) {
-  const router = useRouter();
-  const [preview, setPreview] = useState<ChapterPreview | null>(null);
-  const [mssv, setMssv] = useState("");
-  const [verifiedMssv, setVerifiedMssv] = useState("");
+export function ChapterPreviewView({ chapterId, header, initialMessage, initialPreview, mssv }: {
+  chapterId: string;
+  header: ReactNode;
+  initialMessage?: string;
+  initialPreview: ChapterPreview | null;
+  mssv: string;
+}) {
+  const [preview, setPreview] = useState<ChapterPreview | null>(initialPreview);
   const [selectedId, setSelectedId] = useState<string>();
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string>();
+  const [message, setMessage] = useState(initialMessage);
   const selectedLesson = preview?.lessons.find((lesson) => lesson.id === selectedId) ?? preview?.lessons[0];
 
   // Re-check access after a real network reconnect. Switching browser tabs
   // must not invoke a Server Action because that triggers a Next.js render.
   useEffect(() => {
-    if (!verifiedMssv) return;
+    if (!preview) return;
     let disposed = false;
     let syncing = false;
     async function sync() {
@@ -29,20 +30,17 @@ export function ChapterPreviewView({ chapterId, header }: { chapterId: string; h
       syncing = true;
       try {
         await ensureAnonymousSession();
-        const result = await readChapterPreviewAction(chapterId, verifiedMssv);
+        const result = await readChapterPreviewAction(chapterId, mssv);
         if (disposed) return;
         if (result.status === "success") {
           setPreview(result.preview);
           return;
         }
         setPreview(null);
-        setVerifiedMssv("");
         setMessage(result.message);
-        router.refresh();
       } catch {
         if (disposed) return;
         setPreview(null);
-        setVerifiedMssv("");
         setMessage("Không thể xác minh lại quyền xem trước. Hãy kiểm tra kết nối và thử lại.");
       } finally {
         syncing = false;
@@ -53,7 +51,7 @@ export function ChapterPreviewView({ chapterId, header }: { chapterId: string; h
       disposed = true;
       window.removeEventListener("online", sync);
     };
-  }, [chapterId, router, verifiedMssv]);
+  }, [chapterId, mssv, preview]);
 
   if (preview) return (
     <>
@@ -76,51 +74,15 @@ export function ChapterPreviewView({ chapterId, header }: { chapterId: string; h
   );
 
   return (
-    <div className="mx-auto w-full max-w-lg">
-      {header}
-      <form className="mt-8 space-y-5" noValidate onSubmit={async (event) => {
-      event.preventDefault();
-      if (pending) return;
-      setPending(true);
-      setMessage(undefined);
-      try {
-        await ensureAnonymousSession();
-        const result = await readChapterPreviewAction(chapterId, mssv);
-        if (result.status === "success") {
-          setPreview(result.preview);
-          setVerifiedMssv(mssv.trim().toUpperCase());
-        } else setMessage(result.message);
-      } catch {
-        setMessage("Không thể tải nội dung. Hãy kiểm tra kết nối và thử lại.");
-      } finally {
-        setPending(false);
-      }
-      }}>
-      <div>
-        <label className="mb-2 block text-sm font-semibold" htmlFor="preview-mssv">MSSV</label>
-        <input
-          autoCapitalize="characters"
-          autoComplete="off"
-          className="w-full rounded-xl border border-black/15 bg-white px-4 py-3 uppercase outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-          id="preview-mssv"
-          inputMode="text"
-          maxLength={32}
-          minLength={3}
-          name="mssv"
-          onChange={(event) => setMssv(event.target.value)}
-          required
-          value={mssv}
-        />
+    <>
+      <div className="w-full">{header}</div>
+      <div
+        aria-live="polite"
+        className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900"
+        role="alert"
+      >
+        {message ?? "Không thể mở nội dung chương."}
       </div>
-      {message ? (
-        <p aria-live="polite" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-          {message}
-        </p>
-      ) : null}
-      <button className="w-full rounded-xl bg-[#17201b] px-5 py-3 font-semibold text-white transition hover:bg-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Đang xác minh…" : "Xem trước chương"}
-      </button>
-      </form>
-    </div>
+    </>
   );
 }
