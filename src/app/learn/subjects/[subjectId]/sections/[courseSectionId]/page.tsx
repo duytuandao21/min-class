@@ -31,11 +31,6 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
   if (!courseSection) notFound();
   const lessonsByChapter = new Map(chapters.map((chapter) => [chapter.chapter_id, []] as [string, typeof lessons]));
   for (const lesson of lessons) lessonsByChapter.get(lesson.chapter_id)?.push(lesson);
-  const liveChapterIndex = chapters.findIndex((chapter) =>
-    lessonsByChapter.get(chapter.chapter_id)?.some((lesson) => lesson.lesson_status === "LIVE"),
-  );
-  const initiallyOpenChapterIndex = liveChapterIndex >= 0 ? liveChapterIndex : 0;
-
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-10 sm:px-10">
       <BackLink href={`/learn/subjects/${subjectId}`} label="Lớp học phần" />
@@ -50,7 +45,7 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
         <p className="rounded-3xl border border-dashed border-black/15 bg-white p-8 text-center text-[var(--muted)]">Lớp học phần này chưa có Lesson Plan.</p>
       ) : (
         <div className="space-y-4">
-          {chapters.map((chapter, chapterIndex) => {
+          {chapters.map((chapter) => {
             const chapterLessons = lessonsByChapter.get(chapter.chapter_id) ?? [];
             const chapterStatus = getPublicChapterStatus(chapterLessons, chapter.preview_enabled);
             const chapterHref = chapterStatus === "UPCOMING"
@@ -75,7 +70,6 @@ export default async function PublicLessonsPage({ params }: { params: Promise<{ 
                 ) : (
                   <span className={`w-fit shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusClass[chapterStatus]}`}>{statusLabel[chapterStatus]}</span>
                 )}
-                defaultOpen={chapterIndex === initiallyOpenChapterIndex}
                 key={chapter.chapter_id}
                 lessonCount={chapterLessons.length}
                 title={chapter.chapter_name}

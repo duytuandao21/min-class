@@ -33,8 +33,8 @@ export default async function NewCourseSectionLessonPage({
           <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">CREATE PERSISTENT LESSON</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Tạo Lesson</h1>
           <p className="mt-4 text-lg leading-8 text-[var(--muted)]">
-            Upload, preview và lưu Lesson vào <strong>{chapter.name}</strong>.
-            <br /> Lesson chưa LIVE sau khi tạo.
+            Upload, chỉnh sửa, preview và lưu nhiều Lesson vào <strong>{chapter.name}</strong>.
+            <br /> Các Lesson chưa LIVE sau khi tạo.
           </p>
         </div>
         <MarkdownWritingGuide />

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { readChapterPreviewAction } from "@/features/catalog/preview-actions";
 import type { ChapterPreview } from "@/features/catalog/chapter-preview";
 import { LessonReviewPlayer } from "@/features/lessons/components/lesson-review-player";
+import { ensureAnonymousSession } from "@/lib/supabase/client";
 
 export function ChapterPreviewView({ chapterId, header }: { chapterId: string; header: ReactNode }) {
   const router = useRouter();
@@ -27,6 +28,7 @@ export function ChapterPreviewView({ chapterId, header }: { chapterId: string; h
       if (disposed || syncing) return;
       syncing = true;
       try {
+        await ensureAnonymousSession();
         const result = await readChapterPreviewAction(chapterId, verifiedMssv);
         if (disposed) return;
         if (result.status === "success") {
@@ -82,6 +84,7 @@ export function ChapterPreviewView({ chapterId, header }: { chapterId: string; h
       setPending(true);
       setMessage(undefined);
       try {
+        await ensureAnonymousSession();
         const result = await readChapterPreviewAction(chapterId, mssv);
         if (result.status === "success") {
           setPreview(result.preview);

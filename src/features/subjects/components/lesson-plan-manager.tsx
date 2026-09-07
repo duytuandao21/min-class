@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
 
+import { AddActionIcon } from "@/components/add-action-button";
 import { DeleteLessonButton } from "@/features/lessons/components/delete-lesson-button";
 import { createChapterAction, deleteChapterAction, type ManagementActionState, updateChapterAction } from "@/features/subjects/actions";
 import { TemplateSyncChoice } from "@/features/subjects/components/template-sync-choice";
@@ -12,27 +13,15 @@ const initialState: ManagementActionState = { status: "idle" };
 const inputClassName = "w-full rounded-xl border border-black/15 bg-white px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15";
 const cancelButtonClassName = "min-h-10 rounded-xl border border-black/20 bg-white px-4 py-2 text-sm font-bold text-[#263129] shadow-sm transition hover:bg-black/5";
 const chapterActionClassName = "group inline-flex min-h-16 items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-emerald-950 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-100 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 motion-reduce:transform-none";
-const lessonActionClassName = "group inline-flex min-h-16 items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-left text-sky-950 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-100 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700 motion-reduce:transform-none";
 
-function ActionIcon({ type }: { type: "chapter" | "lesson" }) {
-  const colorClassName = type === "chapter"
-    ? "border-emerald-200 bg-white text-emerald-800 group-hover:border-emerald-300"
-    : "border-sky-200 bg-white text-sky-800 group-hover:border-sky-300";
-
+function ActionIcon() {
   return (
-    <span aria-hidden="true" className={`relative flex size-11 shrink-0 items-center justify-center rounded-xl border shadow-sm transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none ${colorClassName}`}>
-      {type === "chapter" ? (
-        <svg className="size-6" fill="none" viewBox="0 0 24 24">
-          <path d="M7 4.5h8.5A2.5 2.5 0 0 1 18 7v12H8.5A2.5 2.5 0 0 1 6 16.5V6.25A1.75 1.75 0 0 1 7.75 4.5Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
-          <path d="M6 16.5A2.5 2.5 0 0 1 8.5 14H18M9.5 8h5M9.5 11h5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-        </svg>
-      ) : (
-        <svg className="size-7" fill="none" viewBox="0 0 28 28">
-          <path d="M4 7.5c3.6-.55 6.6.1 10 2.3v13c-3.4-2.2-6.4-2.85-10-2.3v-13Zm20 0c-3.6-.55-6.6.1-10 2.3v13c3.4-2.2 6.4-2.85 10-2.3v-13Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
-          <path d="M14 5.25v2M10.75 6.4 9.5 4.9m7.75 1.5 1.25-1.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
-        </svg>
-      )}
-      <span className={`absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full text-xs font-black text-white ring-2 ring-white ${type === "chapter" ? "bg-emerald-700" : "bg-sky-700"}`}>+</span>
+    <span aria-hidden="true" className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-white text-emerald-800 shadow-sm transition-transform duration-200 group-hover:scale-105 group-hover:border-emerald-300 motion-reduce:transform-none">
+      <svg className="size-6" fill="none" viewBox="0 0 24 24">
+        <path d="M7 4.5h8.5A2.5 2.5 0 0 1 18 7v12H8.5A2.5 2.5 0 0 1 6 16.5V6.25A1.75 1.75 0 0 1 7.75 4.5Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+        <path d="M6 16.5A2.5 2.5 0 0 1 8.5 14H18M9.5 8h5M9.5 11h5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      </svg>
+      <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-700 text-xs font-black text-white ring-2 ring-white">+</span>
     </span>
   );
 }
@@ -126,6 +115,13 @@ function ChapterGroup({ chapter, courseSectionCount, lessons, subjectId }: { cha
               <span className="mt-1 block text-xs text-[var(--muted)]">{lessons.length} Lesson mẫu</span>
             </button>
             <div className="flex shrink-0 gap-2">
+              <Link
+                className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3.5 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 motion-reduce:transform-none"
+                href={`/teacher/subjects/${subjectId}/lessons/new?chapterId=${chapter.id}`}
+              >
+                <AddActionIcon compact />
+                Lesson
+              </Link>
               <button className="rounded-lg border border-black/15 px-3 py-2 text-sm font-bold" onClick={() => { setApplyToExisting(true); setEditing(true); }} type="button">Sửa</button>
               <button className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50" disabled={deleting} onClick={() => { setApplyToExisting(true); setConfirmingDelete(true); }} type="button">Xóa</button>
             </div>
@@ -224,15 +220,9 @@ export function LessonPlanManager({ chapters, courseSectionCount, defaultOpen = 
               <div className="pr-24"><p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">LESSON PLAN</p><h2 className="mt-2 text-2xl font-bold" id="lesson-plan-title">Nội dung mẫu của môn học</h2><p className="mt-2 text-sm text-[var(--muted)]">Lớp học phần mới sẽ nhận một bản sao độc lập của toàn bộ nội dung này.</p></div>
               <div className="mt-5 flex flex-wrap justify-end gap-3">
                 <button className={chapterActionClassName} onClick={() => setAdding(true)} type="button">
-                  <ActionIcon type="chapter" />
+                  <ActionIcon />
                   <ActionLabel description="Tạo nhóm nội dung" title="Thêm chương" />
                 </button>
-                {chapters.length > 0 ? (
-                  <Link className={lessonActionClassName} href={`/teacher/subjects/${subjectId}/lessons/new`}>
-                    <ActionIcon type="lesson" />
-                    <ActionLabel description="Upload bài học .md" title="Thêm Lesson mẫu" />
-                  </Link>
-                ) : null}
               </div>
             </div>
             {adding ? <AddChapterForm courseSectionCount={courseSectionCount} onCancel={() => setAdding(false)} subjectId={subjectId} /> : null}

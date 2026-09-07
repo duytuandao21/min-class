@@ -1,58 +1,69 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { fetchTeacherAttendance } from "@/features/rooms/dashboard-client";
+import { createDegradedPollingController, createRealtimeSyncCoordinator } from "@/features/rooms/realtime-sync";
 import type { TeacherAttendance } from "@/features/rooms/summary";
 import { createClient } from "@/lib/supabase/client";
 
 export function TeacherRoomOverview({ roomId, initialAttendance }: { roomId: string; initialAttendance: TeacherAttendance }) {
   const [attendance, setAttendance] = useState(initialAttendance);
   const [isDegraded, setIsDegraded] = useState(false);
-  const syncVersionRef = useRef(0);
-
-  const syncCount = useCallback(async () => {
-    const syncVersion = ++syncVersionRef.current;
-    try {
-      const nextAttendance = await fetchTeacherAttendance(roomId);
-      if (syncVersion !== syncVersionRef.current) return;
-      setAttendance(nextAttendance);
-      setIsDegraded(false);
-    } catch {
-      if (syncVersion === syncVersionRef.current) setIsDegraded(true);
-    }
-  }, [roomId]);
 
   useEffect(() => {
     const supabase = createClient();
+    const coordinator = createRealtimeSyncCoordinator({
+      fetchSnapshot: () => fetchTeacherAttendance(roomId),
+      onError: () => setIsDegraded(true),
+      onSuccess: setAttendance,
+    });
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") coordinator.request();
+    };
+    const fallbackPolling = createDegradedPollingController({
+      isVisible: () => document.visibilityState === "visible",
+      requestSync: coordinator.syncNow,
+    });
+
     const channel = supabase
       .channel(`room-participants:${roomId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants", filter: `room_id=eq.${roomId}` }, () => void syncCount())
-      .on("postgres_changes", { event: "*", schema: "public", table: "session_attendance", filter: `session_id=eq.${roomId}` }, () => void syncCount())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants", filter: `room_id=eq.${roomId}` }, () => coordinator.request())
+      .on("postgres_changes", { event: "*", schema: "public", table: "session_attendance", filter: `session_id=eq.${roomId}` }, () => coordinator.request())
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") void syncCount();
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setIsDegraded(true);
+        if (status === "SUBSCRIBED") {
+          fallbackPolling.stop();
+          setIsDegraded(false);
+          coordinator.syncNow();
+          return;
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setIsDegraded(true);
+          fallbackPolling.start();
+        }
       });
 
-    const syncAfterReconnect = () => void syncCount();
-    const syncWhenVisible = () => {
-      if (document.visibilityState === "visible") void syncCount();
+    const syncAfterReconnect = () => coordinator.syncNow();
+    const markOffline = () => {
+      setIsDegraded(true);
+      fallbackPolling.start();
     };
-    const fallbackSyncTimer = window.setInterval(syncWhenVisible, 3_000);
 
     window.addEventListener("online", syncAfterReconnect);
+    window.addEventListener("offline", markOffline);
     window.addEventListener("focus", syncAfterReconnect);
     document.addEventListener("visibilitychange", syncWhenVisible);
 
     return () => {
-      syncVersionRef.current += 1;
-      window.clearInterval(fallbackSyncTimer);
+      fallbackPolling.stop();
+      coordinator.dispose();
       window.removeEventListener("online", syncAfterReconnect);
+      window.removeEventListener("offline", markOffline);
       window.removeEventListener("focus", syncAfterReconnect);
       document.removeEventListener("visibilitychange", syncWhenVisible);
       void supabase.removeChannel(channel);
     };
-  }, [roomId, syncCount]);
+  }, [roomId]);
 
   return (
     <section className="mt-7 rounded-3xl border border-emerald-900/10 bg-gradient-to-r from-white to-emerald-50/70 px-6 py-5 shadow-sm sm:px-8 sm:py-6">

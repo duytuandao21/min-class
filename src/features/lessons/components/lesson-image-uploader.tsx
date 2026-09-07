@@ -117,8 +117,8 @@ export function LessonImageUploader({ disabled = false, subjectId }: {
           </svg>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-extrabold text-sky-950">Thư viện ảnh Lesson</span>
-          <span className="mt-0.5 block text-xs text-sky-900/65">Upload, xem trước và sao chép Markdown</span>
+          <span className="block text-base font-semibold tracking-tight text-sky-950">Thư viện ảnh Lesson</span>
+          <span className="mt-0.5 block text-sm leading-5 text-sky-900/65">Upload, xem trước và sao chép Markdown</span>
         </span>
         <span aria-hidden="true" className="text-lg font-bold text-sky-700">→</span>
       </button>

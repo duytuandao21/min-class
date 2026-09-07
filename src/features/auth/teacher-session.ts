@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,7 +12,7 @@ export type TeacherIdentity = {
   email: string;
 };
 
-export async function getTeacherIdentity(): Promise<TeacherIdentity | null> {
+export const getTeacherIdentity = cache(async (): Promise<TeacherIdentity | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   const user = data.user;
@@ -24,7 +25,7 @@ export async function getTeacherIdentity(): Promise<TeacherIdentity | null> {
   ) return null;
 
   return { id: user.id, email: TEACHER_AUTH_EMAIL };
-}
+});
 
 export async function requireTeacher(): Promise<TeacherIdentity> {
   const teacher = await getTeacherIdentity();

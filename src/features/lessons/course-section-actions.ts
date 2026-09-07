@@ -25,6 +25,9 @@ const saveInputSchema = z.object({
   markdownSource: z.string().min(1).max(MAX_MARKDOWN_BYTES),
 });
 
+const MAX_BATCH_LESSONS = 20;
+const batchSaveInputSchema = z.array(saveInputSchema).min(1).max(MAX_BATCH_LESSONS);
+
 export type CourseSectionLessonPreviewResult =
   | {
       ok: true;
@@ -37,6 +40,26 @@ export type CourseSectionLessonPreviewResult =
 
 export type SaveCourseSectionLessonResult =
   | { ok: true; lesson: { id: string; title: string; createdAt: string } }
+  | { ok: false; errors: string[] };
+
+export type PreparedCourseSectionLesson = {
+  fileName: string;
+  lessonTitle: string;
+  markdownSource: string;
+  lesson: NormalizedLesson | null;
+  errors: string[];
+};
+
+export type PrepareCourseSectionLessonsResult =
+  | { ok: true; lessons: PreparedCourseSectionLesson[] }
+  | { ok: false; errors: string[] };
+
+export type SaveCourseSectionLessonsResult =
+  | { ok: true; lessons: Array<{ id: string; title: string; createdAt: string }> }
+  | { ok: false; errors: string[] };
+
+export type SaveSubjectTemplateLessonsResult =
+  | { ok: true; lessons: Array<{ id: string; appliedCount: number; skippedCount: number }> }
   | { ok: false; errors: string[] };
 
 export type LessonMutationResult =
@@ -102,6 +125,208 @@ async function ownsLessonPlacement(subjectId: string, courseSectionId: string, c
     && !chapterResult.error
     && Boolean(courseSectionResult.data)
     && Boolean(chapterResult.data);
+}
+
+async function ownsTemplateLessonPlacement(subjectId: string, chapterId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chapters")
+    .select("id")
+    .eq("id", chapterId)
+    .eq("subject_id", subjectId)
+    .maybeSingle();
+  return !error && Boolean(data);
+}
+
+async function prepareLessonFiles(formData: FormData): Promise<PrepareCourseSectionLessonsResult> {
+  const files = formData.getAll("lessonFiles");
+  if (files.length === 0) return { ok: false, errors: ["Hãy chọn ít nhất một file Markdown."] };
+  if (files.length > MAX_BATCH_LESSONS) {
+    return { ok: false, errors: [`Mỗi lần chỉ được thêm tối đa ${MAX_BATCH_LESSONS} Lesson.`] };
+  }
+
+  const lessons = await Promise.all(files.map(async (value): Promise<PreparedCourseSectionLesson> => {
+    if (!(value instanceof File)) {
+      return { fileName: "File không hợp lệ", lessonTitle: "", markdownSource: "", lesson: null, errors: ["File không hợp lệ."] };
+    }
+    const fallbackTitle = value.name.replace(/\.md$/i, "").trim().slice(0, 200);
+    const fileValidation = lessonFileSchema.safeParse(value);
+    if (!fileValidation.success) {
+      return {
+        fileName: value.name,
+        lessonTitle: fallbackTitle,
+        markdownSource: "",
+        lesson: null,
+        errors: zodMessages(fileValidation.error),
+      };
+    }
+    try {
+      const markdownSource = await value.text();
+      const lesson = parseLessonMarkdown(markdownSource);
+      return { fileName: value.name, lessonTitle: lesson.title, markdownSource, lesson, errors: [] };
+    } catch (error) {
+      return {
+        fileName: value.name,
+        lessonTitle: fallbackTitle,
+        markdownSource: await value.text(),
+        lesson: null,
+        errors: error instanceof MarkdownValidationError ? error.issues : ["Không thể đọc file Markdown."],
+      };
+    }
+  }));
+  return { ok: true, lessons };
+}
+
+export async function prepareCourseSectionLessonsAction(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+  formData: FormData,
+): Promise<PrepareCourseSectionLessonsResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  if (!subjectId.success || !courseSectionId.success || !chapterId.success) {
+    return { ok: false, errors: ["Course Section hoặc chương không hợp lệ."] };
+  }
+  if (!await ownsLessonPlacement(subjectId.data, courseSectionId.data, chapterId.data)) {
+    return { ok: false, errors: ["Không tìm thấy Course Section, chương hoặc bạn không có quyền truy cập."] };
+  }
+
+  return prepareLessonFiles(formData);
+}
+
+export async function prepareSubjectTemplateLessonsAction(
+  rawSubjectId: string,
+  rawChapterId: string,
+  formData: FormData,
+): Promise<PrepareCourseSectionLessonsResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  if (!subjectId.success || !chapterId.success) {
+    return { ok: false, errors: ["Môn học hoặc chương không hợp lệ."] };
+  }
+  if (!await ownsTemplateLessonPlacement(subjectId.data, chapterId.data)) {
+    return { ok: false, errors: ["Không tìm thấy môn học, chương hoặc bạn không có quyền truy cập."] };
+  }
+  return prepareLessonFiles(formData);
+}
+
+export async function saveCourseSectionLessonsBatchAction(
+  rawSubjectId: string,
+  rawCourseSectionId: string,
+  rawChapterId: string,
+  rawInput: unknown,
+): Promise<SaveCourseSectionLessonsResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const courseSectionId = courseSectionIdSchema.safeParse(rawCourseSectionId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  const input = batchSaveInputSchema.safeParse(rawInput);
+  if (!subjectId.success || !courseSectionId.success || !chapterId.success) {
+    return { ok: false, errors: ["Course Section hoặc chương không hợp lệ."] };
+  }
+  if (!input.success) return { ok: false, errors: zodMessages(input.error) };
+
+  const duplicateTitles = new Set<string>();
+  const seenTitles = new Set<string>();
+  const normalizedLessons: Array<{ lessonTitle: string; markdownSource: string; lesson: NormalizedLesson }> = [];
+  for (const item of input.data) {
+    const normalized = normalizeLessonInput(item);
+    if (!normalized.ok) return normalized;
+    const titleKey = normalized.title.toLocaleLowerCase("vi");
+    if (seenTitles.has(titleKey)) duplicateTitles.add(normalized.title);
+    seenTitles.add(titleKey);
+    normalizedLessons.push({ lessonTitle: normalized.title, markdownSource: normalized.source, lesson: normalized.lesson });
+  }
+  if (duplicateTitles.size > 0) {
+    return { ok: false, errors: [`Tên Lesson bị trùng trong danh sách: ${[...duplicateTitles].join(", ")}.`] };
+  }
+  if (!await ownsLessonPlacement(subjectId.data, courseSectionId.data, chapterId.data)) {
+    return { ok: false, errors: ["Không tìm thấy Course Section, chương hoặc bạn không có quyền truy cập."] };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_course_section_lessons_batch", {
+    p_course_section_id: courseSectionId.data,
+    p_chapter_id: chapterId.data,
+    p_lessons: normalizedLessons,
+  });
+  const persisted = z.array(z.object({
+    lessonId: z.string().uuid(),
+    lessonTitle: z.string(),
+    lessonCreatedAt: z.string(),
+  })).length(normalizedLessons.length).safeParse(data);
+  if (error || !persisted.success) {
+    return { ok: false, errors: ["Không thể lưu danh sách Lesson. Không có Lesson nào được tạo."] };
+  }
+  revalidatePath(`/teacher/subjects/${subjectId.data}/sections/${courseSectionId.data}`);
+  return {
+    ok: true,
+    lessons: persisted.data.map((lesson) => ({
+      id: lesson.lessonId,
+      title: lesson.lessonTitle,
+      createdAt: lesson.lessonCreatedAt,
+    })),
+  };
+}
+
+export async function saveSubjectTemplateLessonsBatchAction(
+  rawSubjectId: string,
+  rawChapterId: string,
+  rawInput: unknown,
+  applyToExisting = true,
+): Promise<SaveSubjectTemplateLessonsResult> {
+  await requireTeacher();
+  const subjectId = subjectIdSchema.safeParse(rawSubjectId);
+  const chapterId = chapterIdSchema.safeParse(rawChapterId);
+  const input = batchSaveInputSchema.safeParse(rawInput);
+  if (!subjectId.success || !chapterId.success) {
+    return { ok: false, errors: ["Môn học hoặc chương không hợp lệ."] };
+  }
+  if (!input.success) return { ok: false, errors: zodMessages(input.error) };
+
+  const duplicateTitles = new Set<string>();
+  const seenTitles = new Set<string>();
+  const normalizedLessons: Array<{ lessonTitle: string; markdownSource: string; lesson: NormalizedLesson }> = [];
+  for (const item of input.data) {
+    const normalized = normalizeLessonInput(item);
+    if (!normalized.ok) return normalized;
+    const titleKey = normalized.title.toLocaleLowerCase("vi");
+    if (seenTitles.has(titleKey)) duplicateTitles.add(normalized.title);
+    seenTitles.add(titleKey);
+    normalizedLessons.push({ lessonTitle: normalized.title, markdownSource: normalized.source, lesson: normalized.lesson });
+  }
+  if (duplicateTitles.size > 0) {
+    return { ok: false, errors: [`Tên Lesson bị trùng trong danh sách: ${[...duplicateTitles].join(", ")}.`] };
+  }
+  if (!await ownsTemplateLessonPlacement(subjectId.data, chapterId.data)) {
+    return { ok: false, errors: ["Không tìm thấy môn học, chương hoặc bạn không có quyền truy cập."] };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_subject_template_lessons_batch", {
+    p_subject_id: subjectId.data,
+    p_chapter_id: chapterId.data,
+    p_lessons: normalizedLessons,
+    p_apply_to_existing: applyToExisting,
+  });
+  const persisted = z.array(syncedLessonResultSchema).length(normalizedLessons.length).safeParse(data);
+  if (error || !persisted.success) {
+    return { ok: false, errors: ["Không thể lưu danh sách Lesson mẫu. Không có Lesson nào được tạo."] };
+  }
+  revalidatePath(`/teacher/subjects/${subjectId.data}`, "layout");
+  revalidatePath(`/learn/subjects/${subjectId.data}`, "layout");
+  return {
+    ok: true,
+    lessons: persisted.data.map((lesson) => ({
+      id: lesson.lessonId,
+      appliedCount: lesson.appliedCount,
+      skippedCount: lesson.skippedCount,
+    })),
+  };
 }
 
 export async function previewCourseSectionLessonAction(

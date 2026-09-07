@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { accessPublicLessonAction, type LessonAccessState } from "@/features/catalog/actions";
 import type { PublicLessonStatus } from "@/features/catalog/schemas";
+import { ensureAnonymousSession } from "@/lib/supabase/client";
 
 const initialState: LessonAccessState = { status: "idle" };
 
@@ -17,7 +18,18 @@ export function LessonAccessForm({
   scope?: "chapter" | "lesson";
   status: PublicLessonStatus;
 }) {
-  const action = accessPublicLessonAction.bind(null, lessonId, status);
+  const action = useCallback(async (previousState: LessonAccessState, formData: FormData) => {
+    try {
+      await ensureAnonymousSession();
+    } catch {
+      return {
+        status: "error" as const,
+        message: "Không thể khởi tạo phiên. Hãy kiểm tra kết nối và thử lại.",
+      };
+    }
+
+    return accessPublicLessonAction(lessonId, status, previousState, formData);
+  }, [lessonId, status]);
   const [state, formAction, pending] = useActionState(action, initialState);
   const router = useRouter();
 

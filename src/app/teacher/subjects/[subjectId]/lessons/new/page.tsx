@@ -1,14 +1,26 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { BackLink } from "@/components/back-link";
-import { LessonEditorForm } from "@/features/lessons/components/lesson-editor-form";
+import { CreateSubjectTemplateLessonsForm } from "@/features/lessons/components/create-course-section-lesson-form";
 import { MarkdownWritingGuide } from "@/features/lessons/components/markdown-writing-guide";
+import { chapterIdSchema } from "@/features/subjects/schemas";
 import { getSubjectDetail } from "@/features/subjects/server/queries";
 
-export default async function NewSubjectTemplateLessonPage({ params }: { params: Promise<{ subjectId: string }> }) {
+export default async function NewSubjectTemplateLessonPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ subjectId: string }>;
+  searchParams: Promise<{ chapterId?: string | string[] }>;
+}) {
   const { subjectId } = await params;
+  const query = await searchParams;
   const subject = await getSubjectDetail(subjectId);
   if (!subject) notFound();
+
+  const chapterId = chapterIdSchema.safeParse(query.chapterId);
+  const chapter = chapterId.success ? subject.chapters.find((item) => item.id === chapterId.data) : null;
+  if (!chapter) redirect(`/teacher/subjects/${subject.id}?lessonPlan=open`);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-10 sm:px-10 lg:px-12">
@@ -17,15 +29,17 @@ export default async function NewSubjectTemplateLessonPage({ params }: { params:
         <div>
           <p className="text-sm font-bold tracking-[0.2em] text-[var(--accent)]">SUBJECT TEMPLATE</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">Tạo Lesson mẫu</h1>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">Lesson này có thể được sao chép vào cả lớp học phần hiện có và lớp tạo sau này.</p>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">
+            Upload, chỉnh sửa, preview và lưu nhiều Lesson mẫu vào <strong>{chapter.name}</strong>.
+          </p>
         </div>
         <MarkdownWritingGuide />
       </header>
-      {subject.chapters.length === 0 ? (
-        <p className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-amber-900">Hãy tạo chương trong Lesson Plan trước khi thêm Lesson mẫu.</p>
-      ) : (
-        <LessonEditorForm chapters={subject.chapters} courseSectionCount={subject.courseSections.length} mode="create-template" returnHref={`/teacher/subjects/${subject.id}?lessonPlan=open`} subjectId={subject.id} />
-      )}
+      <CreateSubjectTemplateLessonsForm
+        chapter={chapter}
+        courseSectionCount={subject.courseSections.length}
+        subjectId={subject.id}
+      />
     </main>
   );
 }

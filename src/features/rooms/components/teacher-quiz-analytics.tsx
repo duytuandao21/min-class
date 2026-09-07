@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   filterTeacherQuizAnalyticsBySections,
   type TeacherQuizAnalytics,
 } from "@/features/rooms/quiz";
 import { fetchTeacherQuizAnalytics } from "@/features/rooms/quiz-client";
+import { createDegradedPollingController, createRealtimeSyncCoordinator } from "@/features/rooms/realtime-sync";
 import { createClient } from "@/lib/supabase/client";
 
 type ConnectionState = "connecting" | "connected" | "degraded";
@@ -25,24 +26,26 @@ export function TeacherQuizAnalytics({
   const [analytics, setAnalytics] = useState(initialAnalytics);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [syncError, setSyncError] = useState<string | null>(null);
-  const syncVersionRef = useRef(0);
   const lessonAnalytics = filterTeacherQuizAnalyticsBySections(analytics, sectionIds);
-
-  const syncAnalytics = useCallback(async () => {
-    const syncVersion = ++syncVersionRef.current;
-    try {
-      const nextAnalytics = await fetchTeacherQuizAnalytics(roomId);
-      if (syncVersion !== syncVersionRef.current) return;
-      setAnalytics(nextAnalytics);
-      setSyncError(null);
-    } catch {
-      if (syncVersion !== syncVersionRef.current) return;
-      setSyncError("Mất đồng bộ Quiz Analytics tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi.");
-    }
-  }, [roomId]);
 
   useEffect(() => {
     const supabase = createClient();
+    const coordinator = createRealtimeSyncCoordinator({
+      fetchSnapshot: () => fetchTeacherQuizAnalytics(roomId),
+      onError: () => setSyncError("Mất đồng bộ Quiz Analytics tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi."),
+      onSuccess: (nextAnalytics) => {
+        setAnalytics(nextAnalytics);
+        setSyncError(null);
+      },
+    });
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") coordinator.request();
+    };
+    const fallbackPolling = createDegradedPollingController({
+      isVisible: () => document.visibilityState === "visible",
+      requestSync: coordinator.syncNow,
+    });
+
     const channel = supabase
       .channel(`quiz-analytics:${roomId}`)
       .on(
@@ -54,39 +57,43 @@ export function TeacherQuizAnalytics({
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
-          if (payload.new.kind === "QUIZ") void syncAnalytics();
+          if (payload.new.kind === "QUIZ") coordinator.request();
         },
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
+          fallbackPolling.stop();
           setConnection("connected");
-          void syncAnalytics();
+          coordinator.syncNow();
           return;
         }
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           setConnection("degraded");
+          fallbackPolling.start();
         }
       });
 
-    const syncAfterReconnect = () => void syncAnalytics();
-    const syncWhenVisible = () => {
-      if (document.visibilityState === "visible") void syncAnalytics();
+    const syncAfterReconnect = () => coordinator.syncNow();
+    const markOffline = () => {
+      setConnection("degraded");
+      fallbackPolling.start();
     };
-    const fallbackSyncTimer = window.setInterval(syncWhenVisible, 3_000);
 
     window.addEventListener("online", syncAfterReconnect);
+    window.addEventListener("offline", markOffline);
     window.addEventListener("focus", syncAfterReconnect);
     document.addEventListener("visibilitychange", syncWhenVisible);
 
     return () => {
-      syncVersionRef.current += 1;
-      window.clearInterval(fallbackSyncTimer);
+      fallbackPolling.stop();
+      coordinator.dispose();
       window.removeEventListener("online", syncAfterReconnect);
+      window.removeEventListener("offline", markOffline);
       window.removeEventListener("focus", syncAfterReconnect);
       document.removeEventListener("visibilitychange", syncWhenVisible);
       void supabase.removeChannel(channel);
     };
-  }, [roomId, syncAnalytics]);
+  }, [roomId]);
 
   return (
     <section className="mt-8 rounded-3xl border border-black/10 bg-white p-7 shadow-sm sm:p-9">

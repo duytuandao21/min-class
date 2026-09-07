@@ -12,9 +12,8 @@ export function createClient() {
 
 export function ensureAnonymousSession() {
   if (!anonymousSessionPromise) {
-    anonymousSessionPromise = bootstrapAnonymousSession().catch((error: unknown) => {
+    anonymousSessionPromise = bootstrapAnonymousSession().finally(() => {
       anonymousSessionPromise = null;
-      throw error;
     });
   }
 

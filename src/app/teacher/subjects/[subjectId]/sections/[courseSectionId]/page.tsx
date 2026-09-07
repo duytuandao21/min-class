@@ -33,10 +33,6 @@ export default async function CourseSectionRosterPage({
   });
   const lessonsByChapter = new Map(detail.chapters.map((chapter) => [chapter.id, []] as [string, typeof detail.lessons]));
   for (const lesson of detail.lessons) lessonsByChapter.get(lesson.chapter_id)?.push(lesson);
-  const activeChapterIndex = detail.chapters.findIndex((chapter) =>
-    lessonsByChapter.get(chapter.id)?.some((lesson) => lesson.latestSession?.status === "ACTIVE"),
-  );
-  const initiallyOpenChapterIndex = activeChapterIndex >= 0 ? activeChapterIndex : 0;
   const createLessonHref = `/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/lessons/new`;
 
   return (
@@ -79,7 +75,7 @@ export default async function CourseSectionRosterPage({
           </p>
         ) : (
           <div className="mt-5 space-y-4">
-            {detail.chapters.map((chapter, chapterIndex) => {
+            {detail.chapters.map((chapter) => {
               const chapterLessons = lessonsByChapter.get(chapter.id) ?? [];
               const activeSession = chapterLessons.find((lesson) => lesson.latestSession?.status === "ACTIVE")?.latestSession ?? null;
               const hasSessionHistory = chapterLessons.some((lesson) => lesson.latestSession !== null);
@@ -134,7 +130,6 @@ export default async function CourseSectionRosterPage({
                       </ChapterOptionsMenu>
                     </div>
                   )}
-                  defaultOpen={chapterIndex === initiallyOpenChapterIndex}
                   key={chapter.id}
                   lessonCount={chapterLessons.length}
                   showLessonCount={false}

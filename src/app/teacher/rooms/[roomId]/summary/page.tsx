@@ -121,7 +121,7 @@ export default async function TeacherRoomSummaryPage({ params }: { params: Promi
         ) : (
           <div className="mt-5 space-y-4">
             {summary.lessonSummaries.map((lesson, lessonIndex) => (
-              <details className="group overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm" key={lesson.lessonId} open={lessonIndex === 0}>
+              <details className="group overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm" key={lesson.lessonId}>
                 <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-6 py-5 marker:content-none sm:px-8">
                   <div>
                     <p className="text-xs font-bold tracking-[0.14em] text-[var(--accent)]">LESSON {lessonIndex + 1}</p>
