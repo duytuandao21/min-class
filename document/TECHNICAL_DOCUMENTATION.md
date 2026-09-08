@@ -43,19 +43,21 @@ Các route chính:
 | `/` | Public | Landing page |
 | `/teacher/login` | Teacher | Đăng nhập |
 | `/teacher/subjects` | Teacher | Danh sách Subject |
-| `/teacher/subjects/[subjectId]` | Teacher | Subject Detail, Chapter và Course Section |
-| `/teacher/subjects/[subjectId]/sections/[courseSectionId]` | Teacher | Roster, Lesson theo Chapter và export |
-| `.../lessons/new` | Teacher | Tạo Lesson từ Markdown |
+| `/teacher/subjects/[subjectId]` | Teacher | Subject Detail, Course Section và Lesson Plan modal qua `?lessonPlan=open` |
+| `/teacher/subjects/[subjectId]/sections/[courseSectionId]` | Teacher | Roster, Chapter/Lesson riêng của lớp, Live, History và export |
+| `.../lessons/new?chapterId=...` | Teacher | Upload/chỉnh sửa/preview và tạo tối đa 20 Lesson vào Chapter hiện tại |
 | `.../lessons/[lessonId]` | Teacher | Lesson Detail và Session History |
 | `/teacher/rooms/[roomId]` | Teacher | Live Dashboard |
 | `/teacher/rooms/[roomId]/summary` | Teacher | Session Summary/Lesson Review |
 | `/teacher/rooms/[roomId]/reviews` | Teacher | Session Reviews |
 | `/teacher/rooms/[roomId]/voices` | Teacher | Class Voices |
 | `/learn` | Student/Public | Danh sách Subject |
+| `/learn/live` | Student/Public | Danh sách Chapter Session đang LIVE |
 | `/learn/subjects/[subjectId]` | Student/Public | Danh sách Course Section |
-| `/learn/subjects/[subjectId]/sections/[courseSectionId]` | Student/Public | Lesson theo Chapter |
+| `/learn/subjects/[subjectId]/sections/[courseSectionId]` | Student | Xác minh MSSV một lần và hiển thị Chapter theo trạng thái |
+| `.../chapters/[chapterId]` | Student | Xem trước Chapter, tham gia LIVE hoặc mở Session đã kết thúc |
 | `/learn/lessons/[lessonId]` | Student | MSSV access gate |
-| `/student/rooms/[roomId]` | Student | Lesson Session LIVE/ENDED |
+| `/student/rooms/[roomId]` | Student | Chapter Session LIVE/ENDED với điều hướng Lesson |
 | `/learn/review/[sessionId]` | Student | Ended Lesson Review |
 | `.../export` | Teacher | Download Excel |
 
@@ -75,7 +77,7 @@ Backend của MINCLASS gồm hai lớp:
 
 ### Next.js server layer
 
-- Server Components load dữ liệu theo route.
+- Server Components load dữ liệu theo route; Course Section đọc cookie xác minh MSSV và render thẳng nội dung mà không qua màn hình kiểm tra phía client.
 - Server Actions validate `FormData`, gọi Supabase và revalidate/redirect.
 - Route Handler tạo file Excel ở server.
 - Supabase SSR client chuyển tiếp Auth cookie từ request.
@@ -113,7 +115,8 @@ Project không dùng service-role key trong runtime và không có NestJS/Expres
 
 ### Subjects module
 
-- CRUD Subject, Course Section và Chapter.
+- CRUD Subject, Course Section và Chapter; liên kết bản mẫu với bản sao riêng của từng lớp học phần.
+- Đồng bộ có chọn lọc thay đổi Lesson Plan sang Course Section cũ; giữ nguyên Lesson đã có Session hoặc đã được tùy chỉnh riêng.
 - Parse/preview/replace roster.
 - Query Course Section Detail và Session metadata.
 - Tạo workbook Excel từ dữ liệu aggregate của database.
@@ -122,8 +125,10 @@ Project không dùng service-role key trong runtime và không có NestJS/Expres
 
 - `markdown/parser.ts`: parse frontmatter và `:::section`/`:::quiz` directives.
 - `markdown/schema.ts`: normalized Lesson schema.
-- `create-course-section-lesson-form.tsx`: upload, validate, preview và save.
-- `session-actions.ts`: Start Lesson Session.
+- Form tạo Lesson hỗ trợ tối đa 20 file `.md`, danh sách tab, đổi tên/xóa/chỉnh sửa/preview từng file và batch save vào Chapter đã chọn.
+- Lesson Plan và Course Section dùng các batch RPC riêng nhưng giữ cùng trải nghiệm tạo Lesson.
+- Thư viện ảnh dùng Supabase Storage bucket `lesson-images`, giới hạn PNG/JPEG/WebP 5 MB và đường dẫn được phân vùng theo Teacher/Subject.
+- `session-actions.ts`: Start Chapter Session chứa toàn bộ Lesson của Chapter.
 - Lesson Review Player hiển thị Section theo kiểu trái/phải.
 
 ### Rooms module
@@ -147,19 +152,19 @@ sequenceDiagram
     participant Action as Server Action
     participant DB as PostgreSQL RPC
 
-    Teacher->>Form: Chọn Chapter, nhập tên, upload .md
-    Form->>Parser: Parse và validate
-    Parser-->>Form: Normalized Lesson / validation errors
-    Form-->>Teacher: Preview
-    Teacher->>Action: Save
+    Teacher->>Form: Mở + Lesson tại Chapter, chọn tối đa 20 file .md
+    Form->>Parser: Parse và validate từng file
+    Parser-->>Form: Danh sách Lesson đã chuẩn hóa / validation errors
+    Form-->>Teacher: Chỉnh sửa hoặc Preview tùy chọn
+    Teacher->>Action: Save all
     Action->>Action: Validate input và ownership
-    Action->>DB: create_course_section_lesson(...)
-    DB->>DB: Insert Lesson, Section, Quiz và answer key
-    DB-->>Action: Lesson ID
-    Action-->>Teacher: Redirect Lesson Detail
+    Action->>DB: create_course_section_lessons_batch(...) hoặc create_subject_template_lessons_batch(...)
+    DB->>DB: Insert toàn bộ Lesson, Section, Quiz và answer key trong transaction
+    DB-->>Action: Danh sách Lesson ID
+    Action-->>Teacher: Quay lại Chapter
 ```
 
-### Start và join Lesson Session
+### Start và join Chapter Session
 
 ```mermaid
 sequenceDiagram
@@ -169,14 +174,14 @@ sequenceDiagram
     participant Auth as Supabase Auth
     participant DB as PostgreSQL RPC
 
-    Teacher->>App: Start Lesson
-    App->>DB: start_lesson_session(lesson_id)
+    Teacher->>App: Chọn Live tại Chapter
+    App->>DB: start_chapter_session(chapter_id)
     DB->>DB: Verify owner + acquire advisory lock
-    DB->>DB: Create ACTIVE room/session
+    DB->>DB: Create ACTIVE room/session + session_lessons
     DB->>DB: Snapshot roster to session_attendance
     Student->>Auth: Anonymous session
-    Student->>App: Submit MSSV
-    App->>DB: join_live_lesson(lesson_id, mssv)
+    Student->>App: Chọn Chapter LIVE và submit MSSV
+    App->>DB: join_live_chapter_session(session_id, mssv)
     DB->>DB: Verify ACTIVE session + attendance snapshot
     DB->>DB: Create/reuse participant + set joined_at
     DB-->>Student: Session access
@@ -191,8 +196,8 @@ sequenceDiagram
     participant RT as Supabase Realtime
     actor Student
 
-    Teacher->>DB: release_section(room_id)
-    DB->>DB: Move teaching_section/released_through sequentially
+    Teacher->>DB: release_session_lesson_section(room_id, lesson_id)
+    DB->>DB: Cập nhật teaching_section/released_through riêng của Lesson
     DB-->>RT: rooms UPDATE event
     RT-->>Student: Change notification
     Student->>DB: get_student_lesson_snapshot(room_id)
@@ -231,9 +236,9 @@ Không chỉ dựa vào client redirect để bảo vệ route.
 
 ### Student identity
 
-- `AnonymousAuthBootstrap` tạo Supabase anonymous session cho route không phải Teacher.
-- `participants.user_id` gắn anonymous Auth user với một MSSV trong một Session.
-- Unique constraints ngăn một MSSV hoặc một anonymous user join trùng trong Session.
+- `AnonymousAuthBootstrap` khởi tạo Supabase anonymous session ở nền cho route Student; trang public không chờ Auth để render catalog.
+- Course Section xác minh roster một lần, lưu MSSV vào cookie phiên `HttpOnly` theo lớp và dùng lại khi mở Chapter xem trước/đã kết thúc. Chapter LIVE vẫn xác minh MSSV riêng.
+- Một MSSV có thể join cùng Session từ nhiều anonymous browser; `participants` giữ một bản ghi canonical theo Session/MSSV và `lesson_session_access_grants` ánh xạ các phiên trình duyệt vào bản ghi đó.
 - Student không có account UI.
 
 ### Authorization layers
@@ -267,7 +272,7 @@ Realtime được dùng cho:
 - Reaction/comment/Quiz qua `room_feedback_events`.
 - Session Review qua `session_reflections`.
 
-Client subscription không tự coi payload là source of truth. Khi nhận event hoặc reconnect, client gọi query/RPC snapshot tương ứng. Một số component có fallback polling khi channel error, timeout hoặc closed.
+Client subscription không tự coi payload là source of truth. Sự kiện Realtime liên tiếp được debounce/coalesce trước khi refetch snapshot. Dashboard chỉ bật polling dự phòng khi channel lỗi, timeout hoặc đóng; khi kết nối lại, client dừng polling và tải lại snapshot mới nhất.
 
 ## 8. Markdown architecture và XSS
 
@@ -296,21 +301,25 @@ Supabase là external service duy nhất của runtime:
 - RLS: row-level authorization.
 - Realtime: change notification.
 
-Ứng dụng không tích hợp email provider, payment, AI, object storage hay analytics service bên thứ ba.
+Ứng dụng không tích hợp email provider, payment, AI hay analytics service bên thứ ba. Supabase Storage được dùng cho ảnh Markdown của Lesson qua bucket public `lesson-images`; quyền upload/update/delete vẫn được bảo vệ bằng policy theo Teacher và Subject.
 
 ## 10. Các quyết định kỹ thuật quan trọng
 
 ### Evolve `rooms` thành Lesson Session
 
-Live Room core đã hoạt động ổn định nên bảng `rooms` được tái sử dụng làm Lesson Session thay vì tạo hệ thống song song. `rooms.lesson_id` liên kết Session với persistent Lesson; `code` được giữ nullable để tương thích migration cũ nhưng không còn dùng trong flow hiện tại.
+Live Room core được tái sử dụng làm Chapter Session thay vì tạo hệ thống song song. `rooms.course_section_id` và `rooms.chapter_id` xác định buổi học; `session_lessons` chứa các Lesson cùng trạng thái Section riêng. `rooms.lesson_id` và `code` vẫn tồn tại để tương thích dữ liệu cũ nhưng không còn là quan hệ chính của flow Chapter hiện tại.
 
 ### Persistent Lesson tách khỏi Session
 
-Lesson content được lưu một lần trong Course Section. Mỗi lần Start chỉ tạo Session mới, không sao chép hoặc thay đổi nội dung Lesson.
+Lesson Plan của Subject là bản mẫu. Khi tạo Course Section, hệ thống sao chép Chapter/Lesson thành bản độc lập và lưu liên kết `template_chapter_id`/`template_lesson_id` để có thể đồng bộ có chọn lọc về sau. Mỗi lần Start chỉ tạo Chapter Session và các row `session_lessons`, không sao chép hay thay đổi nội dung Lesson.
 
 ### Attendance snapshot
 
-Roster được chụp vào `session_attendance` khi Start. Update roster sau này không sửa lịch sử Session.
+Roster được chụp một lần vào `session_attendance` khi Start Chapter. Một Session là một buổi điểm danh dù Chapter có bao nhiêu Lesson; nếu cùng Chapter được Start nhiều lần thì mỗi Session là một buổi riêng. Update roster sau này không sửa lịch sử Session.
+
+### Query và rendering hiệu năng
+
+Public catalog dùng các RPC gộp `get_public_subject_course_sections`, `get_public_course_section_catalog` và `get_public_chapter_catalog` để giảm round trip. Teacher Summary được tách thành overview nhẹ, attendance và dữ liệu từng Lesson để stream/lazy-load. Quiz analytics có hàm dựng dùng chung và query theo Lesson; các index lịch sử Chapter Session và covering index cho Quiz Answer hỗ trợ các truy vấn thường xuyên.
 
 ### Database RPC cho mutation nhạy cảm
 

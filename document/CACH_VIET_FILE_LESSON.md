@@ -2,7 +2,7 @@
 
 ## Cách viết file Lesson
 
-File `.md`, tối đa 1 MB. Nội dung phải nằm trong section hoặc quiz.
+File `.md`, tối đa 1 MB. Nội dung phải nằm trong section hoặc quiz. Trang tạo Lesson cho phép chọn tối đa 20 file `.md` trong một lần; mỗi file hợp lệ tạo thành một Lesson trong Chapter đang chọn.
 
 ### 1. Frontmatter bắt buộc
 
@@ -76,6 +76,8 @@ Hãy giải thích lại ý chính bằng một câu.
 - Không hỗ trợ HTML tùy ý, iframe, video, slide hoặc assignment.
 - Không đặt văn bản bên ngoài `:::section` hay `:::quiz`.
 
+Giảng viên có thể mở **Thư viện ảnh Lesson** ngay bên dưới vùng upload file, tải ảnh PNG/JPEG/WebP tối đa 5 MB, xem ảnh lớn và sao chép cú pháp Markdown để chèn vào nội dung. Ảnh được lưu trong bucket `lesson-images` theo Teacher và Subject; không cần tự tải ảnh lên dịch vụ bên ngoài.
+
 ### 6. Quiz: Single Choice, Multiple Choice và True/False
 
 - `single_choice` hoặc `single`: đúng một đáp án có `correct: true`.
@@ -127,4 +129,6 @@ questions:
 :::
 ```
 
-**Lưu ý:** Mỗi Lesson cần ít nhất một Section. Hãy dùng nút **Parse & Preview** để kiểm tra toàn bộ ID, YAML, Markdown và Quiz trước khi lưu.
+**Lưu ý:** Mỗi Lesson cần ít nhất một Section. Hệ thống luôn parse và kiểm tra toàn bộ ID, YAML, Markdown và Quiz trước khi lưu; không bắt buộc phải chuyển sang Preview mode. Khi thêm nhiều file, dùng thanh danh sách Lesson để đặt lại tên, xóa file, chỉnh Markdown hoặc xem trước từng Lesson trước khi lưu đồng loạt.
+
+Tên Lesson ban đầu lấy từ trường `title` trong frontmatter. Nếu title bắt đầu bằng tiền tố dạng `Chương x -`, `Chương x:`, `Chapter x -` hoặc `Chapter x:`, hệ thống tự bỏ tiền tố và chỉ giữ phần tên bài phía sau.

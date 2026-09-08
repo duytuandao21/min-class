@@ -48,10 +48,10 @@ Mỗi thẻ môn học hiển thị tên, mã và số lớp học phần đã t
 
 1. Mở chi tiết một môn học.
 2. Chọn **Lesson Plan**.
-3. Chọn **Thêm** để nhập tên Chapter, ví dụ `Chương 1: Giới thiệu`.
-4. Chọn **Sửa** để cập nhật tên Chapter.
+3. Chọn **Thêm chương** để nhập tên Chapter, ví dụ `Chương 1: Giới thiệu`.
+4. Mở menu `⋮` của Chapter để đổi tên hoặc xóa; chọn **+ Lesson** ngay trên Chapter để thêm bài.
 
-Các Chapter được sắp xếp theo tên và dùng chung cho các Course Section thuộc Subject.
+Các Chapter/Lesson được sắp xếp tự nhiên theo tên. Khi tạo Course Section, hệ thống sao chép Lesson Plan thành dữ liệu độc lập của lớp. Nếu Lesson Plan thay đổi sau đó, hộp xác nhận cho phép áp dụng sang các lớp cũ (bật mặc định); Lesson đã có Session hoặc đã tùy chỉnh riêng được giữ nguyên. Nếu từng bỏ qua đồng bộ, giảng viên có thể mở lại Lesson Plan và áp dụng thay đổi về sau.
 
 ### 3.3. Tạo lớp học phần
 
@@ -86,27 +86,26 @@ Việc cập nhật roster không thay đổi attendance của những Session �
 
 ### 3.5. Tạo Lesson
 
-1. Tại Course Section, chọn **Tạo Lesson**.
-2. Chọn Chapter chứa Lesson.
-3. Nhập tên Lesson.
-4. Upload file `.md`.
-5. Kiểm tra phần preview.
-6. Chọn lưu khi file hợp lệ.
+1. Mở Chapter cần thêm bài và chọn **+ Lesson**; Chapter được xác định sẵn nên không cần chọn lại.
+2. Chọn tối đa 20 file `.md`, sau đó chọn **Thêm vào danh sách**.
+3. Dùng thanh Lesson để chuyển file; có thể đặt lại tên, xóa file hoặc chỉnh Markdown của từng bài.
+4. Chuyển giữa **Edit mode** và **Preview mode** nếu cần kiểm tra trực quan. Không bắt buộc mở Preview mode trước khi lưu.
+5. Chọn **Lưu** để tạo đồng loạt toàn bộ Lesson hợp lệ trong Chapter.
 
-Nút **Cách viết file lesson** mở hướng dẫn cú pháp ngay trên trang tạo Lesson. Lesson mới lưu ở trạng thái **Chưa live**.
+Nút **Cách viết file lesson** mở hướng dẫn cú pháp ngay trên trang tạo Lesson. Title được lấy từ frontmatter; tiền tố dạng `Chương x -`/`Chapter x -` được tự bỏ. **Thư viện ảnh Lesson** cho phép upload PNG/JPEG/WebP tối đa 5 MB, xem ảnh và sao chép cú pháp Markdown. Lesson mới lưu ở trạng thái chưa LIVE.
 
-### 3.6. Bắt đầu Lesson LIVE
+### 3.6. Bắt đầu Chapter LIVE
 
-1. Tại thẻ Lesson, chọn **Start Lesson**.
-2. Hệ thống tạo Session LIVE và snapshot roster hiện tại.
-3. Nút của Lesson đổi thành **Dashboard**.
-4. Yêu cầu sinh viên mở Lesson và nhập MSSV.
+1. Tại thẻ Chapter, chọn **Live**.
+2. Hệ thống tạo một Chapter Session gồm toàn bộ Lesson và snapshot roster hiện tại.
+3. Nút **Live** đổi thành **Dashboard**; menu Chapter có **Lịch sử** sau khi đã có Session.
+4. Yêu cầu sinh viên mở **Các bài học đang live**, chọn Chapter và nhập MSSV.
 
-Một Course Section chỉ có một Lesson LIVE tại một thời điểm. MINCLASS không sử dụng Room Code hoặc Session Code.
+Một Course Section chỉ có một Chapter Session LIVE tại một thời điểm; các Course Section khác có thể LIVE đồng thời. MINCLASS không sử dụng Room Code hoặc Session Code.
 
 ### 3.7. Điều khiển buổi học
 
-Dashboard hiển thị:
+Dashboard cho phép chọn từng Lesson và hiển thị dữ liệu riêng của Lesson đó:
 
 - Sĩ số của roster snapshot.
 - Số sinh viên đã tham gia.
@@ -114,7 +113,7 @@ Dashboard hiển thị:
 - Reaction và comment mới.
 - Tiến độ và kết quả Quiz.
 
-Khi hoàn thành nội dung hiện tại, chọn **Next Section** hoặc **Done Section**. Hệ thống mở Section kế tiếp cho sinh viên và cập nhật giao diện gần realtime.
+Giảng viên dùng nút chuyển bài Previous/Next để trình bày Lesson khác mà không release nhầm nội dung. Chọn **Done Section** để release Section hiện tại; hoặc **Done toàn bộ chương** để release phần còn lại. Done toàn bộ chương và Kết thúc buổi học đều có popup xác nhận.
 
 Không thể skip Section và không có Undo trong flow hiện tại.
 
@@ -128,25 +127,25 @@ Sau khi kết thúc:
 
 - Student chỉ được đọc nội dung đã mở.
 - Không thể gửi reaction, comment hoặc Quiz mới.
-- Student có thể gửi tổng kết cá nhân một lần.
+- Student nhận popup **Tổng kết cá nhân** và có thể gửi một lần cho cả Chapter Session.
 - Teacher được chuyển đến Summary.
 
 ### 3.9. Xem lịch sử và tổng kết
 
-Mở Course Section → Lesson → **Xem lịch sử**. Mỗi Session hiển thị trạng thái và nút **Xem Lesson Review**.
+Mở Course Section → menu Chapter → **Lịch sử** để xem các Session của chương. Chọn Session để mở Summary.
 
-Lesson Review gồm:
+Summary gồm attendance toàn buổi và phần nội dung/kết quả tách theo từng Lesson:
 
 - Attendance snapshot, danh sách đã tham gia và danh sách vắng.
 - Thống kê Quiz.
 - Reaction theo Section.
 - Comment có MSSV hoặc ẩn danh.
-- Nội dung Lesson theo dạng chuyển Section trái/phải.
+- Nội dung toàn bộ Chapter theo dạng chuyển Lesson và Section trái/phải.
 
 Trong **Tổng kết buổi học**:
 
 - **Xem Reviews**: xem số lần phát biểu và lời review cuối buổi; có chế độ trình chiếu.
-- **Xem phản hồi**: mở Class Voices từ comment trong Session; có chế độ trình chiếu.
+- **Xem phản hồi**: mở Class Voices từ comment trong Session, lọc và trình chiếu theo Lesson.
 
 ### 3.10. Xuất dữ liệu Excel
 
@@ -154,9 +153,9 @@ Tại Course Section, chọn **Xuất dữ liệu**. File tải xuống gồm:
 
 - MSSV trong roster hiện tại.
 - Tổng số lần phát biểu.
-- Số Lesson đã tham gia trên tổng số Lesson.
+- Số Chapter Session đã tham gia trên tổng số Chapter Session.
 
-Một Lesson được tính là một buổi học. Nếu có nhiều Session cho cùng Lesson, Student tham gia nhiều Session vẫn chỉ được tính một buổi tham gia.
+Mỗi lần giảng viên Start một Chapter được tính là một buổi học, bất kể Chapter có bao nhiêu Lesson. Nếu một Chapter được tổ chức nhiều Session thì mỗi Session là một buổi riêng.
 
 ### 3.11. Xóa dữ liệu
 
@@ -172,23 +171,24 @@ Khi xóa Session, attendance, participant, reaction, comment, Quiz result và re
 2. Chọn **Khám phá bài học**.
 3. Chọn Subject.
 4. Chọn Course Section.
-5. Mở Chapter để xem danh sách Lesson.
+5. Nhập MSSV một lần tại Course Section để xem danh sách Chapter; phiên xác minh được dùng lại khi chuyển giữa các chương.
 
-Lesson có ba trạng thái:
+Chapter có các trạng thái:
 
-- **Chưa live**: chưa thể truy cập nội dung.
+- **Sắp diễn ra**: chưa thể truy cập nội dung.
+- **Xem trước**: nội dung chỉ đọc, không tính điểm danh và không cho tương tác.
 - **LIVE**: có thể tham gia bằng MSSV.
-- **Đã kết thúc**: có thể xem lại bằng MSSV.
+- **Đã kết thúc**: có thể xem lại Session gần nhất.
 
-### 4.2. Tham gia Lesson LIVE
+### 4.2. Tham gia Chapter LIVE
 
-1. Chọn Lesson có trạng thái **LIVE**.
+1. Chọn **Các bài học đang live** ở trang chủ hoặc chọn Chapter có trạng thái **LIVE** trong Course Section.
 2. Nhập MSSV có trong roster của Course Section.
 3. Chọn tham gia.
 
-Student không cần nhập Room Code. Nếu MSSV không thuộc lớp học phần, hệ thống từ chối truy cập.
+Student không cần nhập Room Code. LIVE luôn xác minh MSSV riêng dù trước đó đã vào Course Section. Sau khi join, Student chỉ nhập một lần để truy cập toàn bộ Lesson trong Chapter Session. Nếu MSSV không thuộc lớp học phần, hệ thống từ chối truy cập.
 
-Một anonymous browser session chỉ đại diện cho một MSSV trong cùng Lesson Session. Không nên dùng cùng một cửa sổ ẩn danh để lần lượt giả lập nhiều sinh viên.
+Cùng một MSSV có thể tiếp tục học từ trình duyệt hoặc thiết bị khác. Hệ thống vẫn chỉ ghi nhận một lần điểm danh và dùng chung dữ liệu Participant của MSSV trong Session.
 
 ### 4.3. Theo dõi nội dung
 
@@ -227,7 +227,7 @@ Mỗi Quiz chỉ được nộp một lần. Đáp án đúng không được cu
 
 ### 4.7. Gửi tổng kết cá nhân
 
-Sau khi giảng viên kết thúc Session, cuối Lesson hiển thị **Tổng kết cá nhân**:
+Sau khi giảng viên kết thúc Session, **Tổng kết cá nhân** xuất hiện dưới dạng popup dễ nhận biết:
 
 1. Nhập số lần phát biểu bằng số nguyên từ 0 đến 999.
 2. Nhập lời review buổi học nếu muốn.
@@ -237,10 +237,9 @@ Mỗi Student chỉ gửi một lần và không thể chỉnh sửa sau khi g�
 
 ### 4.8. Xem lại Lesson đã kết thúc
 
-1. Mở Subject và Course Section tương ứng.
-2. Chọn Lesson **Đã kết thúc**.
-3. Nhập MSSV thuộc roster.
-4. Xem toàn bộ nội dung và đáp án Quiz ở chế độ read-only.
+1. Mở Subject và nhập MSSV một lần khi vào Course Section.
+2. Chọn Chapter **Đã kết thúc**; hệ thống dùng phiên đã xác minh để mở Session gần nhất.
+3. Chuyển giữa các Lesson và xem toàn bộ nội dung, đáp án Quiz ở chế độ read-only.
 
 Nếu đã làm Quiz, màn hình hiển thị đáp án đã chọn và đúng/sai. Nếu đã gửi tổng kết cá nhân, Student xem lại số lần phát biểu và review của chính mình.
 
@@ -256,19 +255,19 @@ Nếu đã làm Quiz, màn hình hiển thị đáp án đã chọn và đúng/s
 
 ![Trang quản lý Course Section](../screenshot/course-section.png)
 
-*Trang Course Section nhóm Lesson theo từng Chapter, đồng thời cho phép tạo Lesson, xuất dữ liệu Excel, upload roster và tìm kiếm MSSV đã lưu.*
+*Trang Course Section thể hiện quan hệ Chapter–Lesson, cho phép thêm Chapter/Lesson tại đúng vị trí, mở xem trước, bắt đầu Chapter LIVE, xem lịch sử, xuất Excel và quản lý roster.*
 
 ### 5.3. Teacher Live Dashboard
 
 ![Teacher Live Dashboard](../screenshot/teacher-live-dashboard.png)
 
-*Khi Lesson đang LIVE, giảng viên theo dõi số sinh viên đã tham gia, Section đang dạy và dùng **Done Section** để chuyển lớp sang Section tiếp theo.*
+*Khi Chapter đang LIVE, giảng viên chuyển giữa các Lesson, theo dõi dữ liệu riêng của bài đang chọn và dùng **Done Section** để release Section cho sinh viên.*
 
 ### 5.4. Sinh viên xem Lesson LIVE
 
 ![Sinh viên xem Lesson LIVE và gửi phản hồi](../screenshot/student-live-lesson.png)
 
-*Sinh viên đọc Section hiện tại, chọn reaction và gửi comment có MSSV hoặc ẩn danh. Nút điều hướng chỉ cho phép truy cập các Section đã được mở.*
+*Sinh viên chuyển giữa các Lesson trong Chapter Session, đọc Section đã release, chọn reaction và gửi comment có MSSV hoặc ẩn danh.*
 
 ### 5.5. Session Reviews cuối buổi học
 
@@ -280,7 +279,7 @@ Nếu đã làm Quiz, màn hình hiển thị đáp án đã chọn và đúng/s
 
 ![Class Voices Presentation Mode](../screenshot/class-voices.png)
 
-*Class Voices trình bày phản hồi của lớp theo từng bước, hỗ trợ Previous, Next và Exit để giảng viên sử dụng khi tổng kết buổi học.*
+*Class Voices lọc phản hồi theo Lesson và trình bày từng comment, hỗ trợ Previous, Next và Exit khi tổng kết buổi học.*
 
 ## 6. Các lỗi thường gặp
 
@@ -310,9 +309,9 @@ Hãy tải lại trang sau khi người quản trị kiểm tra cấu hình.
 
 MSSV không có trong attendance snapshot của Session LIVE hoặc roster dùng để xem lại Lesson. Kiểm tra đúng Course Section và MSSV đã được chuẩn hóa.
 
-### “MSSV này đã tham gia bằng một phiên Student khác”
+### Không tự mở được Chapter sau khi đã xác minh MSSV
 
-MSSV đã được gắn với anonymous session khác, hoặc anonymous session hiện tại đã được dùng cho MSSV khác trong cùng Session. Mỗi sinh viên nên dùng trình duyệt/phiên riêng của mình.
+Phiên xác minh Course Section được lưu bằng cookie phiên. Hãy quay lại Course Section, kiểm tra badge MSSV ở góc phải hoặc chọn **Đổi** để xác minh lại. Chapter LIVE vẫn luôn yêu cầu nhập MSSV riêng.
 
 ### Không thấy reaction, comment, participant hoặc Quiz cập nhật
 

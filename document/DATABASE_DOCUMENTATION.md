@@ -6,7 +6,7 @@ MINCLASS dùng Supabase PostgreSQL. Schema nghiệp vụ nằm trong `public`; c
 
 Migrations trong `supabase/migrations/` là source of truth. Không sửa migration đã áp dụng; mọi thay đổi schema phải tạo migration mới.
 
-Hiện có 20 bảng nghiệp vụ. Bảng `rooms` là tên kỹ thuật kế thừa từ MVP ban đầu và hiện đại diện cho **Lesson Session**.
+Hiện có 21 bảng nghiệp vụ trong schema `public`. Bảng `rooms` là tên kỹ thuật kế thừa từ MVP ban đầu và hiện đại diện cho **Chapter Session**; bảng `session_lessons` liên kết nhiều Lesson vào cùng buổi học. Ảnh Lesson được quản lý riêng trong `storage.objects` của Supabase Storage.
 
 ## 2. ERD
 
@@ -20,11 +20,14 @@ erDiagram
     SUBJECTS ||--o{ CHAPTERS : contains
     SUBJECTS ||--o{ COURSE_SECTIONS : contains
     COURSE_SECTIONS ||--o{ COURSE_SECTION_STUDENTS : has_roster
+    COURSE_SECTIONS ||--o{ CHAPTERS : owns_copy
     COURSE_SECTIONS ||--o{ LESSONS : stores
     CHAPTERS ||--o{ LESSONS : groups
 
     LESSONS ||--o{ SECTIONS : contains
     LESSONS ||--o{ ROOMS : taught_as_session
+    LESSONS ||--o{ SESSION_LESSONS : included_in
+    ROOMS ||--o{ SESSION_LESSONS : contains
     ROOMS ||--o{ SESSION_ATTENDANCE : snapshots
     ROOMS ||--o{ PARTICIPANTS : has
     ROOMS ||--o{ LESSON_SESSION_ACCESS_GRANTS : grants_review
@@ -86,16 +89,21 @@ Chapter trong Lesson Plan của Subject.
 | Field | Kiểu | Vai trò |
 |---|---|---|
 | `id` | `uuid` | Primary key |
-| `subject_id` | `uuid` | FK → `subjects.id` |
+| `subject_id` | `uuid nullable` | FK → `subjects.id`, dùng cho Chapter mẫu |
+| `course_section_id` | `uuid nullable` | FK → `course_sections.id`, dùng cho Chapter riêng của lớp |
+| `template_chapter_id` | `uuid nullable` | FK tự tham chiếu đến Chapter mẫu, `ON DELETE SET NULL` |
 | `name` | `text` | Tên Chapter, 1–120 ký tự |
+| `preview_enabled` | `boolean` | Cho phép roster Student xem trước nội dung Chapter chưa có Session |
 | `created_at` | `timestamptz` | Thời điểm tạo |
 | `updated_at` | `timestamptz` | Tự cập nhật bằng trigger |
 
 Constraint/index quan trọng:
 
-- Unique case-insensitive `(subject_id, lower(name))`.
-- Index `(subject_id, lower(name), name)` phục vụ sắp xếp.
-- Trigger không cho chuyển Chapter sang Subject khác.
+- `num_nonnulls(subject_id, course_section_id) = 1`: Chapter thuộc đúng một Subject mẫu hoặc một Course Section.
+- Unique case-insensitive theo Subject hoặc Course Section; index tên phục vụ sắp xếp tự nhiên.
+- `(course_section_id, template_chapter_id)` là duy nhất khi còn liên kết đồng bộ.
+- Trigger không cho chuyển Chapter sang parent khác và kiểm tra Chapter mẫu thuộc đúng Subject của lớp.
+- `preview_enabled` cho phép Teacher mở Chapter chưa LIVE để Student thuộc roster xem trước ở chế độ chỉ đọc.
 
 ### `course_sections`
 
@@ -145,7 +153,9 @@ Persistent Lesson hoặc Lesson của legacy Room.
 | `id` | `uuid` | Primary key |
 | `room_id` | `uuid nullable` | Legacy FK → `rooms.id`, unique |
 | `course_section_id` | `uuid nullable` | Persistent FK → `course_sections.id`, `ON DELETE RESTRICT` |
+| `subject_id` | `uuid nullable` | FK → `subjects.id`, parent của Lesson mẫu |
 | `chapter_id` | `uuid nullable` | FK → `chapters.id`, `ON DELETE RESTRICT` |
+| `template_lesson_id` | `uuid nullable` | FK tự tham chiếu đến Lesson mẫu, `ON DELETE SET NULL` |
 | `title` | `text` | Tên Lesson, 1–200 ký tự |
 | `description` | `text nullable` | Mô tả, tối đa 1.000 ký tự |
 | `markdown_source` | `text` | File Markdown nguyên bản |
@@ -155,9 +165,10 @@ Persistent Lesson hoặc Lesson của legacy Room.
 
 Constraint/index quan trọng:
 
-- `num_nonnulls(room_id, course_section_id) = 1`: Lesson chỉ có một loại parent.
-- Persistent Lesson phải có Chapter thuộc cùng Subject với Course Section; constraint trigger kiểm tra khi transaction kết thúc.
-- Partial indexes theo `course_section_id` và `chapter_id` phục vụ danh sách Lesson.
+- `num_nonnulls(room_id, course_section_id, subject_id) = 1`: Lesson chỉ có một loại parent legacy, Course Section hoặc Subject template.
+- Persistent Lesson phải có Chapter thuộc đúng cùng Subject/Course Section; constraint trigger kiểm tra khi transaction kết thúc.
+- `(course_section_id, template_lesson_id)` là duy nhất khi Lesson của lớp còn theo bản mẫu. Lesson đã tùy chỉnh riêng hoặc mất nguồn mẫu có thể để liên kết này `NULL`.
+- Partial indexes theo Subject/Course Section và Chapter phục vụ danh sách Lesson đã sắp xếp.
 
 ### `sections`
 
@@ -183,7 +194,7 @@ Constraint/index quan trọng:
 
 ### `rooms`
 
-Lesson Session runtime. Tên bảng được giữ để tái sử dụng live Room core.
+Chapter Session runtime. Tên bảng được giữ để tái sử dụng live Room core.
 
 | Field | Kiểu | Vai trò |
 |---|---|---|
@@ -191,6 +202,8 @@ Lesson Session runtime. Tên bảng được giữ để tái sử dụng live R
 | `code` | `text nullable` | Legacy Room Code; Session mới không sử dụng |
 | `teacher_user_id` | `uuid` | FK → `auth.users.id` |
 | `lesson_id` | `uuid nullable` | FK → persistent `lessons.id`, `ON DELETE RESTRICT` |
+| `course_section_id` | `uuid nullable` | FK → Course Section của Chapter Session |
+| `chapter_id` | `uuid nullable` | FK → Chapter đang được dạy |
 | `title` | `text` | Snapshot tên Session/Lesson |
 | `status` | `room_status` | Lifecycle |
 | `teaching_section` | `integer` | Position đang trình bày |
@@ -203,11 +216,25 @@ Constraint/index/trigger quan trọng:
 
 - Lifecycle timestamp phải phù hợp status.
 - `released_through <= teaching_section`.
-- Partial unique index chỉ cho một `ACTIVE` Session trên mỗi Lesson.
-- Trigger và advisory lock bổ sung quy tắc chỉ một Lesson LIVE trong cùng Course Section.
+- Partial unique index chỉ cho một Chapter Session `ACTIVE` trong mỗi Course Section; các Course Section khác vẫn có thể LIVE đồng thời.
+- `rooms.lesson_id`, `teaching_section` và `released_through` được giữ để tương thích Session một Lesson cũ; flow hiện tại lưu tiến độ từng Lesson ở `session_lessons`.
 - `rooms_lesson_status_idx (lesson_id, status, ended_at desc)`.
 - `rooms_teacher_user_id_idx`.
 - `code` nullable sau khi Room Code bị loại khỏi persistent flow.
+
+### `session_lessons`
+
+Liên kết toàn bộ Lesson của Chapter với một Session và lưu tiến độ release độc lập cho từng Lesson.
+
+| Field | Kiểu | Vai trò |
+|---|---|---|
+| `session_id` | `uuid` | PK/FK → `rooms.id`, cascade |
+| `lesson_id` | `uuid` | PK/FK → `lessons.id`, cascade |
+| `teaching_section` | `integer` | Section Teacher đang trình bày trong Lesson |
+| `released_through` | `integer` | Section cuối Student được đọc, bắt đầu từ `-1` |
+| `created_at` | `timestamptz` | Thời điểm đưa Lesson vào Session |
+
+Primary key `(session_id, lesson_id)` ngăn trùng Lesson trong cùng Session. Constraint bảo đảm `released_through <= teaching_section`; RLS chỉ cho Teacher, Participant hoặc anonymous user có access grant phù hợp đọc quan hệ này.
 
 ### `session_attendance`
 
@@ -241,8 +268,8 @@ Student thực tế đã join Session.
 
 Constraint/index quan trọng:
 
-- Unique `(room_id, mssv)`.
-- Unique `(room_id, user_id)`.
+- Unique `(room_id, mssv)` giữ một Participant canonical cho mỗi Student trong Session.
+- Một MSSV có thể tham gia từ nhiều anonymous browser; các phiên bổ sung được ánh xạ qua `lesson_session_access_grants` thay vì tạo Participant trùng.
 - Index `participants_user_id_idx`.
 - Join RPC chỉ insert Participant nếu MSSV có trong attendance snapshot.
 
@@ -416,9 +443,12 @@ Security-definer RPC luôn phải tự kiểm tra `auth.uid()`, claim anonymous/
 |---|---|
 | `replace_course_section_roster` | Replace roster atomically sau validation |
 | `create_course_section_lesson` | Tạo Lesson, Section, Quiz và answer key |
-| `start_lesson_session` | Tạo ACTIVE Session và attendance snapshot |
-| `join_live_lesson` | Join Session bằng Lesson ID + MSSV |
-| `release_section` | Chuyển Section tuần tự |
+| `create_course_section_lessons_batch` / `create_subject_template_lessons_batch` | Tạo tối đa 20 Lesson trong một transaction |
+| `create_*_synced` / `update_*_synced` / `delete_*_synced` | Thay đổi Lesson Plan và tùy chọn đồng bộ sang Course Section cũ |
+| `start_chapter_session` | Tạo ACTIVE Chapter Session, `session_lessons` và attendance snapshot |
+| `join_live_chapter_session` | Join Chapter Session bằng Session ID + MSSV; hỗ trợ nhiều browser cho cùng MSSV |
+| `release_session_lesson_section` | Release Section tuần tự riêng của một Lesson |
+| `release_entire_chapter` | Release toàn bộ Section còn lại trong Chapter Session |
 | `set_section_reaction` | Create/update reaction của Participant |
 | `create_section_comment` | Tạo comment và enforce identity/status |
 | `get_session_student_quiz_snapshot` | Trả Quiz an toàn cho Student |
@@ -427,10 +457,16 @@ Security-definer RPC luôn phải tự kiểm tra `auth.uid()`, claim anonymous/
 | `access_ended_lesson_session` | Xác minh MSSV và cấp review access grant |
 | `get_student_ended_lesson_review` | Trả Lesson/answer key sau ENDED |
 | `save_own_session_reflection` | Gửi reflection một lần |
-| `get_teacher_room_summary` | Aggregate Summary |
+| `get_teacher_room_summary_overview` | Aggregate Summary nhẹ để render đầu trang |
+| `get_teacher_room_attendance_detail` | Lazy-load chi tiết attendance |
+| `get_teacher_room_summary_lessons` / `get_teacher_room_lesson_summary` | Danh sách và Summary theo từng Lesson |
+| `get_teacher_lesson_feedback_snapshot` | Feedback riêng theo Lesson đang chọn |
+| `get_teacher_lesson_quiz_analytics` | Quiz analytics riêng theo Lesson |
 | `get_teacher_class_voices` | Masked Class Voices data |
 | `get_teacher_session_reflections` | Session Reviews cho Teacher |
 | `get_teacher_course_section_export` | Aggregate dữ liệu Excel |
+| `get_public_subject_course_sections` / `get_public_course_section_catalog` / `get_public_chapter_catalog` | Public catalog gộp, giảm số query nối tiếp |
+| `verify_course_section_student` / `get_student_chapter_preview` | Xác minh một MSSV trong roster và trả nội dung Chapter xem trước an toàn |
 | `delete_room` | Xóa Session và dữ liệu con |
 | `delete_subject` | Xóa cây Subject theo thứ tự an toàn |
 
@@ -440,22 +476,25 @@ Các RPC Room Code cũ vẫn có thể tồn tại trong lịch sử migration n
 
 | Index/constraint | Tác dụng |
 |---|---|
-| `rooms_one_active_session_per_lesson_idx` | Ngăn hai ACTIVE Session trên cùng Lesson |
+| `rooms_one_active_chapter_session_per_course_idx` | Ngăn hai Chapter Session ACTIVE trong cùng Course Section |
 | `rooms_lesson_status_idx` | Tìm LIVE/latest ENDED Session theo Lesson |
+| `rooms_course_section_chapter_started_idx` | Tìm lịch sử Session theo lớp, Chapter và thời điểm bắt đầu |
+| `session_lessons_lesson_session_idx` | Tìm các Session chứa một Lesson |
 | `subjects_teacher_created_idx` | Danh sách Subject theo Teacher |
 | `course_sections_subject_created_idx` | Danh sách Course Section theo Subject |
 | `chapters_subject_name_unique_idx` | Tên Chapter không trùng, không phân biệt hoa thường |
 | `course_section_students_mssv_unique` | MSSV không trùng trong Course Section |
 | `session_attendance` primary key | Một MSSV một dòng snapshot trong Session |
-| `participants` unique keys | Ngăn duplicate MSSV và anonymous user trong Session |
+| `participants (room_id, mssv)` | Giữ một Participant canonical cho mỗi MSSV trong Session |
 | `sections (lesson_id, position)` | Thứ tự Section duy nhất |
 | `section_reactions (section_id, participant_id)` | Một reaction/Student/Section |
 | `quiz_attempts (quiz_id, participant_id)` | Một attempt/Student/Quiz |
 | `room_feedback_events_room_id_id_idx` | Realtime event mới nhất theo Session |
+| `quiz_answers_question_attempt_cover_idx` | Covering index cho correct rate và answer distribution |
 
 ## 13. Cascade và xóa dữ liệu
 
-- Xóa Session (`rooms`) cascade attendance, participant, access grant và feedback event.
+- Xóa Session (`rooms`) cascade `session_lessons`, attendance, participant, access grant và feedback event.
 - Participant cascade reaction, comment, Quiz attempt/answer và session reflection.
 - Section/Lesson cascade nội dung Quiz theo cây FK tương ứng.
 - Một số parent FK đã chuyển sang `ON DELETE RESTRICT` để ngăn xóa ngoài ý muốn.
@@ -473,3 +512,5 @@ Các bảng/event source hiện được đưa vào Supabase Realtime publicatio
 - `session_reflections` — review cuối buổi.
 
 Realtime không thay thế query database. Client phải refetch snapshot sau event hoặc reconnect.
+
+Supabase Storage bucket `lesson-images` là public để Markdown có thể hiển thị ảnh, giới hạn 5 MB và chỉ nhận `image/png`, `image/jpeg`, `image/webp`. Policy trên `storage.objects` chỉ cho permanent Teacher quản lý object theo đường dẫn `{teacher_id}/{subject_id}/...`; helper `private.can_manage_lesson_image` kiểm tra ownership mà không dùng service role.

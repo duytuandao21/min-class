@@ -4,7 +4,7 @@
 
 **MINCLASS** là nền tảng hỗ trợ giảng dạy trực tiếp theo từng phần nội dung, không phải hệ thống LMS.
 
-Giảng viên quản lý môn học, lớp học phần, danh sách sinh viên và Lesson Plan. Mỗi Lesson được chuẩn bị bằng file Markdown, chia thành các Section nội dung hoặc Quiz. Khi bắt đầu buổi học, giảng viên điều khiển tiến trình Lesson; sinh viên theo dõi Section hiện tại trên thiết bị cá nhân, gửi reaction, comment và làm Quiz.
+Giảng viên quản lý môn học, lớp học phần, danh sách sinh viên và Lesson Plan mẫu. Mỗi Chapter chứa nhiều Lesson Markdown; khi bắt đầu Chapter Session, giảng viên chuyển giữa các Lesson và điều khiển tiến trình Section riêng của từng Lesson. Sinh viên tham gia một lần cho cả chương, theo dõi Section đã release, gửi reaction, comment và làm Quiz.
 
 Sau buổi học, hệ thống lưu attendance, phản hồi, kết quả Quiz và tổng kết cá nhân để giảng viên xem lại hoặc xuất dữ liệu lớp học phần.
 
@@ -42,10 +42,12 @@ Giảng viên có thể:
 - Đăng nhập, đăng xuất và duy trì phiên đăng nhập.
 - Tạo, chỉnh sửa và xóa môn học.
 - Tạo, chỉnh sửa và xóa lớp học phần.
-- Tạo và chỉnh sửa các Chapter trong Lesson Plan.
+- Tạo, đổi tên và xóa Chapter trong Lesson Plan; tùy chọn đồng bộ thay đổi sang các lớp học phần cũ.
 - Upload roster MSSV bằng file `.txt`.
-- Tạo Lesson bằng file Markdown, preview trước khi lưu.
-- Bắt đầu và kết thúc một Lesson Session.
+- Upload tối đa 20 Lesson Markdown vào Chapter, chỉnh sửa/preview từng file và lưu đồng loạt; không bắt buộc mở Preview mode trước khi lưu.
+- Upload và quản lý ảnh Markdown trong Thư viện ảnh Lesson.
+- Mở Chapter chưa LIVE cho sinh viên xem trước ở chế độ chỉ đọc.
+- Bắt đầu và kết thúc một Chapter Session chứa nhiều Lesson.
 - Điều khiển Section đang trình bày.
 - Theo dõi số sinh viên tham gia, reaction, comment và Quiz gần realtime.
 - Xem lịch sử Session và dữ liệu tổng kết sau buổi học.
@@ -58,8 +60,9 @@ Sinh viên không có tài khoản, email, mật khẩu hoặc profile.
 
 Sinh viên có thể:
 
-- Browse Subject, Course Section và danh sách Lesson.
-- Tham gia Lesson đang LIVE bằng MSSV thuộc roster.
+- Xác minh MSSV một lần khi vào Course Section và duyệt các Chapter được phép truy cập mà không nhập lại ở từng chương.
+- Xem trước Chapter được giảng viên mở mà không tạo điểm danh.
+- Tham gia Chapter đang LIVE bằng MSSV thuộc roster; LIVE vẫn xác minh riêng.
 - Theo dõi Section giảng viên đang trình bày.
 - Xem lại các Section đã được mở.
 - Gửi reaction và comment trên Section đang được phép truy cập.
@@ -81,18 +84,20 @@ Teacher
 │
 └── Subject
     │
-    ├── Lesson Plan / Chapter
+    ├── Lesson Plan mẫu / Chapter mẫu / Lesson mẫu
     │
     └── Course Section
         │
         ├── Student Roster
         │
-        └── Lesson
+        └── Chapter riêng của lớp
             │
-            ├── Section
-            ├── Quiz
+            ├── Lesson
+            │   ├── Section
+            │   └── Quiz
             │
-            └── Lesson Session
+            └── Chapter Session
+                ├── Session Lesson
                 ├── Attendance
                 ├── Participant
                 ├── Reaction
@@ -104,11 +109,11 @@ Teacher
 Trong đó:
 
 - **Subject** là môn học thuộc giảng viên.
-- **Chapter** là chương trong Lesson Plan, dùng để nhóm các Lesson.
+- **Chapter** có thể là chương mẫu của Subject hoặc bản sao độc lập thuộc Course Section; liên kết nguồn cho phép đồng bộ có chọn lọc.
 - **Course Section** là lớp học phần, có mã lớp, tên hiển thị và roster MSSV.
 - **Lesson** là bài học được lưu lâu dài trong Course Section và thuộc một Chapter.
 - **Section** là một phần nội dung tuần tự của Lesson.
-- **Lesson Session** là một lần giảng dạy trực tiếp của Lesson.
+- **Chapter Session** là một lần giảng dạy trực tiếp của toàn bộ Chapter; mỗi Lesson trong Session giữ tiến độ Section riêng.
 
 Mỗi Lesson gồm nhiều Section theo thứ tự:
 
@@ -136,7 +141,7 @@ Không hỗ trợ Slide, Video, Assignment, Exercise, Poll hoặc Code Runner.
 
 ## 5. Lesson bằng Markdown
 
-Giảng viên tạo Lesson bằng cách nhập tên, chọn Chapter và upload file `.md`. Hệ thống parse, validate, hiển thị preview rồi mới cho phép lưu.
+Giảng viên mở **+ Lesson** ngay tại Chapter và có thể chọn tối đa 20 file `.md`. Hệ thống lấy title từ frontmatter, tự bỏ tiền tố dạng `Chương x -`/`Chapter x -`, parse và validate từng file. Người dùng có thể đổi tên, xóa, chỉnh Markdown hoặc preview từng Lesson; Preview mode không phải điều kiện bắt buộc để lưu đồng loạt.
 
 Ví dụ:
 
@@ -193,6 +198,7 @@ Markdown hiện hỗ trợ:
 - Danh sách.
 - Link HTTP, HTTPS hoặc anchor.
 - Image URL HTTP/HTTPS.
+- Ảnh PNG/JPEG/WebP tối đa 5 MB có thể upload trực tiếp qua Thư viện ảnh Lesson rồi sao chép cú pháp Markdown.
 - Inline code và fenced code block.
 - Quiz `single`, `multiple` và `true_false`.
 
@@ -229,16 +235,16 @@ Tạo Subject
 ### Tổ chức buổi học trực tiếp
 
 ```text
-Giảng viên chọn Start Lesson
+Giảng viên chọn Live tại Chapter
     │
     ▼
-Hệ thống tạo Lesson Session LIVE
+Hệ thống tạo Chapter Session LIVE và đưa toàn bộ Lesson vào Session
     │
     ├── Snapshot roster làm attendance
     └── Mở Section đầu tiên
     │
     ▼
-Sinh viên chọn Lesson LIVE và nhập MSSV
+Sinh viên chọn Chapter LIVE và nhập MSSV một lần
     │
     ▼
 Hệ thống kiểm tra MSSV trong attendance snapshot
@@ -265,11 +271,11 @@ Summary / Lesson Review / Class Voices
 
 Quy tắc Session:
 
-- Một Course Section chỉ có một Lesson Session LIVE tại một thời điểm.
-- Một Lesson có thể có nhiều Session lịch sử.
+- Một Course Section chỉ có một Chapter Session LIVE tại một thời điểm; các Course Section khác có thể LIVE đồng thời.
+- Một Chapter có thể có nhiều Session lịch sử và mỗi lần Start được tính là một buổi điểm danh.
 - Khi Start, roster hiện tại được snapshot sang attendance của Session.
 - Student ngoài snapshot không được tham gia.
-- Mỗi MSSV chỉ được ghi nhận một lần trong Session.
+- Mỗi MSSV chỉ được ghi nhận một lần trong attendance của Session nhưng có thể truy cập từ nhiều browser; dữ liệu tương tác dùng chung Participant canonical.
 - Việc thay roster sau này không làm thay đổi attendance lịch sử.
 - Hệ thống tiếp tục dùng bảng `rooms` làm Lesson Session nội bộ để tái sử dụng live logic hiện có.
 
@@ -391,10 +397,10 @@ Dữ liệu được gắn với Participant của Session. Sau khi gửi, Stude
 
 ### Class Voices
 
-Class Voices tổng hợp các comment trong buổi học:
+Class Voices tổng hợp các comment trong buổi học và cho phép lọc theo từng Lesson:
 
 - Hiển thị comment theo card.
-- Group hoặc filter theo Section.
+- Group/filter theo Lesson và Section; số lượng phản hồi được làm nổi bật trên từng tab Lesson.
 - Comment có tên hiển thị đúng MSSV.
 - Comment ẩn danh chỉ hiển thị **Anonymous**.
 - Hỗ trợ Presentation Mode toàn màn hình.
@@ -407,13 +413,14 @@ Session Reviews được trình bày riêng với MSSV, số lần phát biểu 
 
 ## 11. Dashboard dành cho giảng viên
 
-Trong Lesson Session LIVE, giảng viên có thể xem:
+Trong Chapter Session LIVE, giảng viên có thể chọn từng Lesson và xem:
 
 - Trạng thái lớp học đang diễn ra.
 - Sĩ số từ attendance snapshot.
 - Số sinh viên đã tham gia.
 - Section đang trình bày và vị trí Section.
-- Nút chuyển sang Section tiếp theo.
+- Nút chuyển bài Previous/Next và nút Done Section để release nội dung cho sinh viên.
+- Nút Done toàn bộ chương và Kết thúc buổi học, đều có popup xác nhận.
 - Reaction của Section.
 - Comment mới.
 - Tiến độ và kết quả Quiz.
@@ -446,7 +453,7 @@ PostgreSQL là nguồn trạng thái thật. Supabase Realtime chỉ thông báo
 
 ## 12. Báo cáo sau buổi học
 
-Sau khi Session kết thúc, hệ thống hiển thị Lesson Review và Summary.
+Sau khi Session kết thúc, hệ thống hiển thị Summary theo từng Lesson; attendance và phản hồi tổng kết vẫn thuộc toàn bộ Chapter Session.
 
 ### Attendance
 
@@ -478,7 +485,7 @@ Sau khi Session kết thúc, hệ thống hiển thị Lesson Review và Summary
 
 ### Student Lesson Review
 
-Sinh viên chọn Lesson đã kết thúc và nhập MSSV:
+Sinh viên xác minh MSSV một lần khi vào Course Section rồi chọn Chapter đã kết thúc:
 
 - MSSV phải thuộc roster của Course Section.
 - Không yêu cầu Room Code hoặc Session Code.
@@ -495,9 +502,9 @@ Giảng viên có thể tải file Excel gồm:
 
 - MSSV từ roster hiện tại.
 - Tổng số lần phát biểu theo MSSV.
-- Số Lesson đã tham gia trên tổng số Lesson của Course Section.
+- Số Chapter Session đã tham gia trên tổng số Chapter Session của Course Section.
 
-Một Lesson được tính là một buổi học. Nếu Lesson có nhiều Session và Student tham gia nhiều lần, Lesson đó vẫn chỉ được tính một buổi tham gia.
+Mỗi lần Teacher Start một Chapter tạo một buổi học để điểm danh, không phụ thuộc Chapter có bao nhiêu Lesson. Nếu cùng Chapter được Start nhiều lần thì mỗi Session được tính là một buổi riêng.
 
 ---
 
@@ -510,12 +517,12 @@ Một Lesson được tính là một buổi học. Nếu Lesson có nhiều Ses
 3. Giảng viên quản lý Course Section.
 4. Giảng viên quản lý Chapter trong Lesson Plan.
 5. Giảng viên upload và quản lý roster MSSV bằng file `.txt`.
-6. Giảng viên tạo Lesson bằng file Markdown, preview và lưu lâu dài.
+6. Giảng viên upload một hoặc nhiều Lesson Markdown, chỉnh sửa/preview tùy chọn và lưu lâu dài trong Chapter.
 7. Hệ thống parse Markdown thành Section và Quiz đã chuẩn hóa.
-8. Giảng viên Start một Lesson Session LIVE.
+8. Giảng viên Start một Chapter Session LIVE chứa nhiều Lesson.
 9. Hệ thống snapshot roster để ghi nhận attendance theo Session.
-10. Sinh viên browse Subject, Course Section và Lesson.
-11. Sinh viên tham gia Lesson LIVE chỉ bằng MSSV thuộc roster.
+10. Sinh viên browse Subject, xác minh MSSV ở Course Section và truy cập Chapter theo trạng thái.
+11. Sinh viên tham gia Chapter LIVE chỉ bằng MSSV thuộc roster và chuyển giữa các Lesson trong Session.
 12. Giảng viên điều khiển Section theo thứ tự.
 13. Sinh viên nhận Section mới qua Realtime.
 14. Sinh viên gửi reaction và comment trên Section đã mở.
@@ -524,7 +531,7 @@ Một Lesson được tính là một buổi học. Nếu Lesson có nhiều Ses
 17. Giảng viên kết thúc Session.
 18. Sinh viên gửi số lần phát biểu và lời review cuối buổi một lần.
 19. Giảng viên xem Session History, Summary, Session Reviews và Class Voices.
-20. Sinh viên thuộc roster xem lại Lesson đã kết thúc.
+20. Sinh viên thuộc roster xem trước Chapter được mở và xem lại Chapter Session đã kết thúc.
 21. Giảng viên xuất dữ liệu Course Section thành file Excel.
 22. Giảng viên xóa Subject, Course Section hoặc Lesson Session thuộc quyền sở hữu sau bước xác nhận.
 
@@ -562,3 +569,6 @@ Một Lesson được tính là một buổi học. Nếu Lesson có nhiều Ses
 - **Next.js App Router, React và TypeScript**: xây dựng ứng dụng web full-stack.
 - **Tailwind CSS**: xây dựng giao diện responsive.
 - **Supabase**: cung cấp Auth, PostgreSQL, Row Level Security và Realtime.
+- **Supabase Storage**: lưu ảnh Markdown trong bucket `lesson-images` với policy theo Teacher/Subject.
+- **Zod, Unified, Remark và YAML**: kiểm tra input và parse Lesson Markdown an toàn.
+- **ExcelJS**: xuất báo cáo điểm danh theo Chapter Session.

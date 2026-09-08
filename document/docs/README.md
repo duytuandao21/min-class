@@ -6,11 +6,11 @@ MINCLASS là classroom companion cho lớp học trực tiếp, giúp giảng vi
 
 Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên đang trình bày đến đâu, còn giảng viên khó thu thập nhanh mức độ hiểu bài của cả lớp. MINCLASS giải quyết bằng flow Teacher-paced:
 
-1. Giảng viên chuẩn bị Lesson bằng Markdown.
-2. Giảng viên bắt đầu một Session và điều khiển Section hiện tại.
-3. Sinh viên thuộc roster tham gia bằng MSSV, không cần tài khoản hoặc Room Code.
-4. Sinh viên theo dõi nội dung, gửi reaction/comment và làm Quiz.
-5. Giảng viên theo dõi dữ liệu gần realtime và xem lại lịch sử sau buổi học.
+1. Giảng viên chuẩn bị Lesson Plan theo Chapter và có thể upload nhiều Lesson Markdown cùng lúc.
+2. Giảng viên bắt đầu một Chapter Session chứa toàn bộ Lesson của chương và điều khiển Section riêng theo từng Lesson.
+3. Sinh viên thuộc roster tham gia bằng MSSV, không cần tài khoản, Room Code hoặc Session Code.
+4. Sinh viên chuyển giữa các Lesson trong chương, theo dõi Section đã release, gửi reaction/comment và làm Quiz.
+5. Giảng viên theo dõi dữ liệu gần realtime, kết thúc Session và xem Summary theo từng Lesson.
 
 ## Chức năng chính
 
@@ -18,18 +18,21 @@ Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên 
 
 - Đăng nhập bằng tài khoản Teacher được cấu hình trong Supabase Auth.
 - Quản lý Subject và Course Section.
-- Quản lý Lesson Plan theo Chapter.
+- Quản lý Lesson Plan theo Chapter; đồng bộ thay đổi có chọn lọc sang các lớp học phần đã tồn tại.
 - Upload roster MSSV từ file `.txt`, preview và kiểm tra dữ liệu trước khi lưu.
-- Tạo Lesson từ Markdown, validate và preview trước khi lưu.
-- Start/End Lesson Session và điều khiển Section theo thứ tự.
+- Upload tối đa 20 Lesson Markdown vào Chapter, chỉnh sửa/preview từng Lesson và lưu đồng loạt; Preview mode không bắt buộc trước khi lưu.
+- Upload ảnh vào Thư viện ảnh Lesson và sao chép cú pháp Markdown để chèn vào bài.
+- Mở Chapter cho sinh viên xem trước ở chế độ chỉ đọc.
+- Start/End Chapter Session, chuyển Lesson và điều khiển/release Section theo thứ tự.
 - Theo dõi attendance, reaction, comment và Quiz gần realtime.
 - Xem Session History, Summary, Session Reviews và Class Voices.
 - Xuất dữ liệu Course Section thành file Excel.
 
 ### Dành cho sinh viên
 
-- Browse Subject, Course Section và Lesson công khai.
-- Tham gia Lesson LIVE bằng MSSV thuộc roster.
+- Vào Course Section bằng MSSV một lần để xem các Chapter được phép truy cập; phiên được dùng lại khi chuyển Chapter.
+- Mở trước Chapter được Teacher cho phép ở chế độ chỉ đọc, không tính điểm danh.
+- Tham gia Chapter LIVE bằng MSSV thuộc roster; bước LIVE vẫn xác minh riêng.
 - Xem Section hiện tại và các Section đã mở.
 - Gửi reaction, comment có tên hoặc ẩn danh.
 - Làm Quiz một lần và xem kết quả sau khi nộp.
@@ -43,6 +46,7 @@ Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên 
 | Web application | Next.js App Router, React, TypeScript strict |
 | Styling | Tailwind CSS |
 | Database và Auth | Supabase PostgreSQL, Auth, RLS |
+| Lesson images | Supabase Storage (`lesson-images`) |
 | Live updates | Supabase Realtime |
 | Validation | Zod, PostgreSQL constraints |
 | Markdown | Unified, Remark, YAML, React Markdown |
@@ -54,7 +58,7 @@ Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên 
 
 ```text
 min-class/
-├── docs/                       Tài liệu bàn giao
+├── document/                   Tài liệu Markdown và Word bàn giao
 ├── picture/                    Logo, background và asset giao diện
 ├── src/
 │   ├── app/                    Next.js App Router pages và route handlers
@@ -65,7 +69,7 @@ min-class/
 │   │   ├── lessons/            Markdown, Lesson và Session actions
 │   │   ├── rooms/              Live flow, feedback, Quiz và Summary
 │   │   └── subjects/           Subject, Course Section, roster và export
-│   └── lib/supabase/           Browser/server Supabase clients và session refresh
+│   └── lib/supabase/           Browser/server Supabase clients, Auth cookie và session refresh
 ├── supabase/
 │   ├── migrations/             Schema, RLS, RPC và Realtime migrations
 │   └── tests/                  Database/RLS integration tests
@@ -74,7 +78,7 @@ min-class/
 └── package.json                Scripts và dependencies
 ```
 
-Chi tiết kiến trúc nằm trong [Technical Documentation](./TECHNICAL_DOCUMENTATION.md). Schema và ERD nằm trong [Database Documentation](./DATABASE_DOCUMENTATION.md).
+Chi tiết kiến trúc nằm trong [Technical Documentation](<./Technical Documentation.docx>). Schema và ERD nằm trong [Database Documentation](<./Database Documentation.docx>).
 
 ## Yêu cầu môi trường
 
@@ -172,6 +176,6 @@ Project hiện không yêu cầu service-role key.
 
 ## Tài liệu liên quan
 
-- [User Guide](./USER_GUIDE.md)
-- [Technical Documentation](./TECHNICAL_DOCUMENTATION.md)
-- [Database Documentation](./DATABASE_DOCUMENTATION.md)
+- [User Guide](<./User Guide.docx>)
+- [Technical Documentation](<./Technical Documentation.docx>)
+- [Database Documentation](<./Database Documentation.docx>)
