@@ -140,6 +140,7 @@ Mỗi sinh viên chỉ được nộp một lần cho mỗi quiz trong Session.
 Với Chapter được giảng viên bật **Mở xem trước**, sinh viên thuộc roster có thể nhập MSSV để đọc trước nội dung ở chế độ chỉ đọc. Xem trước không tạo điểm danh, không cho reaction, comment hoặc làm quiz và được nhận biết bằng trạng thái **Bản xem trước**.
 
 Khi giảng viên kết thúc Session, trang Lesson đang mở sẽ tự hiển thị phần **Tổng kết cá nhân**. Sinh viên có thể nhập số lần mình đã phát biểu và gửi một lời review ngắn. Mỗi sinh viên chỉ gửi được một lần; nội dung đã gửi không thể chỉnh sửa, được cập nhật ngay cho giảng viên và có thể xem lại sau khi rời buổi học.
+Nếu sinh viên đã tham gia nhưng chưa gửi Tổng kết cá nhân, form sẽ tự hiện lại mỗi lần mở buổi học đã kết thúc hoặc trang ôn tập, kể cả sau khi đổi phiên Student và xác minh lại đúng MSSV. Sinh viên có thể đóng form trong lần xem hiện tại; MSSV chỉ có trong roster nhưng không tham gia sẽ không thấy form.
 
 ### Xem lại Lesson đã kết thúc
 

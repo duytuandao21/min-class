@@ -106,6 +106,7 @@ export type StudentRoom = StudentLessonSnapshot & {
   mssv: string;
   reactions: OwnReactions;
   sessionReflection: SessionReflection | null;
+  participated: boolean;
   lessons: z.infer<typeof sessionLessonLabelSchema>[];
   selectedLessonId: string;
 };
@@ -284,14 +285,16 @@ export async function getStudentRoom(input: string, selectedLessonInput?: string
   if (!mssv) return null;
 
   let sessionReflection: SessionReflection | null = null;
-  if (snapshot.status === "ENDED" && participant?.success) {
+  let participated = Boolean(participant?.success || accessGrant?.success);
+  if (snapshot.status === "ENDED") {
     const { data: reflectionData, error: reflectionError } = await supabase.rpc(
       "get_own_session_reflection",
       { p_room_id: roomId.data },
     );
-    if (reflectionError) return null;
+    if (reflectionError && reflectionError.code !== "42501") return null;
+    participated = !reflectionError;
     const reflectionRow = Array.isArray(reflectionData) ? reflectionData[0] : null;
-    if (reflectionRow) {
+    if (participated && reflectionRow) {
       try {
         sessionReflection = parseSessionReflectionRow(reflectionRow);
       } catch {
@@ -305,6 +308,7 @@ export async function getStudentRoom(input: string, selectedLessonInput?: string
     mssv,
     reactions,
     sessionReflection,
+    participated,
     lessons,
     selectedLessonId: selectedLesson.lesson_id,
   };

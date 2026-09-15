@@ -156,7 +156,7 @@ export async function getPublicLessonGateContext(rawLessonId: string): Promise<P
 export async function getStudentEndedLessonReview(
   rawSessionId: string,
   rawLessonId?: string,
-): Promise<(EndedLessonReview & { subjectId: string; courseSectionId: string }) | null> {
+): Promise<(EndedLessonReview & { subjectId: string; courseSectionId: string; participated: boolean }) | null> {
   const sessionId = idSchema.safeParse(rawSessionId);
   const lessonId = idSchema.safeParse(rawLessonId);
   if (!sessionId.success || !lessonId.success) return null;
@@ -167,14 +167,16 @@ export async function getStudentEndedLessonReview(
       p_room_id: sessionId.data,
       p_lesson_id: lessonId.data,
     }),
-    supabase.rpc("get_ended_session_reflection", { p_room_id: sessionId.data }),
+    supabase.rpc("get_own_session_reflection", { p_room_id: sessionId.data }),
   ]);
   const { data, error } = reviewResult;
   if (error) return null;
 
+  if (reflectionResult.error && reflectionResult.error.code !== "42501") return null;
+  const participated = !reflectionResult.error;
   let sessionReflection = null;
   const reflectionRow = Array.isArray(reflectionResult.data) ? reflectionResult.data[0] : null;
-  if (!reflectionResult.error && reflectionRow) {
+  if (participated && reflectionRow) {
     try {
       sessionReflection = parseSessionReflectionRow(reflectionRow);
     } catch {
@@ -202,6 +204,7 @@ export async function getStudentEndedLessonReview(
     ...review.data,
     subjectId: context.data.subject_id,
     courseSectionId: context.data.course_section_id,
+    participated,
   };
 }
 

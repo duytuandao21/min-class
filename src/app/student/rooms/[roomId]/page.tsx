@@ -46,6 +46,7 @@ export default async function StudentRoomPage({
         key={room.selectedLessonId}
         initialReactions={room.reactions}
         initialSessionReflection={room.sessionReflection}
+        participated={room.participated}
         initialSnapshot={{
           id: room.id,
           title: room.title,

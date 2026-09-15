@@ -8,6 +8,7 @@ import {
   getStudentEndedLessonReview,
   getStudentEndedSessionLessons,
 } from "@/features/catalog/server/queries";
+import { StudentSessionReflection } from "@/features/rooms/components/student-session-reflection";
 
 const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
   dateStyle: "long",
@@ -86,6 +87,11 @@ export default async function StudentEndedLessonReviewPage({
       </Suspense>
 
       <EndedLessonReviewView review={review} />
+      {review.participated && !review.sessionReflection ? (
+        <div className="mx-auto w-full max-w-5xl">
+          <StudentSessionReflection initialReflection={null} key={review.lessonId} roomId={review.sessionId} />
+        </div>
+      ) : null}
     </main>
   );
 }

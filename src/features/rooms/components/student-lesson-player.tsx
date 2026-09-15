@@ -40,11 +40,13 @@ export function StudentLessonPlayer({
   initialReactions,
   initialSessionReflection,
   lessonId,
+  participated,
 }: {
   initialSnapshot: StudentLessonSnapshot;
   initialReactions: OwnReactions;
   initialSessionReflection: SessionReflection | null;
   lessonId: string;
+  participated: boolean;
 }) {
   const router = useRouter();
   const initialPosition = initialSnapshot.sections.at(-1)?.position ?? null;
@@ -237,12 +239,12 @@ export function StudentLessonPlayer({
               sectionId={currentSection.id}
               selectedReaction={reactions[currentSection.id]}
             />
-          ) : (
+          ) : participated ? (
             <StudentSessionReflection
               initialReflection={initialSessionReflection}
               roomId={snapshot.id}
             />
-          )}
+          ) : null}
 
         </div>
       )}
