@@ -81,9 +81,11 @@ File Excel có thông tin mã lớp, tên lớp, sĩ số, tổng số buổi h�
 2. Nhập tên và upload file bài học `.md`.
 3. Chuyển đổi giữa **Edit mode** và **Preview mode** để chỉnh trực tiếp Markdown và xem kết quả đồng bộ tức thời. Có thể lưu bản cuối cùng ở cả hai chế độ.
 4. Dùng **Thư viện ảnh Lesson** để upload ảnh, xem ảnh lớn và sao chép cú pháp Markdown chèn vào nội dung.
-5. Lesson mới tạo chưa LIVE. Giảng viên có thể sửa, tải `.md` hoặc xóa Lesson tại trang Course Section.
+5. Nhúng video từ link HTTPS công khai vào Section Markdown bằng cú pháp `[video: Tên video](https://link-video)` trên một dòng riêng; không cần upload video lên MINCLASS. Hỗ trợ file video trực tiếp và link YouTube, Vimeo, Dailymotion, Google Drive, Loom. Với nguồn khác, nên dùng URL nhúng do dịch vụ cung cấp.
+6. Lesson mới tạo chưa LIVE. Giảng viên có thể sửa, tải `.md` hoặc xóa Lesson tại trang Course Section.
 
 Nút **Cách viết file lesson** trên trang tạo Lesson mở hướng dẫn đầy đủ về định dạng file bài học.
+Video được hiển thị bằng khung 16:9 trong Preview, LIVE và trang ôn tập. Nếu dịch vụ chặn nhúng, yêu cầu đăng nhập hoặc không hỗ trợ phát trên trình duyệt, người xem có thể mở link video gốc; chất lượng phát phụ thuộc vào nguồn video và đường truyền.
 
 ### Dạy Lesson trực tiếp
 

@@ -45,6 +45,17 @@ options:
 :::`;
 
 describe("parseLessonMarkdown", () => {
+  it("accepts an HTTPS video link in lesson content", () => {
+    const lesson = parseLessonMarkdown(validLesson.replace("\n:::\n\n:::quiz", "\n\n[video: Minh họa TCP](https://cdn.example.com/tcp.mp4)\n:::\n\n:::quiz"));
+    expect(lesson.sections[0].contentMd).toContain("[video: Minh họa TCP]");
+  });
+
+  it.each(["http://example.com/tcp.mp4", "https://localhost/tcp.mp4", "javascript:alert(1)"])(
+    "rejects unsafe video URL %s", (url) => {
+      const source = validLesson.replace("\n:::\n\n:::quiz", `\n\n[video: Minh họa TCP](${url})\n:::\n\n:::quiz`);
+      expect(() => parseLessonMarkdown(source)).toThrow(MarkdownValidationError);
+    },
+  );
   it("parses the complete manual test lesson", () => {
     const source = readFileSync(resolve(process.cwd(), "test/lesson.md"), "utf8");
     const lesson = parseLessonMarkdown(source);

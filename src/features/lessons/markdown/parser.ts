@@ -11,6 +11,7 @@ import {
   type NormalizedLessonSection,
   type NormalizedQuizQuestion,
 } from "./schema";
+import { resolveVideoSource, videoTitleFromLink } from "../video-link";
 
 const MAX_MARKDOWN_BYTES = 1_048_576;
 const ALLOWED_MARKDOWN_NODES = new Set<Nodes["type"]>([
@@ -144,6 +145,9 @@ function validateMarkdown(source: string, context: string): void {
     if (node.type === "link") {
       try {
         assertSafeUrl(node.url, `${context}.link`);
+        if (node.children.length === 1 && node.children[0].type === "text" && videoTitleFromLink(node.children[0].value) && !resolveVideoSource(node.url)) {
+          issues.push(`${context}.video: cần URL HTTPS công khai để nhúng video`);
+        }
       } catch (error) {
         issues.push(...(error as MarkdownValidationError).issues);
       }

@@ -4,8 +4,52 @@ import type {
   NormalizedLesson,
   NormalizedLessonSection,
 } from "@/features/lessons/markdown/schema";
+import { resolveVideoSource, videoTitleFromLink } from "@/features/lessons/video-link";
+
+function VideoEmbed({ title, originalUrl }: { title: string; originalUrl: string }) {
+  const source = resolveVideoSource(originalUrl);
+  if (!source) return null;
+
+  return (
+    <figure className="overflow-hidden rounded-2xl border border-emerald-100 bg-[#f3faf6] shadow-sm">
+      <div className="aspect-video w-full bg-[#17201b]">
+        {source.kind === "file" ? (
+          <video aria-label={title} className="h-full w-full" controls playsInline preload="metadata" src={source.url} />
+        ) : (
+          <iframe
+            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="h-full w-full border-0"
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-presentation"
+            src={source.url}
+            title={title}
+          />
+        )}
+      </div>
+      <figcaption className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm sm:px-5">
+        <span className="font-semibold text-[#17201b]">{title}</span>
+        <a className="font-medium text-[var(--accent)] underline underline-offset-4" href={originalUrl} rel="noreferrer noopener" target="_blank">
+          Mở video gốc nếu không phát được
+        </a>
+      </figcaption>
+    </figure>
+  );
+}
 
 const markdownComponents: Components = {
+  p: ({ node, children }) => {
+    const child = node?.children.length === 1 ? node.children[0] : null;
+    if (child?.type === "element" && child.tagName === "a" && child.children.length === 1 && child.children[0].type === "text") {
+      const title = videoTitleFromLink(child.children[0].value);
+      const url = child.properties.href;
+      if (title && typeof url === "string" && resolveVideoSource(url)) {
+        return <VideoEmbed originalUrl={url} title={title} />;
+      }
+    }
+    return <p>{children}</p>;
+  },
   a: ({ children, ...props }) => (
     <a {...props} className="font-medium text-[var(--accent)] underline underline-offset-4" rel="noreferrer noopener" target="_blank">
       {children}

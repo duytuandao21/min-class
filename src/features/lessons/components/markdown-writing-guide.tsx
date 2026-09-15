@@ -29,6 +29,8 @@ const contentExample = [
   "",
   "![Mô tả ảnh](https://example.com/image.png)",
   "",
+  "[video: Minh họa bài học](https://example.com/video.mp4)",
+  "",
   "```text",
   "SYN -> SYN-ACK -> ACK",
   "```",
@@ -170,7 +172,7 @@ export function MarkdownWritingGuide() {
                 <div className="lg:col-span-2">
                   <GuideSection title="3. Section nội dung và Markdown được hỗ trợ">
                     <p>Dùng <code>:::section</code> và kết thúc bằng <code>:::</code>. Sau metadata phải có một dòng trống trước nội dung.</p>
-                    <p className="mt-2">Hỗ trợ paragraph, heading, <strong>bold</strong>, <em>italic</em>, danh sách có/không thứ tự, link, ảnh URL, inline code, xuống dòng và fenced code block.</p>
+                    <p className="mt-2">Hỗ trợ paragraph, heading, <strong>bold</strong>, <em>italic</em>, danh sách có/không thứ tự, link, ảnh URL, video URL, inline code, xuống dòng và fenced code block. Đặt <code>[video: Tên video](https://link-video)</code> trên một dòng riêng để xem trực tiếp trong bài học.</p>
                     <CodeBlock>{contentExample}</CodeBlock>
                   </GuideSection>
                 </div>
@@ -184,7 +186,7 @@ export function MarkdownWritingGuide() {
                   <ul className="list-disc space-y-1 pl-5">
                     <li>Link chỉ nhận <code>http</code>, <code>https</code> hoặc anchor dạng <code>#muc</code>.</li>
                     <li>Ảnh phải là URL <code>http</code> hoặc <code>https</code>.</li>
-                    <li>Không hỗ trợ HTML tùy ý, iframe, video, slide hoặc assignment.</li>
+                    <li>Video chỉ nhận URL HTTPS công khai. Hỗ trợ file video trực tiếp và link YouTube, Vimeo, Dailymotion, Google Drive, Loom. Nguồn khác nên dùng URL nhúng; trang chặn nhúng vẫn có link mở video gốc. Không hỗ trợ HTML hoặc iframe tự viết, slide hay assignment.</li>
                     <li>Không đặt văn bản bên ngoài <code>:::section</code> hay <code>:::quiz</code>.</li>
                   </ul>
                 </GuideSection>

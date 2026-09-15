@@ -29,6 +29,8 @@ Dùng `:::section` và kết thúc bằng `:::`. Sau metadata phải có một d
 
 Hỗ trợ paragraph, heading, **bold**, *italic*, danh sách có/không thứ tự, link, ảnh URL, inline code, xuống dòng và fenced code block.
 
+Để nhúng video vào Section, đặt liên kết video trên **một dòng riêng** theo cú pháp `[video: Tên video](https://link-video)`. MINCLASS hiển thị trình phát ngay trong bài học, cả khi xem trước, LIVE và ôn tập. Hỗ trợ file video trực tiếp (`.mp4`, `.webm`, `.ogg`, `.ogv`, `.m4v`) và tự chuyển link YouTube, Vimeo, Dailymotion, Google Drive, Loom sang trình phát nhúng. Với nguồn khác, hãy dùng URL nhúng HTTPS của dịch vụ đó. Một số trang chặn nhúng hoặc yêu cầu đăng nhập; sinh viên vẫn có thể bấm **Mở video gốc nếu không phát được**. Chất lượng phát phụ thuộc vào file/dịch vụ cung cấp và đường truyền, không do MINCLASS chuyển mã video.
+
 ````markdown
 :::section
 id: tcp-overview
@@ -48,6 +50,8 @@ type: content
 [Đọc thêm](https://example.com)
 
 ![Mô tả ảnh](https://example.com/image.png)
+
+[video: Minh họa bài học](https://example.com/video.mp4)
 
 ```text
 SYN -> SYN-ACK -> ACK
@@ -73,7 +77,7 @@ Hãy giải thích lại ý chính bằng một câu.
 
 - Link chỉ nhận `http`, `https` hoặc anchor dạng `#muc`.
 - Ảnh phải là URL `http` hoặc `https`.
-- Không hỗ trợ HTML tùy ý, iframe, video, slide hoặc assignment.
+- Video chỉ nhận URL HTTPS công khai; không hỗ trợ HTML hoặc iframe tự viết, slide hay assignment.
 - Không đặt văn bản bên ngoài `:::section` hay `:::quiz`.
 
 Giảng viên có thể mở **Thư viện ảnh Lesson** ngay bên dưới vùng upload file, tải ảnh PNG/JPEG/WebP tối đa 5 MB, xem ảnh lớn và sao chép cú pháp Markdown để chèn vào nội dung. Ảnh được lưu trong bucket `lesson-images` theo Teacher và Subject; không cần tự tải ảnh lên dịch vụ bên ngoài.
