@@ -6,6 +6,7 @@ import {
   lessonStatusSchema,
   publicCatalogLessonSchema,
   publicChapterSchema,
+  publicLessonGateContextSchema,
 } from "./schemas";
 
 describe("public Lesson access input", () => {
@@ -47,6 +48,25 @@ describe("public Chapter catalog", () => {
       lesson_title: "Giới thiệu",
       lesson_status: "UPCOMING",
     }).chapter_id).toBe(chapterId);
+  });
+});
+
+describe("public Lesson gate context", () => {
+  it("keeps the Chapter name separate from the first Lesson title", () => {
+    const context = publicLessonGateContextSchema.parse({
+      lesson_id: "ae300000-0000-4000-8000-000000000001",
+      lesson_title: "Bài 4",
+      lesson_status: "LIVE",
+      subject_id: "ae100000-0000-4000-8000-000000000001",
+      subject_name: "DSA",
+      course_section_id: "ae200000-0000-4000-8000-000000000001",
+      section_code: "DSA123",
+      section_display_name: null,
+      chapter_name: "Chương 3: Tìm kiếm và sắp xếp",
+    });
+
+    expect(context.chapter_name).toBe("Chương 3: Tìm kiếm và sắp xếp");
+    expect(context.chapter_name).not.toBe(context.lesson_title);
   });
 });
 

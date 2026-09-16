@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(17);
+select plan(18);
 
 insert into auth.users (id, instance_id, aud, role, encrypted_password, email, created_at, updated_at, is_anonymous)
 values
@@ -117,6 +117,11 @@ select is(
   (select count(*) from public.get_public_lesson_gate_context('ae300000-0000-0000-0000-000000000002')),
   1::bigint,
   'Public can load sanitized Lesson gate context'
+);
+select is(
+  (select chapter_name from public.get_public_lesson_gate_context('ae300000-0000-0000-0000-000000000002')),
+  'Chương 1: Public'::text,
+  'Public Lesson gate exposes its Chapter name instead of displaying the Lesson title'
 );
 
 select * from finish();

@@ -111,11 +111,11 @@ export default async function TeacherRoomPage({
       <BackLink href={courseSectionHref} label="Course Section" />
 
       <header className="mt-8 flex flex-col justify-between gap-5 border-b border-black/10 pb-7 sm:flex-row sm:items-end">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-bold tracking-[0.18em] text-[var(--accent)]">TEACHER LIVE DASHBOARD</p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">{room.title}</h1>
+          <h1 className="mt-2 truncate text-4xl font-semibold tracking-tight sm:text-5xl" title={room.title}>{room.title}</h1>
         </div>
-        <span className={`w-fit rounded-full px-3 py-1 text-sm font-semibold ${room.status === "ACTIVE" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>{room.status}</span>
+        <span className={`w-fit shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${room.status === "ACTIVE" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>{room.status}</span>
       </header>
 
       <TeacherRoomOverview initialAttendance={room.attendance} roomId={room.id} />

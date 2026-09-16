@@ -75,7 +75,7 @@ export default async function PublicChapterAccessPage({
         ) : (
           <>
             <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{chapter.chapter_name}</h1>
+              <h1 className="min-w-0 line-clamp-3 break-words text-3xl font-semibold tracking-tight sm:line-clamp-2 sm:text-4xl" title={chapter.chapter_name}>{chapter.chapter_name}</h1>
               <span className={`w-fit shrink-0 rounded-full px-4 py-2 text-sm font-bold ${statusClass[chapterStatus]}`}>{statusLabel[chapterStatus]}</span>
             </div>
             <p className="mt-4 text-lg leading-8 text-[var(--muted)]">

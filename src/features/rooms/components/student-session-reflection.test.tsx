@@ -9,8 +9,9 @@ describe("StudentSessionReflection on page entry", () => {
   it("automatically opens the form when the attendee has not submitted", () => {
     const html = renderToStaticMarkup(<StudentSessionReflection initialReflection={null} roomId={roomId} />);
     expect(html).toContain('role="dialog"');
-    expect(html).toContain("Gửi tổng kết");
+    expect(html).toContain(">Gửi</button>");
     expect(html).toContain("Đóng tổng kết cá nhân");
+    expect(html).not.toContain('class="pr-16"');
   });
 
   it("does not automatically open after submission", () => {

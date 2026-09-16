@@ -36,6 +36,7 @@ const context = [{
   course_section_id: courseSectionId,
   section_code: "REVISIT01",
   section_display_name: null,
+  chapter_name: "Chương ôn tập",
 }];
 
 function mockReviewQuery(reflectionResult: { data: unknown; error: { code: string } | null }) {

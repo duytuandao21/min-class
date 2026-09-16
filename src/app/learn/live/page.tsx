@@ -25,13 +25,13 @@ export default async function PublicLiveSessionsPage() {
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {sessions.map((session) => (
-            <li key={session.session_id}>
+            <li className="min-w-0" key={session.session_id}>
               <Link className="group block h-full rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md motion-reduce:transform-none" href={`/learn/lessons/${session.first_lesson_id}`}>
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-bold text-[var(--accent)]">{session.section_code}</span>
                   <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900"><span className="size-2 animate-pulse rounded-full bg-emerald-500 motion-reduce:animate-none" /> LIVE</span>
                 </div>
-                <h2 className="mt-4 text-xl font-bold">{session.chapter_name}</h2>
+                <h2 className="mt-4 truncate text-xl font-bold" title={session.chapter_name}>{session.chapter_name}</h2>
                 <p className="mt-2 text-sm text-[var(--muted)]">{session.subject_name}{session.section_display_name ? ` · ${session.section_display_name}` : ""}</p>
                 <p className="mt-5 text-sm font-semibold text-emerald-800">{session.lesson_count} Lesson · Bắt đầu {timeFormatter.format(new Date(session.started_at))}</p>
               </Link>

@@ -67,6 +67,7 @@ export const publicLessonGateContextSchema = publicLessonSchema.extend({
   course_section_id: z.string().uuid(),
   section_code: z.string(),
   section_display_name: z.string().nullable(),
+  chapter_name: z.string().min(1).nullable(),
 });
 
 const endedLessonReviewOptionSchema = z.object({

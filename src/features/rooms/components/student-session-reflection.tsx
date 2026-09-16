@@ -75,11 +75,11 @@ export function StudentSessionReflection({
 
   if (savedReflection) {
     return renderDialog(
-      <div className="pr-16">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <div className="flex flex-wrap items-start justify-between gap-4 pr-20">
           <div>
             <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
-            <h2 className="mt-2 text-3xl font-semibold" id="session-reflection-title">Tổng kết của bạn đã được ghi nhận</h2>
+            <h2 className="mt-2 text-2xl font-semibold sm:text-3xl" id="session-reflection-title">Tổng kết của bạn đã được ghi nhận</h2>
           </div>
           <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-bold text-emerald-900">Đã gửi</span>
         </div>
@@ -101,11 +101,13 @@ export function StudentSessionReflection({
   }
 
   return renderDialog(
-    <div className="pr-16">
-      <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
-      <h2 className="mt-2 text-3xl font-semibold" id="session-reflection-title">
-        Bạn đã đóng góp gì trong buổi học?
-      </h2>
+    <div>
+      <div className="pr-20">
+        <p className="text-xs font-bold tracking-[0.18em] text-[var(--accent)]">TỔNG KẾT CÁ NHÂN</p>
+        <h2 className="mt-2 text-2xl font-semibold sm:text-3xl" id="session-reflection-title">
+          Bạn đã đóng góp gì trong buổi học?
+        </h2>
+      </div>
       <p className="mt-3 text-lg leading-8 text-[var(--muted)]">
         Tự ghi lại số lần phát biểu và một lời review ngắn về buổi học hôm nay.
       </p>
@@ -162,7 +164,7 @@ export function StudentSessionReflection({
           disabled={pending}
           type="submit"
         >
-          {pending ? "Đang gửi…" : "Gửi tổng kết"}
+          {pending ? "Đang gửi…" : "Gửi"}
         </button>
       </form>
     </div>,
