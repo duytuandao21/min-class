@@ -10,7 +10,7 @@ import {
   getTeacherSectionViewMode,
   type LessonSection,
 } from "@/features/rooms/lesson-flow";
-import { advanceTeacherSection } from "@/features/rooms/lifecycle-client";
+import { advanceTeacherSection, presentTeacherSection } from "@/features/rooms/lifecycle-client";
 
 export function TeacherSectionPlayer({
   initialFeedback,
@@ -41,10 +41,29 @@ export function TeacherSectionPlayer({
   const currentIndex = sections.findIndex((section) => section.position === viewingPosition);
   const currentSection = currentIndex >= 0 ? sections[currentIndex] : null;
   const teachingSection = sections.find((section) => section.position === teachingPosition) ?? null;
-  const viewMode = getTeacherSectionViewMode(viewingPosition, teachingPosition);
+  const viewMode = getTeacherSectionViewMode(viewingPosition, teachingPosition, releasedThrough);
   const previousPosition = getAdjacentSectionPosition(sections, viewingPosition, -1);
   const nextPosition = getAdjacentSectionPosition(sections, viewingPosition, 1);
   const hasTeachingSectionAfterCurrent = sections.some((section) => section.position > teachingPosition);
+  const previousTeachingPosition = getAdjacentSectionPosition(sections, teachingPosition, -1);
+  const nextTeachingPosition = getAdjacentSectionPosition(sections, teachingPosition, 1);
+  const canPresentNext = nextTeachingPosition !== null && nextTeachingPosition <= releasedThrough;
+  const isAtReleaseFrontier = teachingPosition === releasedThrough;
+
+  function presentSection(position: number | null) {
+    if (position === null || position > releasedThrough || isPending) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await presentTeacherSection(roomId, lessonId, position);
+        setTeachingPosition(result.teachingSection);
+        setReleasedThrough(result.releasedThrough);
+        setViewingPosition(result.teachingSection);
+      } catch (presentError) {
+        setError(presentError instanceof Error ? presentError.message : "Không thể đồng bộ section.");
+      }
+    });
+  }
 
   function moveTo(position: number | null) {
     if (position === null || isPending) return;
@@ -53,7 +72,7 @@ export function TeacherSectionPlayer({
   }
 
   function releaseCurrentSection() {
-    if (viewMode !== "TEACHING" || isPending) return;
+    if (viewMode !== "TEACHING" || !isAtReleaseFrontier || isPending) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -114,10 +133,10 @@ export function TeacherSectionPlayer({
                 onClick={() => moveTo(previousPosition)}
                 type="button"
               >
-                <span aria-hidden className="mr-2 text-xl leading-none">←</span> Bài trước
+                <span aria-hidden className="mr-2 text-xl leading-none">←</span> Xem trước
               </button>
               <p className="hidden text-center text-sm font-semibold text-[var(--muted)] sm:block">
-                Section {currentIndex + 1} / {sections.length}
+                Chỉ đổi màn hình của bạn
               </p>
               <button
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-black/15 bg-white px-5 py-3 font-bold transition hover:-translate-y-0.5 hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-35 motion-reduce:transform-none"
@@ -125,11 +144,57 @@ export function TeacherSectionPlayer({
                 onClick={() => moveTo(nextPosition)}
                 type="button"
               >
-                Bài tiếp <span aria-hidden className="ml-2 text-xl leading-none">→</span>
+                Xem tiếp <span aria-hidden className="ml-2 text-xl leading-none">→</span>
               </button>
             </nav>
 
-            <div className="mt-5 rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <div aria-label="Điều khiển lớp" aria-busy={isPending} className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-emerald-900">Điều khiển lớp</p>
+                  <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+                    Đồng bộ sinh viên trong Lesson này đến section đang trình chiếu.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-35"
+                    disabled={previousTeachingPosition === null || isPending}
+                    onClick={() => presentSection(previousTeachingPosition)}
+                    type="button"
+                  >
+                    <span aria-hidden>←</span> Quay lại section
+                  </button>
+                  <button
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-35"
+                    disabled={!canPresentNext || isPending}
+                    onClick={() => presentSection(nextTeachingPosition)}
+                    type="button"
+                  >
+                    Section tiếp <span aria-hidden>→</span>
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col justify-between gap-3 border-t border-emerald-200/70 pt-4 sm:flex-row sm:items-center">
+                <p aria-live="polite" className="min-w-0 text-sm text-emerald-950">
+                  Đang trình chiếu: <strong>{teachingSection?.title ?? `Section ${teachingPosition + 1}`}</strong>
+                </p>
+                {viewingPosition <= releasedThrough ? (
+                  <button
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
+                    disabled={isPending}
+                    onClick={() => presentSection(viewingPosition)}
+                    type="button"
+                  >
+                    {isPending ? "Đang đồng bộ…" : viewingPosition === teachingPosition ? "Đồng bộ lại lớp" : "Trình chiếu section này"}
+                  </button>
+                ) : (
+                  <span className="text-sm text-[var(--muted)]">Section này chưa mở cho sinh viên.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
               {viewMode !== "TEACHING" ? (
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                   <p className="text-sm leading-6 text-[var(--muted)]">
@@ -141,6 +206,20 @@ export function TeacherSectionPlayer({
                     type="button"
                   >
                     Về section đang dạy
+                  </button>
+                </div>
+              ) : !isAtReleaseFrontier ? (
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <p className="text-sm leading-6 text-[var(--muted)]">
+                    Đang trình chiếu lại. Các section đã mở vẫn được giữ nguyên. Trở về section mới nhất để tiếp tục Done.
+                  </p>
+                  <button
+                    className="shrink-0 rounded-xl bg-sky-100 px-5 py-3 font-bold text-sky-900 transition hover:bg-sky-200 disabled:opacity-60"
+                    disabled={isPending}
+                    onClick={() => presentSection(releasedThrough)}
+                    type="button"
+                  >
+                    Về section mới nhất
                   </button>
                 </div>
               ) : hasTeachingSectionAfterCurrent ? (

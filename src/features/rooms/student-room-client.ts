@@ -15,9 +15,10 @@ export class StudentRoomUnavailableError extends Error {
 export async function fetchStudentLessonSnapshot(input: string, lessonInput: string): Promise<StudentLessonSnapshot> {
   const roomId = roomIdSchema.parse(input);
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_student_session_lesson_snapshot", {
+  const lessonId = roomIdSchema.parse(lessonInput);
+  const { data, error } = await supabase.rpc("get_student_session_lesson_flow_snapshot", {
     p_room_id: roomId,
-    p_lesson_id: lessonInput,
+    p_lesson_id: lessonId,
   });
   if (error?.code === "42501") throw new StudentRoomUnavailableError();
   if (error) throw new Error("Không thể đồng bộ nội dung Room.");

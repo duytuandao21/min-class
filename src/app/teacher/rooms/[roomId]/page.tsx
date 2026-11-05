@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { BackLink } from "@/components/back-link";
+import { ActiveChapterSessions } from "@/features/rooms/components/active-chapter-sessions";
 import { EndSessionButton } from "@/features/rooms/components/end-session-button";
 import { ReleaseChapterButton } from "@/features/rooms/components/release-chapter-button";
 import { TeacherQuizAnalytics } from "@/features/rooms/components/teacher-quiz-analytics";
@@ -35,6 +36,7 @@ async function TeacherLessonContent({
   if (!feedback) notFound();
   return (
     <TeacherSectionPlayer
+      key={`${lessonId}:${teachingSection}:${releasedThrough}`}
       initialFeedback={feedback}
       initialReleasedThrough={releasedThrough}
       initialTeachingSection={teachingSection}
@@ -120,6 +122,10 @@ export default async function TeacherRoomPage({
 
       <TeacherRoomOverview initialAttendance={room.attendance} roomId={room.id} />
 
+      {room.activeChapterSessions.length > 1 ? (
+        <ActiveChapterSessions currentSessionId={room.id} sessions={room.activeChapterSessions} />
+      ) : null}
+
       <nav aria-label="Các Lesson đang dạy" className="mt-7 flex gap-2 overflow-x-auto pb-2">
         {room.lessons.map((lesson) => (
           <Link
@@ -156,8 +162,8 @@ export default async function TeacherRoomPage({
 
       <section className="mt-8 border-t border-black/10 pt-8">
         <div className="flex flex-wrap items-start gap-3">
-          <ReleaseChapterButton roomId={room.id} />
-          <EndSessionButton roomId={room.id} />
+          <ReleaseChapterButton chapterName={room.title} roomId={room.id} />
+          <EndSessionButton chapterName={room.title} roomId={room.id} />
         </div>
       </section>
     </main>

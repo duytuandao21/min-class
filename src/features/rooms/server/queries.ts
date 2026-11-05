@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { requireTeacher } from "@/features/auth/teacher-session";
+import { activeChapterSessionSchema, type ActiveChapterSession } from "@/features/rooms/active-chapter-sessions";
 import {
   classVoicesSnapshotSchema,
   type ClassVoicesSnapshot,
@@ -93,6 +94,7 @@ const summarySectionPlacementSchema = z.object({
 });
 
 export type TeacherRoom = z.infer<typeof teacherRoomSchema> & {
+  activeChapterSessions: ActiveChapterSession[];
   attendance: TeacherAttendance;
   lessonContext: {
     courseSectionId: string;
@@ -172,14 +174,25 @@ export async function getTeacherRoom(input: string, selectedLessonInput?: string
       .eq("id", room.data.course_section_id)
       .maybeSingle()
     : Promise.resolve({ data: null, error: null });
-  const [courseSectionResult, sectionResult] = await Promise.all([
+  const activeSessionPromise = room.data.course_section_id
+    ? supabase.from("rooms")
+      .select("id, title, started_at")
+      .eq("course_section_id", room.data.course_section_id)
+      .eq("status", "ACTIVE")
+      .not("chapter_id", "is", null)
+      .order("started_at", { ascending: true })
+    : Promise.resolve({ data: [], error: null });
+  const [courseSectionResult, sectionResult, activeSessionResult] = await Promise.all([
     courseSectionPromise,
     supabase
       .from("sections")
       .select("id, position, type, title, content_md")
       .eq("lesson_id", selectedProgress.lesson_id)
       .order("position"),
+    activeSessionPromise,
   ]);
+  const activeChapterSessions = z.array(activeChapterSessionSchema).safeParse(activeSessionResult.data);
+  if (activeSessionResult.error || !activeChapterSessions.success) return null;
   if (room.data.course_section_id) {
     const { data: courseSectionData, error: courseSectionError } = courseSectionResult;
     const courseSection = courseSectionPlacementSchema.safeParse(courseSectionData);
@@ -204,6 +217,7 @@ export async function getTeacherRoom(input: string, selectedLessonInput?: string
 
   return {
     ...room.data,
+    activeChapterSessions: activeChapterSessions.data,
     teaching_section: selectedProgress.teaching_section,
     released_through: selectedProgress.released_through,
     attendance: attendance.data,
@@ -254,7 +268,7 @@ export async function getStudentRoom(input: string, selectedLessonInput?: string
   const requestedLessonId = z.string().uuid().safeParse(selectedLessonInput);
   const selectedLesson = lessons.find((lesson) => lesson.lesson_id === (requestedLessonId.success ? requestedLessonId.data : null))
     ?? lessons[0];
-  const snapshotResult = await supabase.rpc("get_student_session_lesson_snapshot", {
+  const snapshotResult = await supabase.rpc("get_student_session_lesson_flow_snapshot", {
     p_room_id: roomId.data,
     p_lesson_id: selectedLesson.lesson_id,
   });

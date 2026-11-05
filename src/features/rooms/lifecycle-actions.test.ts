@@ -10,7 +10,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/features/auth/teacher-session", () => ({ requireTeacher: mocks.requireTeacher }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
-import { releaseEntireChapterAction } from "./lifecycle-actions";
+import { endRoomAction, releaseEntireChapterAction } from "./lifecycle-actions";
 
 const roomId = "a9800000-0000-4000-8000-000000000001";
 
@@ -49,5 +49,24 @@ describe("releaseEntireChapterAction", () => {
       ok: false,
       message: "Chỉ có thể Done chương đang LIVE.",
     });
+  });
+});
+
+describe("ending one Chapter Session", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("ends only the supplied Session and invalidates the LIVE lists", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    mocks.createClient.mockResolvedValue({ rpc });
+    await expect(endRoomAction(roomId)).resolves.toEqual({ ok: true });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("end_room", { p_room_id: roomId });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/learn/live");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/teacher/rooms/[roomId]", "page");
+  });
+
+  it("does not invalidate on a failed end", async () => {
+    mocks.createClient.mockResolvedValue({ rpc: vi.fn().mockResolvedValue({ error: { code: "42501" } }) });
+    await expect(endRoomAction(roomId)).resolves.toMatchObject({ ok: false });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });

@@ -24,6 +24,7 @@ Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên 
 - Upload roster MSSV từ file `.txt`, preview và kiểm tra dữ liệu trước khi lưu.
 - Upload tối đa 20 Lesson Markdown vào Chapter, chỉnh sửa/preview từng Lesson và lưu đồng loạt; Preview mode không bắt buộc trước khi lưu.
 - Upload ảnh vào Thư viện ảnh Lesson và sao chép cú pháp Markdown để chèn vào bài.
+- Nhúng video từ URL HTTPS công khai vào Lesson Markdown mà không cần upload video lên MINCLASS.
 - Mở Chapter cho sinh viên xem trước ở chế độ chỉ đọc.
 - Start/End Chapter Session, chuyển Lesson và điều khiển/release Section theo thứ tự.
 - Theo dõi attendance, reaction, comment và Quiz gần realtime.
@@ -38,7 +39,8 @@ Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên 
 - Xem Section hiện tại và các Section đã mở.
 - Gửi reaction, comment có tên hoặc ẩn danh.
 - Làm Quiz một lần và xem kết quả sau khi nộp.
-- Gửi tổng kết cá nhân sau khi Session kết thúc.
+- Xem video nhúng trực tiếp trong Preview, LIVE và nội dung ôn tập.
+- Gửi tổng kết cá nhân sau khi Session kết thúc; form tự hiện lại khi quay lại nếu đã tham gia nhưng chưa gửi.
 - Xem lại Lesson đã kết thúc ở chế độ read-only.
 
 ## Tech stack
@@ -51,7 +53,7 @@ Trong lớp học trực tiếp, sinh viên thường khó biết giảng viên 
 | Lesson images | Supabase Storage (`lesson-images`) |
 | Live updates | Supabase Realtime |
 | Validation | Zod, PostgreSQL constraints |
-| Markdown | Unified, Remark, YAML, React Markdown |
+| Markdown và video | Unified, Remark, YAML, React Markdown; trình phát video URL HTTPS an toàn |
 | Export | ExcelJS |
 | Testing | Vitest, Supabase SQL tests |
 | Package manager | pnpm |

@@ -114,10 +114,9 @@ select throws_ok(
 );
 
 select set_config('request.jwt.claims', '{"sub":"a9000000-0000-4000-8000-000000000001","role":"authenticated","is_anonymous":false,"email":"thaybao@minclass.local"}', true);
-select throws_ok(
+select lives_ok(
   $$select * from public.start_chapter_session('a9200000-0000-4000-8000-000000000001', 'a9300000-0000-4000-8000-000000000002')$$,
-  '23505', 'Course Section already has a LIVE Lesson Session.',
-  'A Course Section cannot have two concurrent teaching Sessions'
+  'Different Chapters in one Course Section can be LIVE concurrently'
 );
 select lives_ok(
   $$select public.delete_course_section_chapter('a9100000-0000-4000-8000-000000000001', 'a9200000-0000-4000-8000-000000000001', 'a9300000-0000-4000-8000-000000000002')$$,

@@ -56,7 +56,7 @@ Các route chính:
 | `/learn/subjects/[subjectId]` | Student/Public | Danh sách Course Section |
 | `/learn/subjects/[subjectId]/sections/[courseSectionId]` | Student | Xác minh MSSV một lần và hiển thị Chapter theo trạng thái |
 | `.../chapters/[chapterId]` | Student | Xem trước Chapter, tham gia LIVE hoặc mở Session đã kết thúc |
-| `/learn/lessons/[lessonId]` | Student | MSSV access gate |
+| `/learn/lessons/[lessonId]` | Student | MSSV access gate; với LIVE hiển thị Chapter name thay vì title của Lesson đầu tiên |
 | `/student/rooms/[roomId]` | Student | Chapter Session LIVE/ENDED với điều hướng Lesson |
 | `/learn/review/[sessionId]` | Student | Ended Lesson Review |
 | `.../export` | Teacher | Download Excel |
@@ -128,6 +128,8 @@ Project không dùng service-role key trong runtime và không có NestJS/Expres
 - Form tạo Lesson hỗ trợ tối đa 20 file `.md`, danh sách tab, đổi tên/xóa/chỉnh sửa/preview từng file và batch save vào Chapter đã chọn.
 - Lesson Plan và Course Section dùng các batch RPC riêng nhưng giữ cùng trải nghiệm tạo Lesson.
 - Thư viện ảnh dùng Supabase Storage bucket `lesson-images`, giới hạn PNG/JPEG/WebP 5 MB và đường dẫn được phân vùng theo Teacher/Subject.
+- `video-link.ts` nhận diện `[video: ...](https://...)`, chuẩn hóa link YouTube/Vimeo/Dailymotion/Google Drive/Loom hoặc file video trực tiếp và từ chối URL nội bộ/không an toàn.
+- `markdown-preview.tsx` render video trong khung 16:9 bằng `<video>` hoặc sandboxed iframe, kèm link mở nguồn gốc khi trình phát nhúng không hoạt động.
 - `session-actions.ts`: Start Chapter Session chứa toàn bộ Lesson của Chapter.
 - Lesson Review Player hiển thị Section theo kiểu trái/phải.
 
@@ -138,6 +140,7 @@ Project không dùng service-role key trong runtime và không có NestJS/Expres
 - `quiz.ts`: Quiz snapshot và analytics schemas.
 - `summary.ts`: Summary data contract.
 - `class-voices.ts`: Class Voices data contract.
+- `student-session-reflection.tsx`: popup tổng kết một lần, tự mở lại khi người đã tham gia quay lại mà chưa submit.
 - Realtime clients subscribe rồi gọi lại snapshot loader.
 
 ## 5. Luồng dữ liệu chính
@@ -239,6 +242,7 @@ Không chỉ dựa vào client redirect để bảo vệ route.
 - `AnonymousAuthBootstrap` khởi tạo Supabase anonymous session ở nền cho route Student; trang public không chờ Auth để render catalog.
 - Course Section xác minh roster một lần, lưu MSSV vào cookie phiên `HttpOnly` theo lớp và dùng lại khi mở Chapter xem trước/đã kết thúc. Chapter LIVE vẫn xác minh MSSV riêng.
 - Một MSSV có thể join cùng Session từ nhiều anonymous browser; `participants` giữ một bản ghi canonical theo Session/MSSV và `lesson_session_access_grants` ánh xạ các phiên trình duyệt vào bản ghi đó.
+- Với Session đã kết thúc, access grant hiện tại được ưu tiên để ánh xạ đúng Participant/MSSV khi đọc hoặc gửi reflection; nhờ đó form chưa gửi vẫn xuất hiện sau khi đổi anonymous browser và xác minh lại cùng MSSV.
 - Student không có account UI.
 
 ### Authorization layers
@@ -288,20 +292,20 @@ Raw Markdown
   → Render with React Markdown without raw HTML
 ```
 
-Chỉ hỗ trợ paragraph, heading, strong, emphasis, list, link, image, inline code, fenced code và line break. HTML tùy ý bị parser từ chối. Link/ảnh chỉ chấp nhận protocol được cho phép.
+Hỗ trợ paragraph, heading, strong, emphasis, list, link, image, video link, inline code, fenced code và line break. HTML tùy ý bị parser từ chối. Link/ảnh chỉ chấp nhận protocol được cho phép. Video phải là URL HTTPS công khai, không có credentials và không trỏ đến localhost, hostname nội bộ hoặc địa chỉ IP; direct file dùng `<video controls>`, nguồn nhúng dùng iframe sandboxed và luôn có link fallback mở URL gốc.
 
 ## 9. External services
 
 ### Supabase
 
-Supabase là external service duy nhất của runtime:
+Supabase là external data service duy nhất mà MINCLASS quản lý trong runtime:
 
 - Auth: permanent Teacher và anonymous Student identity.
 - PostgreSQL: domain data và transaction logic.
 - RLS: row-level authorization.
 - Realtime: change notification.
 
-Ứng dụng không tích hợp email provider, payment, AI hay analytics service bên thứ ba. Supabase Storage được dùng cho ảnh Markdown của Lesson qua bucket public `lesson-images`; quyền upload/update/delete vẫn được bảo vệ bằng policy theo Teacher và Subject.
+Ứng dụng không tích hợp email provider, payment, AI hay analytics service bên thứ ba. Supabase Storage được dùng cho ảnh Markdown của Lesson qua bucket public `lesson-images`; quyền upload/update/delete vẫn được bảo vệ bằng policy theo Teacher và Subject. Lesson có thể tham chiếu video từ CDN hoặc nhà cung cấp bên ngoài; browser tải trực tiếp nội dung đó, MINCLASS không upload, proxy hay chuyển mã video.
 
 ## 10. Các quyết định kỹ thuật quan trọng
 

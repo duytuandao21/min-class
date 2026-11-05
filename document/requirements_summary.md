@@ -63,6 +63,7 @@ Sinh viên có thể:
 - Xác minh MSSV một lần khi vào Course Section và duyệt các Chapter được phép truy cập mà không nhập lại ở từng chương.
 - Xem trước Chapter được giảng viên mở mà không tạo điểm danh.
 - Tham gia Chapter đang LIVE bằng MSSV thuộc roster; LIVE vẫn xác minh riêng.
+- Nhận biết đúng tên Chapter trên trang xác minh LIVE; tên dài được giới hạn số dòng thay vì hiển thị title của Lesson đầu tiên.
 - Theo dõi Section giảng viên đang trình bày.
 - Xem lại các Section đã được mở.
 - Gửi reaction và comment trên Section đang được phép truy cập.
@@ -135,7 +136,7 @@ Các loại Section hiện được hỗ trợ:
 | `REFLECTION` | Nội dung dùng để gợi ý sinh viên suy nghĩ hoặc phản hồi |
 | `QUIZ` | Bộ câu hỏi trắc nghiệm |
 
-Không hỗ trợ Slide, Video, Assignment, Exercise, Poll hoặc Code Runner.
+Không hỗ trợ Slide, Assignment, Exercise, Poll hoặc Code Runner. Video được hỗ trợ dưới dạng liên kết HTTPS nhúng trong nội dung `CONTENT`/`REFLECTION`; MINCLASS không nhận upload hoặc chuyển mã file video.
 
 ---
 
@@ -199,6 +200,7 @@ Markdown hiện hỗ trợ:
 - Link HTTP, HTTPS hoặc anchor.
 - Image URL HTTP/HTTPS.
 - Ảnh PNG/JPEG/WebP tối đa 5 MB có thể upload trực tiếp qua Thư viện ảnh Lesson rồi sao chép cú pháp Markdown.
+- Video đặt trên một dòng riêng theo cú pháp `[video: Tên video](https://link-video)`. Hệ thống hỗ trợ file `.mp4`, `.webm`, `.ogg`, `.ogv`, `.m4v`, tự chuyển link YouTube, Vimeo, Dailymotion, Google Drive, Loom và chấp nhận URL nhúng HTTPS của nguồn khác.
 - Inline code và fenced code block.
 - Quiz `single`, `multiple` và `true_false`.
 
@@ -209,7 +211,7 @@ Parser phải:
 - Phát hiện Section ID, question ID và option ID bị trùng.
 - Kiểm tra số đáp án đúng phù hợp với loại Quiz.
 - Từ chối file rỗng, sai cấu trúc hoặc lớn hơn 1 MB.
-- Từ chối HTML tùy ý và URL không an toàn để hạn chế XSS.
+- Từ chối HTML tùy ý và URL không an toàn để hạn chế XSS. URL video phải dùng HTTPS công khai, không chứa credentials và không trỏ tới localhost, IP hoặc hostname nội bộ.
 
 ---
 
@@ -395,6 +397,8 @@ Sau khi giảng viên kết thúc Session, Student có thể gửi một lần:
 
 Dữ liệu được gắn với Participant của Session. Sau khi gửi, Student không thể chỉnh sửa và có thể xem lại trong Lesson Review. Giảng viên nhận review mới gần realtime.
 
+Nếu Student đã tham gia Session nhưng chưa gửi, form tự mở lại mỗi lần truy cập buổi học đã kết thúc hoặc trang ôn tập. Student có thể đóng popup trong lần xem hiện tại; khi quay lại, form vẫn xuất hiện cho đến khi gửi thành công. Việc xác minh lại cùng MSSV ở một anonymous browser khác vẫn truy cập đúng trạng thái reflection. Student chỉ có trong roster nhưng chưa từng tham gia Session không thấy form này.
+
 ### Class Voices
 
 Class Voices tổng hợp các comment trong buổi học và cho phép lọc theo từng Lesson:
@@ -491,6 +495,7 @@ Sinh viên xác minh MSSV một lần khi vào Course Section rồi chọn Chapt
 - Không yêu cầu Room Code hoặc Session Code.
 - Student thuộc roster vẫn được xem Lesson dù không tham gia Session.
 - Hiển thị toàn bộ Section và đáp án Quiz ở chế độ read-only.
+- Hiển thị video nhúng bằng khung responsive 16:9; nếu nguồn chặn nhúng, Student có thể mở URL gốc.
 - Nếu Student đã làm Quiz, hiển thị đáp án đã chọn và trạng thái đúng/sai.
 - Nếu đã gửi tổng kết cá nhân, Student xem lại dữ liệu của chính mình.
 - Không hiển thị toàn bộ comment của lớp cho Student.
@@ -517,7 +522,7 @@ Mỗi lần Teacher Start một Chapter tạo một buổi học để điểm d
 3. Giảng viên quản lý Course Section.
 4. Giảng viên quản lý Chapter trong Lesson Plan.
 5. Giảng viên upload và quản lý roster MSSV bằng file `.txt`.
-6. Giảng viên upload một hoặc nhiều Lesson Markdown, chỉnh sửa/preview tùy chọn và lưu lâu dài trong Chapter.
+6. Giảng viên upload một hoặc nhiều Lesson Markdown, chỉnh sửa/preview tùy chọn, nhúng video bằng URL HTTPS và lưu lâu dài trong Chapter.
 7. Hệ thống parse Markdown thành Section và Quiz đã chuẩn hóa.
 8. Giảng viên Start một Chapter Session LIVE chứa nhiều Lesson.
 9. Hệ thống snapshot roster để ghi nhận attendance theo Session.
@@ -557,7 +562,7 @@ Mỗi lần Teacher Start một Chapter tạo một buổi học để điểm d
 - Self-paced Mode.
 - Exercise, Assignment, Gradebook hoặc Leaderboard.
 - Poll, upvote, reply hoặc chat.
-- Video, iframe hoặc slide/PDF player.
+- Upload/chuyển mã video, iframe HTML tùy ý hoặc slide/PDF player.
 - Code Runner.
 - AI Summary hoặc AI Analytics.
 - GPS, nhận diện khuôn mặt hoặc điểm danh theo vị trí.
@@ -570,5 +575,5 @@ Mỗi lần Teacher Start một Chapter tạo một buổi học để điểm d
 - **Tailwind CSS**: xây dựng giao diện responsive.
 - **Supabase**: cung cấp Auth, PostgreSQL, Row Level Security và Realtime.
 - **Supabase Storage**: lưu ảnh Markdown trong bucket `lesson-images` với policy theo Teacher/Subject.
-- **Zod, Unified, Remark và YAML**: kiểm tra input và parse Lesson Markdown an toàn.
+- **Zod, Unified, Remark và YAML**: kiểm tra input, parse Lesson Markdown và nhận diện liên kết video an toàn.
 - **ExcelJS**: xuất báo cáo điểm danh theo Chapter Session.

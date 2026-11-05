@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireTeacher } from "@/features/auth/teacher-session";
 import { roomIdSchema } from "@/features/rooms/schemas";
+import { revalidateChapterSessionLists } from "@/features/rooms/server/revalidate-session-lists";
 import { createClient } from "@/lib/supabase/server";
 
 export type ReleaseChapterResult =
@@ -52,6 +53,7 @@ export async function endRoomAction(input: unknown): Promise<EndRoomResult> {
 
   revalidatePath(`/teacher/rooms/${roomId.data}`);
   revalidatePath(`/teacher/rooms/${roomId.data}/summary`);
+  revalidateChapterSessionLists();
   return { ok: true };
 }
 

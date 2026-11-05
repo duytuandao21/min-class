@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireTeacher } from "@/features/auth/teacher-session";
+import { revalidateChapterSessionLists } from "@/features/rooms/server/revalidate-session-lists";
 import { createClient } from "@/lib/supabase/server";
 
 export type StartLessonSessionResult =
@@ -35,7 +35,7 @@ export async function startLessonSessionAction(input: unknown): Promise<StartLes
     return {
       ok: false,
       message: error.code === "23505"
-        ? "Lớp học phần này đang có một Lesson LIVE."
+        ? "Chương của Lesson này đang LIVE. Hãy mở Dashboard hoặc tải lại trang."
         : "Không thể bắt đầu Lesson.",
     };
   }
@@ -43,7 +43,7 @@ export async function startLessonSessionAction(input: unknown): Promise<StartLes
   const result = startedSessionSchema.safeParse(Array.isArray(data) ? data[0] : null);
   if (!result.success) return { ok: false, message: "Lesson Session đã tạo nhưng phản hồi không hợp lệ." };
 
-  revalidatePath("/teacher/subjects");
+  revalidateChapterSessionLists();
   return { ok: true, sessionId: result.data.session_id };
 }
 
@@ -61,7 +61,7 @@ export async function startChapterSessionAction(input: unknown): Promise<StartLe
     return {
       ok: false,
       message: error.code === "23505"
-        ? "Lớp học phần này đang có một buổi học LIVE."
+        ? "Chương này đang LIVE. Hãy mở Dashboard hoặc tải lại trang."
         : error.code === "P0001"
           ? "Chương cần có ít nhất một Lesson hợp lệ."
           : "Không thể bắt đầu buổi học.",
@@ -69,6 +69,6 @@ export async function startChapterSessionAction(input: unknown): Promise<StartLe
   }
   const result = startedSessionSchema.safeParse(Array.isArray(data) ? data[0] : null);
   if (!result.success) return { ok: false, message: "Session đã tạo nhưng phản hồi không hợp lệ." };
-  revalidatePath("/teacher/subjects");
+  revalidateChapterSessionLists();
   return { ok: true, sessionId: result.data.session_id };
 }

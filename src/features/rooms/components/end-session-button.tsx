@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { endRoomAction } from "@/features/rooms/lifecycle-actions";
 
-export function EndSessionButton({ roomId }: { roomId: string }) {
+export function EndSessionButton({ roomId, chapterName }: { roomId: string; chapterName?: string }) {
   const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export function EndSessionButton({ roomId }: { roomId: string }) {
   return (
     <>
       <button className="rounded-xl border border-red-200 bg-white px-5 py-3 font-semibold text-red-700 transition hover:bg-red-50 motion-reduce:transition-none" onClick={() => setIsConfirming(true)} ref={triggerButtonRef} type="button">
-        Kết thúc buổi học
+        {chapterName ? "Kết thúc LIVE chương" : "Kết thúc buổi học"}
       </button>
       {isConfirming ? (
         <div
@@ -61,13 +61,17 @@ export function EndSessionButton({ roomId }: { roomId: string }) {
             aria-describedby="end-session-description"
             aria-labelledby="end-session-title"
             aria-modal="true"
-            className="w-full max-w-md rounded-3xl border border-red-200 bg-[#fff8f6] p-7 shadow-2xl sm:p-8"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-red-200 bg-[#fff8f6] p-7 shadow-2xl sm:p-8"
             role="alertdialog"
           >
             <div aria-hidden="true" className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-red-100 text-2xl font-black text-red-700">!</div>
-            <h3 className="mt-5 text-center text-2xl font-bold text-red-950" id="end-session-title">Xác nhận kết thúc buổi học?</h3>
+            <h3 className="mt-5 text-center text-2xl font-bold text-red-950" id="end-session-title">{chapterName ? "Kết thúc LIVE chương này?" : "Xác nhận kết thúc buổi học?"}</h3>
+            {chapterName ? (
+              <p className="mt-3 break-words text-center font-bold text-red-950">{chapterName}</p>
+            ) : null}
             <p className="mt-3 text-center leading-7 text-red-900/85" id="end-session-description">
               Sau khi kết thúc, Student không thể gửi thêm reaction, comment hoặc Quiz. Hệ thống sẽ mở phần tổng kết cá nhân cho Student.
+              {chapterName ? " Chỉ kết thúc chương này; các chương khác vẫn tiếp tục LIVE." : null}
             </p>
             {error ? <p className="mt-4 rounded-xl bg-red-100 p-3 text-sm font-semibold text-red-800" role="alert">{error}</p> : null}
             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">

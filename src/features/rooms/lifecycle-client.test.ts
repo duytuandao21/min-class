@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: mocks.createClient }));
 
-import { advanceTeacherSection } from "./lifecycle-client";
+import { advanceTeacherSection, presentTeacherSection } from "./lifecycle-client";
 
 const roomId = "a9800000-0000-4000-8000-000000000001";
 const lessonId = "a9800000-0000-4000-8000-000000000002";
@@ -51,5 +51,40 @@ describe("advanceTeacherSection", () => {
     await expect(advanceTeacherSection("invalid", lessonId)).rejects.toThrow();
     await expect(advanceTeacherSection(roomId, "invalid")).rejects.toThrow();
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("presentTeacherSection", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("uses authoritative progress and keeps later sections released", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ teaching_section: 0, released_through: 4 }], error: null });
+    mocks.createClient.mockReturnValue({ rpc });
+    await expect(presentTeacherSection(roomId, lessonId, 0)).resolves.toEqual({ teachingSection: 0, releasedThrough: 4 });
+    expect(rpc).toHaveBeenCalledWith("present_session_lesson_section", {
+      p_room_id: roomId, p_lesson_id: lessonId, p_section_position: 0,
+    });
+  });
+
+  it.each([-1, 0.5, NaN])("rejects invalid position %s before any RPC", async (position) => {
+    const rpc = vi.fn();
+    mocks.createClient.mockReturnValue({ rpc });
+    await expect(presentTeacherSection(roomId, lessonId, position)).rejects.toThrow();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it.each([roomId, "invalid"])("validates lesson/room identifiers (%s)", async (id) => {
+    const rpc = vi.fn();
+    mocks.createClient.mockReturnValue({ rpc });
+    await expect(presentTeacherSection(id, "invalid", 0)).rejects.toThrow();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("reports unreleased sections and does not accept malformed responses", async () => {
+    const rpc = vi.fn().mockResolvedValueOnce({ data: null, error: { code: "22023" } })
+      .mockResolvedValueOnce({ data: [], error: null });
+    mocks.createClient.mockReturnValue({ rpc });
+    await expect(presentTeacherSection(roomId, lessonId, 4)).rejects.toThrow("Chỉ có thể trình chiếu section đã mở");
+    await expect(presentTeacherSection(roomId, lessonId, 0)).rejects.toThrow("Không thể đồng bộ trạng thái");
   });
 });

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { releaseEntireChapterAction } from "@/features/rooms/lifecycle-actions";
 
-export function ReleaseChapterButton({ roomId }: { roomId: string }) {
+export function ReleaseChapterButton({ roomId, chapterName }: { roomId: string; chapterName?: string }) {
   const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,13 +67,17 @@ export function ReleaseChapterButton({ roomId }: { roomId: string }) {
             aria-describedby="release-chapter-description"
             aria-labelledby="release-chapter-title"
             aria-modal="true"
-            className="w-full max-w-md rounded-3xl border border-sky-200 bg-[#f7fbfd] p-7 shadow-2xl sm:p-8"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-sky-200 bg-[#f7fbfd] p-7 shadow-2xl sm:p-8"
             role="alertdialog"
           >
             <div aria-hidden="true" className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-sky-100 text-2xl font-black text-sky-700">✓</div>
             <h3 className="mt-5 text-center text-2xl font-bold text-sky-950" id="release-chapter-title">Done toàn bộ chương đang LIVE?</h3>
+            {chapterName ? (
+              <p className="mt-3 break-words text-center font-bold text-sky-950">{chapterName}</p>
+            ) : null}
             <p className="mt-3 text-center leading-7 text-sky-900/85" id="release-chapter-description">
               Tất cả section và Quiz của mọi Lesson trong chương sẽ được mở cho sinh viên. Thao tác này không thể hoàn tác.
+              {chapterName ? " Các chương khác không bị ảnh hưởng." : null}
             </p>
             {error ? <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{error}</p> : null}
             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">

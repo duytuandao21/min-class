@@ -415,7 +415,8 @@ Quy tắc:
 
 - Unique `participant_id` bảo đảm một reflection/Student/Session.
 - RPC cuối cùng dùng insert-only và trả duplicate error, không cho sửa sau submit.
-- Chỉ Participant sở hữu hoặc Teacher của Session được đọc.
+- Teacher của Session được đọc toàn bộ reflection. Student chỉ đọc reflection của Participant/MSSV đã xác minh; access grant hiện tại được ưu tiên so với anonymous `user_id` cũ để hỗ trợ quay lại bằng browser khác.
+- Student đã tham gia nhưng chưa gửi nhận tập kết quả rỗng từ `get_own_session_reflection`, nhờ đó UI tự mở lại form; Student chỉ thuộc roster nhưng chưa tham gia bị từ chối.
 - Bảng nằm trong Realtime publication để Teacher nhận review mới.
 
 ## 10. RLS và quyền truy cập
@@ -456,6 +457,7 @@ Security-definer RPC luôn phải tự kiểm tra `auth.uid()`, claim anonymous/
 | `end_room` | Chuyển Session sang ENDED |
 | `access_ended_lesson_session` | Xác minh MSSV và cấp review access grant |
 | `get_student_ended_lesson_review` | Trả Lesson/answer key sau ENDED |
+| `get_own_session_reflection` | Đọc reflection của Participant/MSSV hiện tại hoặc xác nhận người đã tham gia nhưng chưa gửi |
 | `save_own_session_reflection` | Gửi reflection một lần |
 | `get_teacher_room_summary_overview` | Aggregate Summary nhẹ để render đầu trang |
 | `get_teacher_room_attendance_detail` | Lazy-load chi tiết attendance |
@@ -466,6 +468,7 @@ Security-definer RPC luôn phải tự kiểm tra `auth.uid()`, claim anonymous/
 | `get_teacher_session_reflections` | Session Reviews cho Teacher |
 | `get_teacher_course_section_export` | Aggregate dữ liệu Excel |
 | `get_public_subject_course_sections` / `get_public_course_section_catalog` / `get_public_chapter_catalog` | Public catalog gộp, giảm số query nối tiếp |
+| `get_public_lesson_gate_context` | Trả metadata an toàn cho MSSV gate, gồm tên Chapter để trang LIVE không phụ thuộc title Lesson đầu tiên |
 | `verify_course_section_student` / `get_student_chapter_preview` | Xác minh một MSSV trong roster và trả nội dung Chapter xem trước an toàn |
 | `delete_room` | Xóa Session và dữ liệu con |
 | `delete_subject` | Xóa cây Subject theo thứ tự an toàn |

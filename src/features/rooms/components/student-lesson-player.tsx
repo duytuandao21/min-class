@@ -10,6 +10,7 @@ import { StudentSessionReflection } from "@/features/rooms/components/student-se
 import type { OwnReactions, Reaction } from "@/features/rooms/feedback";
 import {
   reconcileStudentPosition,
+  getStudentPresentationPosition,
   type StudentLessonSnapshot,
 } from "@/features/rooms/lesson-flow";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/features/rooms/student-room-client";
 import type { SessionReflection } from "@/features/rooms/session-reflection";
 import { createClient } from "@/lib/supabase/client";
+import { createDegradedPollingController, createRealtimeSyncCoordinator } from "@/features/rooms/realtime-sync";
 
 type ConnectionState = "connecting" | "connected" | "degraded";
 
@@ -49,7 +51,7 @@ export function StudentLessonPlayer({
   participated: boolean;
 }) {
   const router = useRouter();
-  const initialPosition = initialSnapshot.sections.at(-1)?.position ?? null;
+  const initialPosition = getStudentPresentationPosition(initialSnapshot);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [currentPosition, setCurrentPosition] = useState<number | null>(initialPosition);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
@@ -57,13 +59,12 @@ export function StudentLessonPlayer({
   const [syncError, setSyncError] = useState<string | null>(null);
   const snapshotRef = useRef(initialSnapshot);
   const currentPositionRef = useRef<number | null>(initialPosition);
-  const syncVersionRef = useRef(0);
 
   const applySnapshot = useCallback((nextSnapshot: StudentLessonSnapshot) => {
     const nextPosition = reconcileStudentPosition(
       currentPositionRef.current,
-      snapshotRef.current.sections,
-      nextSnapshot.sections,
+      snapshotRef.current,
+      nextSnapshot,
     );
     snapshotRef.current = nextSnapshot;
     currentPositionRef.current = nextPosition;
@@ -71,26 +72,42 @@ export function StudentLessonPlayer({
     setCurrentPosition(nextPosition);
   }, []);
 
-  const syncSnapshot = useCallback(async () => {
-    const syncVersion = ++syncVersionRef.current;
-    try {
-      const nextSnapshot = await fetchStudentLessonSnapshot(initialSnapshot.id, lessonId);
-      if (syncVersion !== syncVersionRef.current) return;
-      applySnapshot(nextSnapshot);
-      setSyncError(null);
-    } catch (error) {
-      if (syncVersion !== syncVersionRef.current) return;
-      if (error instanceof StudentRoomUnavailableError) {
-        router.replace("/learn");
-        router.refresh();
-        return;
-      }
-      setSyncError("Mất đồng bộ tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi.");
-    }
-  }, [applySnapshot, initialSnapshot.id, lessonId, router]);
-
   useEffect(() => {
     const supabase = createClient();
+    let realtimeHealthy = false;
+    let disposed = false;
+    const sync = createRealtimeSyncCoordinator({
+      fetchSnapshot: () => fetchStudentLessonSnapshot(initialSnapshot.id, lessonId),
+      onSuccess: (nextSnapshot) => {
+        applySnapshot(nextSnapshot);
+        setSyncError(null);
+        if (realtimeHealthy) {
+          polling.stop();
+          setConnection("connected");
+        }
+      },
+      onError: (error) => {
+        if (error instanceof StudentRoomUnavailableError) {
+          polling.stop();
+          sync.dispose();
+          router.replace("/learn");
+          router.refresh();
+          return;
+        }
+        setSyncError("Mất đồng bộ tạm thời. MINCLASS sẽ thử lại khi kết nối phục hồi.");
+        polling.start();
+      },
+    });
+    const polling = createDegradedPollingController({
+      isVisible: () => document.visibilityState === "visible" && navigator.onLine,
+      requestSync: () => sync.request(),
+    });
+    const connectionTimeout = setTimeout(() => {
+      if (!realtimeHealthy) {
+        setConnection("degraded");
+        polling.start();
+      }
+    }, 8_000);
     const channel = supabase
       .channel(`room-flow:${initialSnapshot.id}`)
       .on(
@@ -102,7 +119,7 @@ export function StudentLessonPlayer({
           filter: `id=eq.${initialSnapshot.id}`,
         },
         () => {
-          void syncSnapshot();
+          sync.request();
         },
       )
       .on(
@@ -113,7 +130,7 @@ export function StudentLessonPlayer({
           table: "session_lessons",
           filter: `session_id=eq.${initialSnapshot.id}`,
         },
-        () => void syncSnapshot(),
+        () => sync.request(),
       )
       .on(
         "postgres_changes",
@@ -123,30 +140,51 @@ export function StudentLessonPlayer({
           table: "rooms",
           filter: `id=eq.${initialSnapshot.id}`,
         },
-        () => void syncSnapshot(),
+        () => sync.request(),
       )
       .subscribe((status) => {
+        if (disposed) return;
         if (status === "SUBSCRIBED") {
+          realtimeHealthy = true;
+          clearTimeout(connectionTimeout);
+          polling.stop();
           setConnection("connected");
-          void syncSnapshot();
+          sync.syncNow();
           return;
         }
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          realtimeHealthy = false;
           setConnection("degraded");
+          polling.start();
         }
       });
 
-    const syncAfterReconnect = () => void syncSnapshot();
+    const syncAfterReconnect = () => sync.syncNow();
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") sync.syncNow();
+    };
+    const markOffline = () => {
+      realtimeHealthy = false;
+      setConnection("degraded");
+      polling.start();
+    };
     window.addEventListener("online", syncAfterReconnect);
+    window.addEventListener("offline", markOffline);
     window.addEventListener("focus", syncAfterReconnect);
+    document.addEventListener("visibilitychange", syncWhenVisible);
 
     return () => {
-      syncVersionRef.current += 1;
+      disposed = true;
+      clearTimeout(connectionTimeout);
+      sync.dispose();
+      polling.stop();
       window.removeEventListener("online", syncAfterReconnect);
+      window.removeEventListener("offline", markOffline);
       window.removeEventListener("focus", syncAfterReconnect);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
       void supabase.removeChannel(channel);
     };
-  }, [initialSnapshot.id, syncSnapshot]);
+  }, [applySnapshot, initialSnapshot.id, lessonId, router]);
 
   const currentIndex = snapshot.sections.findIndex((section) => section.position === currentPosition);
   const currentSection = currentIndex >= 0 ? snapshot.sections[currentIndex] : null;
@@ -184,6 +222,22 @@ export function StudentLessonPlayer({
         </div>
       ) : (
         <div className="mx-auto w-full max-w-5xl">
+          {snapshot.status === "ACTIVE" ? (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p aria-live="polite" className="text-sm font-semibold text-emerald-900">
+                {currentPosition === snapshot.teachingSection ? "Đang theo giảng viên" : "Đang xem lại section đã mở"}
+              </p>
+              {currentPosition !== snapshot.teachingSection ? (
+                <button
+                  className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100"
+                  onClick={() => moveTo(snapshot.sections.findIndex((section) => section.position === snapshot.teachingSection))}
+                  type="button"
+                >
+                  Về section đang dạy
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {snapshot.status === "ENDED" ? (
             <p className="mb-4 w-fit rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-800" role="status">
               Buổi học đã kết thúc · Bạn vẫn có thể xem lại các section đã release.

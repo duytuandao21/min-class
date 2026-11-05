@@ -13,6 +13,8 @@ export const studentLessonSnapshotSchema = z.object({
   title: z.string().min(1),
   status: z.enum(["ACTIVE", "ENDED"]),
   releasedThrough: z.number().int(),
+  teachingSection: z.number().int().nonnegative(),
+  presentationRevision: z.number().int().nonnegative(),
   sections: z.array(lessonSectionSchema),
 });
 
@@ -21,6 +23,8 @@ const studentSnapshotRowSchema = z.object({
   room_title: z.string().min(1),
   room_status: z.enum(["ACTIVE", "ENDED"]),
   released_through: z.number().int(),
+  teaching_section: z.number().int().nonnegative(),
+  presentation_revision: z.number().int().nonnegative(),
   section_id: z.string().uuid().nullable(),
   section_position: z.number().int().nonnegative().nullable(),
   section_type: z.enum(["CONTENT", "QUIZ", "REFLECTION"]).nullable(),
@@ -35,9 +39,10 @@ export type TeacherSectionViewMode = "TEACHING" | "REVIEW" | "PREVIEW";
 export function getTeacherSectionViewMode(
   viewingPosition: number,
   teachingPosition: number,
+  releasedThrough = teachingPosition,
 ): TeacherSectionViewMode {
   if (viewingPosition === teachingPosition) return "TEACHING";
-  return viewingPosition < teachingPosition ? "REVIEW" : "PREVIEW";
+  return viewingPosition <= releasedThrough ? "REVIEW" : "PREVIEW";
 }
 
 export function getAdjacentSectionPosition(
@@ -77,26 +82,34 @@ export function parseStudentLessonSnapshot(input: unknown): StudentLessonSnapsho
     title: first.room_title,
     status: first.room_status,
     releasedThrough: first.released_through,
+    teachingSection: first.teaching_section,
+    presentationRevision: first.presentation_revision,
     sections,
   });
 }
 
+export function getStudentPresentationPosition(snapshot: StudentLessonSnapshot): number | null {
+  if (snapshot.status === "ACTIVE"
+    && snapshot.sections.some((section) => section.position === snapshot.teachingSection)) {
+    return snapshot.teachingSection;
+  }
+  return snapshot.sections.at(-1)?.position ?? null;
+}
+
 export function reconcileStudentPosition(
   currentPosition: number | null,
-  previousSections: LessonSection[],
-  nextSections: LessonSection[],
+  previousSnapshot: StudentLessonSnapshot,
+  nextSnapshot: StudentLessonSnapshot,
 ): number | null {
-  if (nextSections.length === 0) return null;
-
-  const previousLatest = previousSections.at(-1)?.position ?? null;
-  const nextLatest = nextSections.at(-1)?.position ?? null;
-  if (nextLatest === null) return null;
-
-  if (currentPosition === null || previousLatest === null || currentPosition === previousLatest) {
-    return nextLatest;
+  const presentationChanged = nextSnapshot.status === "ACTIVE" && (
+    nextSnapshot.presentationRevision !== previousSnapshot.presentationRevision
+    || nextSnapshot.teachingSection !== previousSnapshot.teachingSection
+    || nextSnapshot.releasedThrough !== previousSnapshot.releasedThrough
+  );
+  if (presentationChanged || currentPosition === null) {
+    return getStudentPresentationPosition(nextSnapshot);
   }
-
-  return nextSections.some((section) => section.position === currentPosition)
+  return nextSnapshot.sections.some((section) => section.position === currentPosition)
     ? currentPosition
-    : nextLatest;
+    : getStudentPresentationPosition(nextSnapshot);
 }

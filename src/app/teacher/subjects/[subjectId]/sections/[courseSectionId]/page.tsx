@@ -4,6 +4,8 @@ import { Suspense } from "react";
 
 import { AddActionIcon } from "@/components/add-action-button";
 import { BackLink } from "@/components/back-link";
+import { getActiveChapterSessions } from "@/features/rooms/active-chapter-sessions";
+import { ActiveChapterSessions } from "@/features/rooms/components/active-chapter-sessions";
 import { DeleteLessonButton } from "@/features/lessons/components/delete-lesson-button";
 import { EditLessonButton } from "@/features/lessons/components/edit-lesson-button";
 import { LessonChapterDisclosure } from "@/features/lessons/components/lesson-chapter-disclosure";
@@ -65,6 +67,7 @@ export default async function CourseSectionRosterPage({
   const lessonsByChapter = new Map(detail.chapters.map((chapter) => [chapter.id, []] as [string, typeof detail.lessons]));
   for (const lesson of detail.lessons) lessonsByChapter.get(lesson.chapter_id)?.push(lesson);
   const createLessonHref = `/teacher/subjects/${detail.subject.id}/sections/${detail.courseSection.id}/lessons/new`;
+  const activeChapterSessions = getActiveChapterSessions(detail.chapters, detail.lessons);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-10 sm:px-10">
@@ -78,6 +81,8 @@ export default async function CourseSectionRosterPage({
           <p className="mt-3 text-lg text-[var(--muted)]">{detail.courseSection.display_name}</p>
         ) : null}
       </header>
+
+      <ActiveChapterSessions sessions={activeChapterSessions} />
 
       <section className="mb-10" aria-labelledby="lesson-list-title">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -131,7 +136,7 @@ export default async function CourseSectionRosterPage({
                             Dashboard
                           </Link>
                         ) : (
-                          <StartChapterSessionButton chapterId={chapter.id} courseSectionId={detail.courseSection.id} />
+                          <StartChapterSessionButton chapterId={chapter.id} chapterName={chapter.name} courseSectionId={detail.courseSection.id} />
                         )
                       ) : null}
                       <ChapterOptionsMenu chapterName={chapter.name}>

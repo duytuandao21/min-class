@@ -29,7 +29,7 @@ Dùng `:::section` và kết thúc bằng `:::`. Sau metadata phải có một d
 
 Hỗ trợ paragraph, heading, **bold**, *italic*, danh sách có/không thứ tự, link, ảnh URL, inline code, xuống dòng và fenced code block.
 
-Để nhúng video vào Section, đặt liên kết video trên **một dòng riêng** theo cú pháp `[video: Tên video](https://link-video)`. MINCLASS hiển thị trình phát ngay trong bài học, cả khi xem trước, LIVE và ôn tập. Hỗ trợ file video trực tiếp (`.mp4`, `.webm`, `.ogg`, `.ogv`, `.m4v`) và tự chuyển link YouTube, Vimeo, Dailymotion, Google Drive, Loom sang trình phát nhúng. Với nguồn khác, hãy dùng URL nhúng HTTPS của dịch vụ đó. Một số trang chặn nhúng hoặc yêu cầu đăng nhập; sinh viên vẫn có thể bấm **Mở video gốc nếu không phát được**. Chất lượng phát phụ thuộc vào file/dịch vụ cung cấp và đường truyền, không do MINCLASS chuyển mã video.
+Để nhúng video vào Section, đặt liên kết video trên **một dòng riêng** theo cú pháp `[video: Tên video](https://link-video)`. MINCLASS hiển thị trình phát ngay trong bài học, cả khi xem trước, LIVE và ôn tập. Hỗ trợ file video trực tiếp (`.mp4`, `.webm`, `.ogg`, `.ogv`, `.m4v`) và tự chuyển link YouTube, Vimeo, Dailymotion, Google Drive, Loom sang trình phát nhúng. Với nguồn khác, hãy dùng URL nhúng HTTPS của dịch vụ đó. Một số trang chặn nhúng hoặc yêu cầu đăng nhập; sinh viên vẫn có thể bấm **Mở video gốc nếu không phát được**. Video được tải trực tiếp từ nguồn, không được upload/proxy/chuyển mã bởi MINCLASS; chất lượng phát phụ thuộc vào file/dịch vụ cung cấp và đường truyền.
 
 ````markdown
 :::section

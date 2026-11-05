@@ -52,6 +52,8 @@ export default async function StudentRoomPage({
           title: room.title,
           status: room.status,
           releasedThrough: room.releasedThrough,
+          teachingSection: room.teachingSection,
+          presentationRevision: room.presentationRevision,
           sections: room.sections,
         }}
         lessonId={room.selectedLessonId}

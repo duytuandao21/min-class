@@ -90,11 +90,11 @@ Video được hiển thị bằng khung 16:9 trong Preview, LIVE và trang ôn 
 ### Dạy Lesson trực tiếp
 
 1. Tại Chapter trong Course Section, chọn **Live** để bắt đầu một Session cho toàn bộ chương. Hệ thống chụp roster hiện tại làm dữ liệu điểm danh riêng cho buổi học.
-2. Tất cả Lesson trong chương được đưa vào cùng Session; nhiều chương có thể được tổ chức thành các Session riêng.
+2. Tất cả Lesson trong chương được đưa vào cùng Session. Một lớp học phần có thể LIVE nhiều chương đồng thời; mỗi chương chỉ có một Session LIVE tại một thời điểm. Mỗi chương giữ Dashboard, điểm danh, quiz, phản hồi và tổng kết riêng. Bảng **Chương đang LIVE** ở Course Section và Dashboard giúp chuyển nhanh giữa các chương.
 3. Yêu cầu sinh viên mở **Các bài học đang live**, chọn đúng chương và nhập MSSV thuộc lớp học phần; sinh viên không cần Session Code.
 4. Mở **Dashboard** để chuyển qua từng Lesson và theo dõi riêng section đang dạy, reaction, comment và tiến độ quiz của Lesson đó.
-5. Chọn **Done Section** để release section hiện tại cho sinh viên. Giảng viên vẫn có thể chuyển Lesson để trình bày mà không release nhầm nội dung.
-6. Có thể chọn **Done toàn bộ chương** để release phần còn lại hoặc chọn **Kết thúc buổi học**; cả hai thao tác đều có popup xác nhận.
+5. Chọn **Done Section** để mở section tiếp theo cho sinh viên. Các nút **Xem trước/Xem tiếp** chỉ đổi màn hình giảng viên. Trong **Điều khiển lớp**, dùng **Quay lại section**, **Section tiếp** hoặc **Trình chiếu section này** để đưa sinh viên đang xem cùng Lesson về một section đã mở; **Đồng bộ lại lớp** đưa các máy đang xem lại về section đang dạy. Nội dung đã mở, quiz và phản hồi vẫn được giữ nguyên. Khi trình chiếu lại, chọn **Về section mới nhất** để tiếp tục Done.
+6. Có thể chọn **Done toàn bộ chương** để release phần còn lại hoặc chọn **Kết thúc LIVE chương**; cả hai thao tác đều có popup xác nhận kèm tên chương. Done hoặc kết thúc một chương không ảnh hưởng các chương khác đang LIVE. Mỗi Chapter Session vẫn được tính là một buổi điểm danh riêng.
 7. Sau khi kết thúc, nội dung, điểm danh và phản hồi của Session được giữ lại ở chế độ lịch sử.
 
 ### Xem lại buổi học
@@ -124,7 +124,7 @@ Sinh viên không cần email, mật khẩu hoặc tài khoản MINCLASS.
 1. Từ trang chủ, chọn **Các bài học đang live** để vào nhanh danh sách Session đang diễn ra; hoặc chọn **Khám phá bài học** để duyệt theo môn học và lớp học phần.
 2. Chọn Chapter đang **LIVE** và nhập MSSV có trong roster của lớp học phần.
 3. Chỉ cần nhập MSSV một lần để tham gia toàn bộ Lesson trong Chapter Session đó.
-4. Chuyển qua các Lesson trong chương và theo dõi section giảng viên đã release. Section tiếp theo chỉ xuất hiện sau khi giảng viên bấm **Done Section**.
+4. Chuyển qua các Lesson trong chương và theo dõi section giảng viên đã release. Section tiếp theo chỉ xuất hiện sau khi giảng viên bấm **Done Section**. Khi giảng viên điều khiển trình chiếu, các máy đang xem cùng Lesson tự chuyển theo dù trước đó đang ở section nào; giữa các lệnh, sinh viên vẫn xem lại độc lập và có thể chọn **Về section đang dạy**. Khi kết nối phục hồi, hệ thống tải lại vị trí trình chiếu mới nhất.
 
 Sinh viên không cần tài khoản, mật khẩu hoặc Session Code. Số người tham gia và các thay đổi trong buổi học được đồng bộ realtime.
 

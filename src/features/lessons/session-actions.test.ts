@@ -36,14 +36,14 @@ describe("startLessonSessionAction", () => {
     expect(rpc).toHaveBeenCalledWith("start_lesson_session", { p_lesson_id: lessonId });
   });
 
-  it("reports duplicate active Course Section Session", async () => {
+  it("reports a duplicate active Chapter rather than blocking the entire Course Section", async () => {
     mocks.createClient.mockResolvedValue({
       rpc: vi.fn().mockResolvedValue({ data: null, error: { code: "23505" } }),
     });
 
     await expect(startLessonSessionAction(lessonId)).resolves.toEqual({
       ok: false,
-      message: "Lớp học phần này đang có một Lesson LIVE.",
+      message: "Chương của Lesson này đang LIVE. Hãy mở Dashboard hoặc tải lại trang.",
     });
   });
 
@@ -79,6 +79,23 @@ describe("startChapterSessionAction", () => {
     expect(rpc).toHaveBeenCalledWith("start_chapter_session", {
       p_course_section_id: courseSectionId,
       p_chapter_id: chapterId,
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/learn/live");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/teacher/subjects/[subjectId]/sections/[courseSectionId]", "page");
+  });
+
+  it("reports a duplicate of this Chapter only", async () => {
+    mocks.createClient.mockResolvedValue({ rpc: vi.fn().mockResolvedValue({ error: { code: "23505" } }) });
+    await expect(startChapterSessionAction({ courseSectionId, chapterId })).resolves.toEqual({
+      ok: false, message: "Chương này đang LIVE. Hãy mở Dashboard hoặc tải lại trang.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("retains the empty-Chapter validation", async () => {
+    mocks.createClient.mockResolvedValue({ rpc: vi.fn().mockResolvedValue({ error: { code: "P0001" } }) });
+    await expect(startChapterSessionAction({ courseSectionId, chapterId })).resolves.toEqual({
+      ok: false, message: "Chương cần có ít nhất một Lesson hợp lệ.",
     });
   });
 

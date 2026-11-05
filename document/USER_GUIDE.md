@@ -94,6 +94,8 @@ Việc cập nhật roster không thay đổi attendance của những Session �
 
 Nút **Cách viết file lesson** mở hướng dẫn cú pháp ngay trên trang tạo Lesson. Title được lấy từ frontmatter; tiền tố dạng `Chương x -`/`Chapter x -` được tự bỏ. **Thư viện ảnh Lesson** cho phép upload PNG/JPEG/WebP tối đa 5 MB, xem ảnh và sao chép cú pháp Markdown. Lesson mới lưu ở trạng thái chưa LIVE.
 
+Để chèn video, đặt `[video: Tên video](https://link-video)` trên một dòng riêng trong Section. MINCLASS hỗ trợ file video trực tiếp `.mp4`, `.webm`, `.ogg`, `.ogv`, `.m4v` và link YouTube, Vimeo, Dailymotion, Google Drive, Loom; nguồn khác nên dùng URL nhúng HTTPS do dịch vụ cung cấp. Video không được upload lên MINCLASS và sẽ xuất hiện trong Preview, LIVE và trang ôn tập.
+
 ### 3.6. Bắt đầu Chapter LIVE
 
 1. Tại thẻ Chapter, chọn **Live**.
@@ -128,6 +130,7 @@ Sau khi kết thúc:
 - Student chỉ được đọc nội dung đã mở.
 - Không thể gửi reaction, comment hoặc Quiz mới.
 - Student nhận popup **Tổng kết cá nhân** và có thể gửi một lần cho cả Chapter Session.
+- Nếu Student đã tham gia nhưng đóng popup hoặc rời trang trước khi gửi, popup sẽ tự hiện lại khi mở buổi học đã kết thúc hoặc trang ôn tập.
 - Teacher được chuyển đến Summary.
 
 ### 3.9. Xem lịch sử và tổng kết
@@ -186,7 +189,7 @@ Chapter có các trạng thái:
 2. Nhập MSSV có trong roster của Course Section.
 3. Chọn tham gia.
 
-Student không cần nhập Room Code. LIVE luôn xác minh MSSV riêng dù trước đó đã vào Course Section. Sau khi join, Student chỉ nhập một lần để truy cập toàn bộ Lesson trong Chapter Session. Nếu MSSV không thuộc lớp học phần, hệ thống từ chối truy cập.
+Student không cần nhập Room Code. Trang xác minh hiển thị tên Chapter đang LIVE thay vì tên Lesson đầu tiên; tên quá dài được rút gọn nhiều dòng để vẫn dễ nhận biết. LIVE luôn xác minh MSSV riêng dù trước đó đã vào Course Section. Sau khi join, Student chỉ nhập một lần để truy cập toàn bộ Lesson trong Chapter Session. Nếu MSSV không thuộc lớp học phần, hệ thống từ chối truy cập.
 
 Cùng một MSSV có thể tiếp tục học từ trình duyệt hoặc thiết bị khác. Hệ thống vẫn chỉ ghi nhận một lần điểm danh và dùng chung dữ liệu Participant của MSSV trong Session.
 
@@ -197,6 +200,7 @@ Cùng một MSSV có thể tiếp tục học từ trình duyệt hoặc thiết
 - Không thể chuyển đến Section chưa được giảng viên mở.
 - Khi giảng viên chuyển Section, nội dung mới được cập nhật gần realtime.
 - Nếu mất kết nối realtime, ứng dụng sẽ đồng bộ lại trạng thái từ database.
+- Video nhúng hiển thị trong khung 16:9. Nếu dịch vụ chặn nhúng, yêu cầu đăng nhập hoặc trình duyệt không phát được định dạng file, chọn **Mở video gốc nếu không phát được**.
 
 ### 4.4. Gửi reaction
 
@@ -233,7 +237,7 @@ Sau khi giảng viên kết thúc Session, **Tổng kết cá nhân** xuất hi�
 2. Nhập lời review buổi học nếu muốn.
 3. Chọn gửi.
 
-Mỗi Student chỉ gửi một lần và không thể chỉnh sửa sau khi gửi.
+Mỗi Student chỉ gửi một lần và không thể chỉnh sửa sau khi gửi. Student đã tham gia nhưng chưa gửi có thể đóng popup trong lần xem hiện tại; form sẽ tự hiện lại mỗi lần quay lại buổi học đã kết thúc hoặc trang ôn tập, kể cả khi xác minh lại cùng MSSV trên một anonymous browser khác. Student chỉ có trong roster nhưng chưa tham gia Session không thấy form này.
 
 ### 4.8. Xem lại Lesson đã kết thúc
 
